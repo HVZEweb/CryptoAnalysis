@@ -1,0 +1,183 @@
+
+--- Trading bot start 2026-07-11T10:37:00.422Z ---
+13:37:02 | INFO | trading_bot | Starting unified trading bot | mode=paper | strategy=meta
+13:37:02 | INFO | trading_bot | Starting unified trading bot | mode=paper | strategy=meta
+Traceback (most recent call last):
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\resolver.py", line 117, in resolve
+    resp = await self._resolver.getaddrinfo(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+aiodns.error.DNSError: (11, 'Could not contact DNS servers')
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\connector.py", line 1571, in _create_direct_connection
+    hosts = await self._resolve_host(host, port, traces=traces)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\connector.py", line 1181, in _resolve_host
+    return await asyncio.shield(resolved_host_task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\connector.py", line 1212, in _resolve_host_with_throttle
+    addrs = await self._resolver.resolve(host, port, family=self._family)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\resolver.py", line 126, in resolve
+    raise OSError(None, msg) from exc
+OSError: [Errno None] Could not contact DNS servers
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 248, in fetch
+    async with session_method(yarl.URL(url, encoded=True),
+               ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              data=encoded_body,
+                              ^^^^^^^^^^^^^^^^^^
+                              headers=request_headers,
+                              ^^^^^^^^^^^^^^^^^^^^^^^^
+                              timeout=(self.timeout / 1000),
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              proxy=final_proxy) as response:
+                              ^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\client.py", line 1683, in __aenter__
+    self._resp: _RetType_co = await self._coro
+                              ^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\client.py", line 856, in _request
+    resp = await handler(req)
+           ^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\client.py", line 810, in _connect_and_send_request
+    conn = await self._connector.connect(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        req, traces=traces, timeout=real_timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\connector.py", line 657, in connect
+    proto = await self._create_connection(req, traces, timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\connector.py", line 1242, in _create_connection
+    _, proto = await self._create_direct_connection(req, traces, timeout)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\aiohttp\connector.py", line 1577, in _create_direct_connection
+    raise ClientConnectorDNSError(req.connection_key, exc) from exc
+aiohttp.client_exceptions.ClientConnectorDNSError: Cannot connect to host www.okx.com:443 ssl:default [Could not contact DNS servers]
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\xampp\htdocs\crypto\bot\main.py", line 291, in <module>
+    asyncio.run(_main())
+    ~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\Irink\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 204, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "C:\Users\Irink\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\runners.py", line 127, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "C:\Users\Irink\AppData\Local\Python\pythoncore-3.14-64\Lib\asyncio\base_events.py", line 719, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "C:\xampp\htdocs\crypto\bot\main.py", line 282, in _main
+    await bot.start()
+  File "C:\xampp\htdocs\crypto\bot\main.py", line 160, in start
+    await self.rest.connect()
+  File "C:\xampp\htdocs\crypto\bot\exchange\okx_rest.py", line 126, in connect
+    await self._exchange.load_markets()
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 372, in load_markets
+    raise e
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 364, in load_markets
+    result = await self.markets_loading
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 329, in load_markets_helper
+    currencies = await self.fetch_currencies()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\ccxt\async_support\okx.py", line 1969, in fetch_currencies
+    response = await self.privateGetAssetCurrencies(params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 1051, in request
+    return await self.fetch2(path, api, method, params, headers, body, config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 1045, in fetch2
+    raise e
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 1028, in fetch2
+    response = await self.fetch(request['url'], request['method'], request['headers'], request['body'])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\crypto\bot\.venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 288, in fetch
+    raise ExchangeNotAvailable(details) from e
+ccxt.base.errors.ExchangeNotAvailable: okx GET https://www.okx.com/api/v5/asset/currencies
+okx requires to release all resources with an explicit call to the .close() coroutine. If you are using the exchange instance with async coroutines, add `await exchange.close()` to your code into a place when you're done with the exchange and don't need the exchange instance anymore (at the end of your async coroutine).
+Unclosed client session
+client_session: <aiohttp.client.ClientSession object at 0x000001E870B15FD0>
+
+--- Trading bot start 2026-07-11T10:48:24.284Z ---
+13:48:26 | INFO | trading_bot | Starting unified trading bot | mode=paper | strategy=meta
+13:48:26 | INFO | trading_bot | Starting unified trading bot | mode=paper | strategy=meta
+13:48:27 | INFO | trading_bot.exchange.rest | OKX futures REST connected | host=www.okx.com | mode=paper | markets=4102
+13:48:27 | INFO | trading_bot.exchange.rest | OKX futures REST connected | host=www.okx.com | mode=paper | markets=4102
+C:\xampp\htdocs\crypto\bot\main.py:167: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  self._started_at = datetime.utcnow()
+13:48:27 | INFO | trading_bot | Bot running on http://127.0.0.1:8765
+13:48:27 | INFO | trading_bot | Bot running on http://127.0.0.1:8765
+13:48:28 | INFO | trading_bot | Active strategy: hft_orderbook
+13:48:28 | INFO | trading_bot | Active strategy: hft_orderbook
+13:48:28 | INFO | trading_bot.exchange.ws | WS subscribed to 5 symbols
+13:48:28 | INFO | trading_bot.exchange.ws | WS subscribed to 5 symbols
+13:48:41 | INFO | trading_bot | Stopping unified trading bot
+13:48:41 | INFO | trading_bot | Stopping unified trading bot
+16:03:13 | INFO | optimization | Starting optimization: 3000 scenarios, 3000 runs, 60 param sets
+
+--- Trading bot start 2026-07-12T11:54:04.561Z ---
+14:54:08 | INFO | trading_bot | Starting unified trading bot | mode=paper | strategy=meta
+14:54:08 | INFO | trading_bot | Starting unified trading bot | mode=paper | strategy=meta
+14:54:09 | INFO | trading_bot.exchange.rest | OKX futures REST connected | host=www.okx.com | mode=paper | markets=4038
+14:54:09 | INFO | trading_bot.exchange.rest | OKX futures REST connected | host=www.okx.com | mode=paper | markets=4038
+C:\xampp\htdocs\crypto\bot\main.py:167: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+  self._started_at = datetime.utcnow()
+14:54:09 | INFO | trading_bot | Bot running on http://127.0.0.1:8765
+14:54:09 | INFO | trading_bot | Bot running on http://127.0.0.1:8765
+14:54:10 | INFO | trading_bot | Active strategy: hft_orderbook
+14:54:10 | INFO | trading_bot | Active strategy: hft_orderbook
+14:54:10 | INFO | trading_bot.exchange.ws | WS subscribed to 5 symbols
+14:54:10 | INFO | trading_bot.exchange.ws | WS subscribed to 5 symbols
+14:55:45 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:55:45 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:55:49 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:55:49 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:55:53 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:55:53 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:55:57 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:55:57 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:00 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:00 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:04 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:04 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:08 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:08 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:12 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:12 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:15 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:15 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:22 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401
+14:56:22 | WARNING | trading_bot.ai.predictor | AI call failed: Client error '401 Unauthorized' for url 'https://openrouter.ai/api/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401

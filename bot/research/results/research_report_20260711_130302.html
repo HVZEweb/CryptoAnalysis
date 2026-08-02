@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <title>Trading Research Report</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; background: #0f1117; color: #e8e8e8; }
+    h1, h2 { color: #a78bfa; }
+    table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    td, th { border: 1px solid #333; padding: 8px; text-align: left; }
+    tr:nth-child(even) { background: #1a1d27; }
+    .badge { padding: 2px 8px; border-radius: 6px; font-size: 12px; }
+    .badge.ok { background: #065f46; }
+    .badge.bad { background: #7f1d1d; }
+    .card { border: 1px solid #333; border-radius: 12px; padding: 1rem; margin: 1rem 0; }
+    .card.ok { border-color: #10b981; }
+    .card.bad { border-color: #ef4444; }
+    .warnings { color: #fca5a5; }
+    .strengths { color: #86efac; }
+    .verdict { font-size: 1.1rem; padding: 1rem; background: #1e1b4b; border-radius: 12px; }
+    @media print { body { background: white; color: black; } }
+  </style>
+</head>
+<body>
+  <h1>Research Validation Report</h1>
+  <p>Generated: 2026-07-11T13:03:02.067988+00:00 UTC</p>
+  <p>Symbols: BTC/USDT:USDT, ETH/USDT:USDT, SOL/USDT:USDT · Timeframe: 5m</p>
+  <p>Execution: fees 0.05% · slippage 0.03% · latency 1 bars</p>
+
+  <div class="verdict">
+    <h2>Вердикт</h2>
+    <p>НИ ОДНА стратегия не показала устойчивого положительного EV после комиссий и slippage.</p>
+    <p>ML: ✗ · Regime: ✗ · Optimization: ✗</p>
+  </div>
+
+  <h2>Рекомендации</h2>
+  <ul><li>Не переходить к ML — сначала исправить логику входа/выхода или фильтры.</li><li>Пересмотреть TP/SL, min EV, min score на реальных OHLCV.</li><li>Увеличить выборку данных (больше баров / больше пар).</li><li>Проверить, не переобучены ли текущие параметры на in-sample.</li></ul>
+  <h3>Не делать сейчас</h3>
+  <ul class="warnings"><li>Замена стратегий на LLM.</li><li>Добавление десятков новых индикаторов без валидации.</li><li>Оптимизация только по итоговой прибыли без walk-forward.</li></ul>
+
+  <h2>Стратегии</h2>
+  
+            <div class="card bad">
+              <h4>quant_scalping · BTC/USDT:USDT — none</h4>
+              <p>Стратегия не прошла валидацию. ML не исправит фундаментальную проблему.</p>
+              <ul class="strengths"></ul>
+              <ul class="warnings"><li>OOS expectancy <= 0 — net edge after costs is not positive.</li><li>Profit Factor <= 1 — gross edge does not cover fees and slippage.</li><li>Walk-forward stability 0% — результат нестабилен между периодами.</li><li>Rolling Sharpe отрицательный — периодические просадки доминируют.</li></ul>
+            </div>
+            
+            <div class="card bad">
+              <h4>hft_orderbook · BTC/USDT:USDT — none</h4>
+              <p>Стратегия не прошла валидацию. ML не исправит фундаментальную проблему.</p>
+              <ul class="strengths"></ul>
+              <ul class="warnings"><li>Недостаточно сделок для статистически значимого вывода.</li><li>OOS expectancy <= 0 — net edge after costs is not positive.</li><li>Profit Factor <= 1 — gross edge does not cover fees and slippage.</li><li>Walk-forward stability 0% — результат нестабилен между периодами.</li></ul>
+            </div>
+            
+            <div class="card bad">
+              <h4>quant_scalping · ETH/USDT:USDT — none</h4>
+              <p>Стратегия не прошла валидацию. ML не исправит фундаментальную проблему.</p>
+              <ul class="strengths"></ul>
+              <ul class="warnings"><li>OOS expectancy <= 0 — net edge after costs is not positive.</li><li>Profit Factor <= 1 — gross edge does not cover fees and slippage.</li><li>Walk-forward stability 0% — результат нестабилен между периодами.</li><li>Rolling Sharpe отрицательный — периодические просадки доминируют.</li></ul>
+            </div>
+            
+            <div class="card bad">
+              <h4>hft_orderbook · ETH/USDT:USDT — none</h4>
+              <p>Стратегия не прошла валидацию. ML не исправит фундаментальную проблему.</p>
+              <ul class="strengths"></ul>
+              <ul class="warnings"><li>Недостаточно сделок для статистически значимого вывода.</li><li>OOS expectancy <= 0 — net edge after costs is not positive.</li><li>Profit Factor <= 1 — gross edge does not cover fees and slippage.</li><li>Walk-forward stability 0% — результат нестабилен между периодами.</li></ul>
+            </div>
+            
+            <div class="card bad">
+              <h4>quant_scalping · SOL/USDT:USDT — none</h4>
+              <p>Стратегия не прошла валидацию. ML не исправит фундаментальную проблему.</p>
+              <ul class="strengths"></ul>
+              <ul class="warnings"><li>OOS expectancy <= 0 — net edge after costs is not positive.</li><li>Profit Factor <= 1 — gross edge does not cover fees and slippage.</li><li>Walk-forward stability 0% — результат нестабилен между периодами.</li><li>Rolling Sharpe отрицательный — периодические просадки доминируют.</li></ul>
+            </div>
+            
+            <div class="card bad">
+              <h4>hft_orderbook · SOL/USDT:USDT — none</h4>
+              <p>Стратегия не прошла валидацию. ML не исправит фундаментальную проблему.</p>
+              <ul class="strengths"></ul>
+              <ul class="warnings"><li>Недостаточно сделок для статистически значимого вывода.</li><li>OOS expectancy <= 0 — net edge after costs is not positive.</li><li>Profit Factor <= 1 — gross edge does not cover fees and slippage.</li><li>Walk-forward stability 0% — результат нестабилен между периодами.</li></ul>
+            </div>
+            
+
+  <section><h2>quant_scalping:BTC/USDT:USDT</h2><h3>Out-of-Sample <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>1826</strong></td></tr><tr><td>wins</td><td><strong>337</strong></td></tr><tr><td>losses</td><td><strong>1489</strong></td></tr><tr><td>win_rate</td><td><strong>18.46</strong></td></tr><tr><td>profit_factor</td><td><strong>0.075</strong></td></tr><tr><td>expectancy_pct</td><td><strong>-0.2786</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>-0.002786</strong></td></tr><tr><td>total_return_pct</td><td><strong>-99.39</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>99.39</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-154.042</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-208.297</strong></td></tr><tr><td>calmar_ratio</td><td><strong>-1.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>4.4</strong></td></tr><tr><td>avg_hold_min</td><td><strong>21.99</strong></td></tr><tr><td>total_fees_pct</td><td><strong>182.6</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>109.56</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.1218</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>-0.3692</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Walk-Forward OOS <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>3383</strong></td></tr><tr><td>wins</td><td><strong>590</strong></td></tr><tr><td>losses</td><td><strong>2793</strong></td></tr><tr><td>win_rate</td><td><strong>17.44</strong></td></tr><tr><td>profit_factor</td><td><strong>0.069</strong></td></tr><tr><td>expectancy_pct</td><td><strong>-0.2827</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>-0.002827</strong></td></tr><tr><td>total_return_pct</td><td><strong>-99.993</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>99.99</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-190.097</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-227.658</strong></td></tr><tr><td>calmar_ratio</td><td><strong>-1.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>4.41</strong></td></tr><tr><td>avg_hold_min</td><td><strong>22.07</strong></td></tr><tr><td>total_fees_pct</td><td><strong>338.3</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>202.98</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.1197</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>-0.3677</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Rolling Windows <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>34895</strong></td></tr><tr><td>wins</td><td><strong>6763</strong></td></tr><tr><td>losses</td><td><strong>28132</strong></td></tr><tr><td>win_rate</td><td><strong>19.38</strong></td></tr><tr><td>profit_factor</td><td><strong>0.079</strong></td></tr><tr><td>expectancy_pct</td><td><strong>-0.2841</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>-0.002841</strong></td></tr><tr><td>total_return_pct</td><td><strong>-100.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-255.065</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-322.821</strong></td></tr><tr><td>calmar_ratio</td><td><strong>-1.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>4.25</strong></td></tr><tr><td>avg_hold_min</td><td><strong>21.27</strong></td></tr><tr><td>total_fees_pct</td><td><strong>3489.5</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>2093.7</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.1261</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>-0.3828</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>По рыночным режимам</h3><table><tr><td>unknown</td><td>trades=3392</td><td>EV=-0.2858</td><td>PF=0.118</td></tr><tr><td>flat</td><td>trades=2470</td><td>EV=-0.2938</td><td>PF=0.136</td></tr><tr><td>trending</td><td>trades=1670</td><td>EV=-0.2741</td><td>PF=0.254</td></tr></table></section><section><h2>hft_orderbook:BTC/USDT:USDT</h2><h3>Out-of-Sample <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>0</strong></td></tr><tr><td>wins</td><td><strong>0</strong></td></tr><tr><td>losses</td><td><strong>0</strong></td></tr><tr><td>win_rate</td><td><strong>0.0</strong></td></tr><tr><td>profit_factor</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_pct</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>0.0</strong></td></tr><tr><td>total_return_pct</td><td><strong>0.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>calmar_ratio</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_min</td><td><strong>0.0</strong></td></tr><tr><td>total_fees_pct</td><td><strong>0.0</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>0.0</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Walk-Forward OOS <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>0</strong></td></tr><tr><td>wins</td><td><strong>0</strong></td></tr><tr><td>losses</td><td><strong>0</strong></td></tr><tr><td>win_rate</td><td><strong>0.0</strong></td></tr><tr><td>profit_factor</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_pct</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>0.0</strong></td></tr><tr><td>total_return_pct</td><td><strong>0.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>calmar_ratio</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_min</td><td><strong>0.0</strong></td></tr><tr><td>total_fees_pct</td><td><strong>0.0</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>0.0</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Rolling Windows <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>0</strong></td></tr><tr><td>wins</td><td><strong>0</strong></td></tr><tr><td>losses</td><td><strong>0</strong></td></tr><tr><td>win_rate</td><td><strong>0.0</strong></td></tr><tr><td>profit_factor</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_pct</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>0.0</strong></td></tr><tr><td>total_return_pct</td><td><strong>0.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>calmar_ratio</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_min</td><td><strong>0.0</strong></td></tr><tr><td>total_fees_pct</td><td><strong>0.0</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>0.0</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>По рыночным режимам</h3><table><tr><td>unknown</td><td>trades=0</td><td>EV=0.0</td><td>PF=0.0</td></tr><tr><td>flat</td><td>trades=0</td><td>EV=0.0</td><td>PF=0.0</td></tr><tr><td>trending</td><td>trades=0</td><td>EV=0.0</td><td>PF=0.0</td></tr></table></section><section><h2>quant_scalping:ETH/USDT:USDT</h2><h3>Out-of-Sample <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>1896</strong></td></tr><tr><td>wins</td><td><strong>458</strong></td></tr><tr><td>losses</td><td><strong>1438</strong></td></tr><tr><td>win_rate</td><td><strong>24.16</strong></td></tr><tr><td>profit_factor</td><td><strong>0.105</strong></td></tr><tr><td>expectancy_pct</td><td><strong>-0.2833</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>-0.002833</strong></td></tr><tr><td>total_return_pct</td><td><strong>-99.544</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>99.54</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-121.804</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-152.619</strong></td></tr><tr><td>calmar_ratio</td><td><strong>-1.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>3.96</strong></td></tr><tr><td>avg_hold_min</td><td><strong>19.82</strong></td></tr><tr><td>total_fees_pct</td><td><strong>189.6</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>113.76</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.1378</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>-0.4174</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Walk-Forward OOS <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>3754</strong></td></tr><tr><td>wins</td><td><strong>1156</strong></td></tr><tr><td>losses</td><td><strong>2598</strong></td></tr><tr><td>win_rate</td><td><strong>30.79</strong></td></tr><tr><td>profit_factor</td><td><strong>0.143</strong></td></tr><tr><td>expectancy_pct</td><td><strong>-0.2812</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>-0.002812</strong></td></tr><tr><td>total_return_pct</td><td><strong>-99.998</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-149.326</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-196.315</strong></td></tr><tr><td>calmar_ratio</td><td><strong>-1.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>3.43</strong></td></tr><tr><td>avg_hold_min</td><td><strong>17.15</strong></td></tr><tr><td>total_fees_pct</td><td><strong>375.4</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>225.24</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.1524</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>-0.4742</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Rolling Windows <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>37748</strong></td></tr><tr><td>wins</td><td><strong>11294</strong></td></tr><tr><td>losses</td><td><strong>26454</strong></td></tr><tr><td>win_rate</td><td><strong>29.92</strong></td></tr><tr><td>profit_factor</td><td><strong>0.14</strong></td></tr><tr><td>expectancy_pct</td><td><strong>-0.2835</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>-0.002835</strong></td></tr><tr><td>total_return_pct</td><td><strong>-100.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-192.287</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-251.845</strong></td></tr><tr><td>calmar_ratio</td><td><strong>-1.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>3.49</strong></td></tr><tr><td>avg_hold_min</td><td><strong>17.46</strong></td></tr><tr><td>total_fees_pct</td><td><strong>3774.8</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>2264.88</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.1542</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>-0.4703</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>По рыночным режимам</h3><table><tr><td>unknown</td><td>trades=3267</td><td>EV=-0.3004</td><td>PF=0.181</td></tr><tr><td>trending</td><td>trades=2877</td><td>EV=-0.2759</td><td>PF=0.272</td></tr><tr><td>flat</td><td>trades=1919</td><td>EV=-0.312</td><td>PF=0.223</td></tr></table></section><section><h2>hft_orderbook:ETH/USDT:USDT</h2><h3>Out-of-Sample <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>0</strong></td></tr><tr><td>wins</td><td><strong>0</strong></td></tr><tr><td>losses</td><td><strong>0</strong></td></tr><tr><td>win_rate</td><td><strong>0.0</strong></td></tr><tr><td>profit_factor</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_pct</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>0.0</strong></td></tr><tr><td>total_return_pct</td><td><strong>0.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>calmar_ratio</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_min</td><td><strong>0.0</strong></td></tr><tr><td>total_fees_pct</td><td><strong>0.0</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>0.0</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Walk-Forward OOS <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>0</strong></td></tr><tr><td>wins</td><td><strong>0</strong></td></tr><tr><td>losses</td><td><strong>0</strong></td></tr><tr><td>win_rate</td><td><strong>0.0</strong></td></tr><tr><td>profit_factor</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_pct</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>0.0</strong></td></tr><tr><td>total_return_pct</td><td><strong>0.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>calmar_ratio</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_min</td><td><strong>0.0</strong></td></tr><tr><td>total_fees_pct</td><td><strong>0.0</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>0.0</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Rolling Windows <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>0</strong></td></tr><tr><td>wins</td><td><strong>0</strong></td></tr><tr><td>losses</td><td><strong>0</strong></td></tr><tr><td>win_rate</td><td><strong>0.0</strong></td></tr><tr><td>profit_factor</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_pct</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>0.0</strong></td></tr><tr><td>total_return_pct</td><td><strong>0.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>calmar_ratio</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_min</td><td><strong>0.0</strong></td></tr><tr><td>total_fees_pct</td><td><strong>0.0</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>0.0</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>По рыночным режимам</h3><table><tr><td>unknown</td><td>trades=0</td><td>EV=0.0</td><td>PF=0.0</td></tr><tr><td>trending</td><td>trades=0</td><td>EV=0.0</td><td>PF=0.0</td></tr><tr><td>flat</td><td>trades=0</td><td>EV=0.0</td><td>PF=0.0</td></tr></table></section><section><h2>quant_scalping:SOL/USDT:USDT</h2><h3>Out-of-Sample <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>2012</strong></td></tr><tr><td>wins</td><td><strong>558</strong></td></tr><tr><td>losses</td><td><strong>1454</strong></td></tr><tr><td>win_rate</td><td><strong>27.73</strong></td></tr><tr><td>profit_factor</td><td><strong>0.125</strong></td></tr><tr><td>expectancy_pct</td><td><strong>-0.2881</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>-0.002881</strong></td></tr><tr><td>total_return_pct</td><td><strong>-99.703</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>99.7</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-119.502</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-158.038</strong></td></tr><tr><td>calmar_ratio</td><td><strong>-1.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>3.64</strong></td></tr><tr><td>avg_hold_min</td><td><strong>18.22</strong></td></tr><tr><td>total_fees_pct</td><td><strong>201.2</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>120.72</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.1489</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>-0.4558</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Walk-Forward OOS <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>3961</strong></td></tr><tr><td>wins</td><td><strong>1349</strong></td></tr><tr><td>losses</td><td><strong>2612</strong></td></tr><tr><td>win_rate</td><td><strong>34.06</strong></td></tr><tr><td>profit_factor</td><td><strong>0.171</strong></td></tr><tr><td>expectancy_pct</td><td><strong>-0.285</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>-0.00285</strong></td></tr><tr><td>total_return_pct</td><td><strong>-99.999</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-116.134</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-127.354</strong></td></tr><tr><td>calmar_ratio</td><td><strong>-1.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>3.06</strong></td></tr><tr><td>avg_hold_min</td><td><strong>15.3</strong></td></tr><tr><td>total_fees_pct</td><td><strong>396.1</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>237.66</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.1725</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>-0.5212</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Rolling Windows <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>39441</strong></td></tr><tr><td>wins</td><td><strong>12908</strong></td></tr><tr><td>losses</td><td><strong>26533</strong></td></tr><tr><td>win_rate</td><td><strong>32.73</strong></td></tr><tr><td>profit_factor</td><td><strong>0.165</strong></td></tr><tr><td>expectancy_pct</td><td><strong>-0.2857</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>-0.002857</strong></td></tr><tr><td>total_return_pct</td><td><strong>-100.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-159.439</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-187.106</strong></td></tr><tr><td>calmar_ratio</td><td><strong>-1.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>3.22</strong></td></tr><tr><td>avg_hold_min</td><td><strong>16.08</strong></td></tr><tr><td>total_fees_pct</td><td><strong>3944.1</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>2366.46</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.1722</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>-0.5084</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>По рыночным режимам</h3><table><tr><td>unknown</td><td>trades=3314</td><td>EV=-0.2987</td><td>PF=0.206</td></tr><tr><td>flat</td><td>trades=1686</td><td>EV=-0.3109</td><td>PF=0.269</td></tr><tr><td>trending</td><td>trades=3586</td><td>EV=-0.275</td><td>PF=0.276</td></tr><tr><td>high_volatility</td><td>trades=1</td><td>EV=-56.7555</td><td>PF=0.0</td></tr></table></section><section><h2>hft_orderbook:SOL/USDT:USDT</h2><h3>Out-of-Sample <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>0</strong></td></tr><tr><td>wins</td><td><strong>0</strong></td></tr><tr><td>losses</td><td><strong>0</strong></td></tr><tr><td>win_rate</td><td><strong>0.0</strong></td></tr><tr><td>profit_factor</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_pct</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>0.0</strong></td></tr><tr><td>total_return_pct</td><td><strong>0.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>calmar_ratio</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_min</td><td><strong>0.0</strong></td></tr><tr><td>total_fees_pct</td><td><strong>0.0</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>0.0</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Walk-Forward OOS <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>0</strong></td></tr><tr><td>wins</td><td><strong>0</strong></td></tr><tr><td>losses</td><td><strong>0</strong></td></tr><tr><td>win_rate</td><td><strong>0.0</strong></td></tr><tr><td>profit_factor</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_pct</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>0.0</strong></td></tr><tr><td>total_return_pct</td><td><strong>0.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>calmar_ratio</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_min</td><td><strong>0.0</strong></td></tr><tr><td>total_fees_pct</td><td><strong>0.0</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>0.0</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>Rolling Windows <span class="badge bad">NO EDGE</span></h3><table><tr><td>trades</td><td><strong>0</strong></td></tr><tr><td>wins</td><td><strong>0</strong></td></tr><tr><td>losses</td><td><strong>0</strong></td></tr><tr><td>win_rate</td><td><strong>0.0</strong></td></tr><tr><td>profit_factor</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_pct</td><td><strong>0.0</strong></td></tr><tr><td>expectancy_usd_per_notional</td><td><strong>0.0</strong></td></tr><tr><td>total_return_pct</td><td><strong>0.0</strong></td></tr><tr><td>max_drawdown_pct</td><td><strong>100.0</strong></td></tr><tr><td>sharpe_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>sortino_ratio</td><td><strong>-5.0</strong></td></tr><tr><td>calmar_ratio</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_bars</td><td><strong>0.0</strong></td></tr><tr><td>avg_hold_min</td><td><strong>0.0</strong></td></tr><tr><td>total_fees_pct</td><td><strong>0.0</strong></td></tr><tr><td>total_slippage_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_win_pct</td><td><strong>0.0</strong></td></tr><tr><td>avg_loss_pct</td><td><strong>0.0</strong></td></tr><tr><td>stability_score</td><td><strong>0.0</strong></td></tr></table><h3>По рыночным режимам</h3><table><tr><td>unknown</td><td>trades=0</td><td>EV=0.0</td><td>PF=0.0</td></tr><tr><td>flat</td><td>trades=0</td><td>EV=0.0</td><td>PF=0.0</td></tr><tr><td>trending</td><td>trades=0</td><td>EV=0.0</td><td>PF=0.0</td></tr><tr><td>high_volatility</td><td>trades=0</td><td>EV=0.0</td><td>PF=0.0</td></tr></table></section>
+
+  <h2>Stability Ranking (Quant)</h2>
+  <pre>{
+  "BTC/USDT:USDT": {
+    "best_params": {
+      "tp_pct": 0.3,
+      "sl_pct": 0.3,
+      "trailing_pct": 0.1,
+      "min_rr": 1.8,
+      "min_profit_pct": 0.22,
+      "rsi_low": 32.0,
+      "rsi_high": 72.0,
+      "max_hold_bars": 8,
+      "min_bullish_score": 3,
+      "atr_max_pct": 2.5
+    },
+    "rank_score": -2.2,
+    "oos": {
+      "trades": 0,
+      "wins": 0,
+      "losses": 0,
+      "win_rate": 0.0,
+      "profit_factor": 0.0,
+      "expectancy_pct": 0.0,
+      "expectancy_usd_per_notional": 0.0,
+      "total_return_pct": 0.0,
+      "max_drawdown_pct": 100.0,
+      "sharpe_ratio": -5.0,
+      "sortino_ratio": -5.0,
+      "calmar_ratio": 0.0,
+      "avg_hold_bars": 0.0,
+      "avg_hold_min": 0.0,
+      "total_fees_pct": 0.0,
+      "total_slippage_pct": 0.0,
+      "avg_win_pct": 0.0,
+      "avg_loss_pct": 0.0,
+      "stability_score": 0.0,
+      "has_edge": false
+    },
+    "top_3": [
+      {
+        "params": {
+          "tp_pct": 0.3,
+          "sl_pct": 0.3,
+          "trailing_pct": 0.1,
+          "min_rr": 1.8,
+          "min_profit_pct": 0.22,
+          "rsi_low": 32.0,
+          "rsi_high": 72.0,
+          "max_hold_bars": 8,
+          "min_bullish_score": 3,
+          "atr_max_pct": 2.5
+        },
+        "rank_score": -2.2,
+        "oos": {
+          "trades": 0,
+          "wins": 0,
+          "losses": 0,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "expectancy_pct": 0.0,
+          "expectancy_usd_per_notional": 0.0,
+          "total_return_pct": 0.0,
+          "max_drawdown_pct": 100.0,
+          "sharpe_ratio": -5.0,
+          "sortino_ratio": -5.0,
+          "calmar_ratio": 0.0,
+          "avg_hold_bars": 0.0,
+          "avg_hold_min": 0.0,
+          "total_fees_pct": 0.0,
+          "total_slippage_pct": 0.0,
+          "avg_win_pct": 0.0,
+          "avg_loss_pct": 0.0,
+          "stability_score": 0.0,
+          "has_edge": false
+        }
+      },
+      {
+        "params": {
+          "tp_pct": 0.35,
+          "sl_pct": 0.25,
+          "trailing_pct": 0.1,
+          "min_rr": 2.5,
+          "min_profit_pct": 0.18,
+          "rsi_low": 30.0,
+          "rsi_high": 72.0,
+          "max_hold_bars": 6,
+          "min_bullish_score": 3,
+          "atr_max_pct": 2.5
+        },
+        "rank_score": -2.2,
+        "oos": {
+          "trades": 0,
+          "wins": 0,
+          "losses": 0,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "expectancy_pct": 0.0,
+          "expectancy_usd_per_notional": 0.0,
+          "total_return_pct": 0.0,
+          "max_drawdown_pct": 100.0,
+          "sharpe_ratio": -5.0,
+          "sortino_ratio": -5.0,
+          "calmar_ratio": 0.0,
+          "avg_hold_bars": 0.0,
+          "avg_hold_min": 0.0,
+          "total_fees_pct": 0.0,
+          "total_slippage_pct": 0.0,
+          "avg_win_pct": 0.0,
+          "avg_loss_pct": 0.0,
+          "stability_score": 0.0,
+          "has_edge": false
+        }
+      },
+      {
+        "params": {
+          "tp_pct": 0.45,
+          "sl_pct": 0.3,
+          "trailing_pct": 0.15,
+          "min_rr": 2.5,
+          "min_profit_pct": 0.08,
+          "rsi_low": 32.0,
+          "rsi_high": 62.0,
+          "max_hold_bars": 6,
+          "min_bullish_score": 3,
+          "atr_max_pct": 2.5
+        },
+        "rank_score": -2.2,
+        "oos": {
+          "trades": 0,
+          "wins": 0,
+          "losses": 0,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "expectancy_pct": 0.0,
+          "expectancy_usd_per_notional": 0.0,
+          "total_return_pct": 0.0,
+          "max_drawdown_pct": 100.0,
+          "sharpe_ratio": -5.0,
+          "sortino_ratio": -5.0,
+          "calmar_ratio": 0.0,
+          "avg_hold_bars": 0.0,
+          "avg_hold_min": 0.0,
+          "total_fees_pct": 0.0,
+          "total_slippage_pct": 0.0,
+          "avg_win_pct": 0.0,
+          "avg_loss_pct": 0.0,
+          "stability_score": 0.0,
+          "has_edge": false
+        }
+      }
+    ]
+  },
+  "ETH/USDT:USDT": </pre>
+
+  <footer><p>Research Framework — validation before ML. Print this page to PDF (Ctrl+P).</p></footer>
+</body>
+</html>

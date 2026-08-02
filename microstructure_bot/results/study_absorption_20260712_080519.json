@@ -1,0 +1,275 @@
+{
+  "generated_at": "2026-07-12T08:05:19.836846+00:00",
+  "research_methodology_version": "2.0",
+  "phase": "Phase 3 — Quantitative Market Research",
+  "hypothesis": {
+    "id": "absorption",
+    "question": "Что происходит после absorption?",
+    "description": "Сильный агрессивный поток без пропорционального движения цены.",
+    "event_types": [
+      "absorption_strong"
+    ],
+    "quantile": "flag",
+    "economic": "Поглощение крупным пассивным участником — возможен разворот или накопление позиции."
+  },
+  "events_total": 460,
+  "fee_cost_pct": 0.12,
+  "exploration": {
+    "event_key": "absorption",
+    "count": 142,
+    "horizons": [
+      {
+        "horizon_sec": 1,
+        "n": 142,
+        "mean_ret_pct": -0.0001,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 2.82,
+        "prob_down_pct": 3.52,
+        "win_rate": 2.82,
+        "expectancy_pct": -0.0001,
+        "profit_factor": 0.642,
+        "mae_pct": -0.009,
+        "mfe_pct": 0.0068
+      },
+      {
+        "horizon_sec": 3,
+        "n": 142,
+        "mean_ret_pct": -0.0001,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 10.56,
+        "prob_down_pct": 10.56,
+        "win_rate": 10.56,
+        "expectancy_pct": -0.0001,
+        "profit_factor": 0.82,
+        "mae_pct": -0.0151,
+        "mfe_pct": 0.0154
+      },
+      {
+        "horizon_sec": 5,
+        "n": 142,
+        "mean_ret_pct": -0.0001,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 14.79,
+        "prob_down_pct": 12.68,
+        "win_rate": 14.79,
+        "expectancy_pct": -0.0001,
+        "profit_factor": 0.919,
+        "mae_pct": -0.0198,
+        "mfe_pct": 0.0179
+      },
+      {
+        "horizon_sec": 10,
+        "n": 142,
+        "mean_ret_pct": -0.0004,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 21.83,
+        "prob_down_pct": 20.42,
+        "win_rate": 21.83,
+        "expectancy_pct": -0.0004,
+        "profit_factor": 0.806,
+        "mae_pct": -0.0348,
+        "mfe_pct": 0.0243
+      },
+      {
+        "horizon_sec": 30,
+        "n": 142,
+        "mean_ret_pct": -0.0006,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 35.92,
+        "prob_down_pct": 28.87,
+        "win_rate": 35.92,
+        "expectancy_pct": -0.0006,
+        "profit_factor": 0.87,
+        "mae_pct": -0.0475,
+        "mfe_pct": 0.0346
+      },
+      {
+        "horizon_sec": 60,
+        "n": 141,
+        "mean_ret_pct": -0.0002,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 45.39,
+        "prob_down_pct": 34.04,
+        "win_rate": 45.39,
+        "expectancy_pct": -0.0002,
+        "profit_factor": 0.974,
+        "mae_pct": -0.0991,
+        "mfe_pct": 0.049
+      },
+      {
+        "horizon_sec": 300,
+        "n": 134,
+        "mean_ret_pct": 0.0038,
+        "median_ret_pct": 0.0052,
+        "prob_up_pct": 58.96,
+        "prob_down_pct": 41.04,
+        "win_rate": 58.96,
+        "expectancy_pct": 0.0038,
+        "profit_factor": 1.304,
+        "mae_pct": -0.1702,
+        "mfe_pct": 0.0941
+      }
+    ],
+    "best_horizon_sec": 300,
+    "best_expectancy": 0.0038,
+    "labeled_sample": [
+      {
+        "ts": 1783795783902,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "absorption_strong",
+        "quantile": "flag",
+        "threshold": 0.0,
+        "mid": 64304.55,
+        "feature_value": 1.0,
+        "fwd_ret_1s": 0.0,
+        "fwd_ret_3s": 0.0,
+        "fwd_ret_5s": 0.0,
+        "fwd_ret_10s": 0.0,
+        "fwd_ret_30s": -0.003265709813700307,
+        "fwd_ret_60s": -0.018350178953126815,
+        "fwd_ret_300s": -0.04680850732958371
+      },
+      {
+        "ts": 1783795814302,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "absorption_strong",
+        "quantile": "flag",
+        "threshold": 0.0,
+        "mid": 64302.45,
+        "feature_value": 1.0,
+        "fwd_ret_1s": 0.0,
+        "fwd_ret_3s": 0.0,
+        "fwd_ret_5s": 0.0,
+        "fwd_ret_10s": -0.0035768466053827043,
+        "fwd_ret_30s": -0.015084961770503441,
+        "fwd_ret_60s": -0.015084961770503441,
+        "fwd_ret_300s": -0.04354421954373434
+      },
+      {
+        "ts": 1783795844002,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "absorption_strong",
+        "quantile": "flag",
+        "threshold": 0.0,
+        "mid": 64292.75,
+        "feature_value": 1.0,
+        "fwd_ret_1s": 0.0,
+        "fwd_ret_3s": 0.0,
+        "fwd_ret_5s": 0.0,
+        "fwd_ret_10s": 0.0,
+        "fwd_ret_30s": 0.0,
+        "fwd_ret_60s": 0.0,
+        "fwd_ret_300s": -0.013065236749080073
+      },
+      {
+        "ts": 1783795903102,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "absorption_strong",
+        "quantile": "flag",
+        "threshold": 0.0,
+        "mid": 64292.75,
+        "feature_value": 1.0,
+        "fwd_ret_1s": 0.0,
+        "fwd_ret_3s": 0.0,
+        "fwd_ret_5s": 0.0,
+        "fwd_ret_10s": -0.016176007403625105,
+        "fwd_ret_30s": -0.04728371394907541,
+        "fwd_ret_60s": -0.028463551489091552,
+        "fwd_ret_300s": 0.00015553853273630506
+      },
+      {
+        "ts": 1783795931902,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "absorption_strong",
+        "quantile": "flag",
+        "threshold": 0.0,
+        "mid": 64262.350000000006,
+        "feature_value": 1.0,
+        "fwd_ret_1s": 0.0,
+        "fwd_ret_3s": 0.0,
+        "fwd_ret_5s": 0.0,
+        "fwd_ret_10s": 0.006224484476524746,
+        "fwd_ret_30s": 0.018829065541473768,
+        "fwd_ret_60s": 0.018829065541473768,
+        "fwd_ret_300s": 0.04761730624540072
+      }
+    ],
+    "net_expectancy": -0.11616606884151327,
+    "net_pf": 0.0
+  },
+  "validations": [
+    {
+      "event_key": "absorption",
+      "symbol": "BTC-USDT-SWAP",
+      "horizon_sec": 300,
+      "n_events": 134,
+      "train_ev": -0.121,
+      "test_ev": -0.1018,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.4925,
+      "independent_days_pass": false,
+      "accepted": false,
+      "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.492; independent days fail; net EV after fees negative on train",
+      "daily_ev": [
+        -0.1027
+      ]
+    },
+    {
+      "event_key": "absorption",
+      "symbol": "ETH-USDT-SWAP",
+      "horizon_sec": 10,
+      "n_events": 183,
+      "train_ev": -0.1203,
+      "test_ev": -0.1206,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.5,
+      "independent_days_pass": false,
+      "accepted": false,
+      "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.500; independent days fail; net EV after fees negative on train",
+      "daily_ev": [
+        -0.1206
+      ]
+    },
+    {
+      "event_key": "absorption",
+      "symbol": "SOL-USDT-SWAP",
+      "horizon_sec": 300,
+      "n_events": 127,
+      "train_ev": -0.1095,
+      "test_ev": -0.112,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.51,
+      "independent_days_pass": false,
+      "accepted": false,
+      "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.510; independent days fail; net EV after fees negative on train",
+      "daily_ev": [
+        -0.1086
+      ]
+    }
+  ],
+  "accepted": false,
+  "rejection_reasons": [
+    "Cross-symbol fail — нет данных/валидации: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+    "Закономерность не воспроизведена на BTC+ETH+SOL",
+    "BTC-USDT-SWAP: negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.492; independent days fail; net EV after fees negative on train",
+    "ETH-USDT-SWAP: negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.500; independent days fail; net EV after fees negative on train",
+    "SOL-USDT-SWAP: negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.510; independent days fail; net EV after fees negative on train"
+  ],
+  "data_summary": {
+    "symbols": [
+      "BTC-USDT-SWAP",
+      "ETH-USDT-SWAP",
+      "SOL-USDT-SWAP"
+    ],
+    "symbols_with_data": [
+      "BTC-USDT-SWAP",
+      "ETH-USDT-SWAP",
+      "SOL-USDT-SWAP"
+    ],
+    "orderbook_rows": 165980,
+    "trade_rows": 53116
+  }
+}

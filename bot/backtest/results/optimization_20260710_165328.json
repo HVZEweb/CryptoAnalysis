@@ -1,0 +1,319 @@
+{
+  "timestamp": "20260710_165328",
+  "objective": "sharpe_ratio + min_drawdown (not max profit)",
+  "total_runs": 10000,
+  "n_param_sets": 50,
+  "n_scenarios_pool": 10000,
+  "elapsed_sec": 289.2,
+  "best_params": {
+    "tp_pct": 0.3,
+    "sl_pct": 0.15,
+    "trailing_pct": 0.1,
+    "min_rr": 1.5,
+    "min_profit_pct": 0.18,
+    "rsi_low": 30.0,
+    "rsi_high": 70.0,
+    "max_hold_bars": 12,
+    "min_bullish_score": 3,
+    "atr_max_pct": 2.5
+  },
+  "best_aggregate": {
+    "sharpe": -6.663220760453069,
+    "sortino": -12.266907197808946,
+    "max_dd": 8.21832919966232,
+    "trades": 42.0,
+    "return_pct": -7.762558123040031,
+    "win_rate": 23.809523809523807,
+    "score": 0.17247169560236372,
+    "scenarios_with_trades": 31
+  },
+  "validation": {
+    "sharpe": -5.0,
+    "max_dd": 100.0,
+    "trades": 0.0,
+    "return_pct": 0.0,
+    "score": -10.0,
+    "win_rate": 0.0
+  },
+  "baseline": {
+    "params": {
+      "tp_pct": 0.45,
+      "sl_pct": 0.25,
+      "trailing_pct": 0.15,
+      "min_rr": 1.5,
+      "min_profit_pct": 0.3,
+      "rsi_low": 35.0,
+      "rsi_high": 65.0,
+      "max_hold_bars": 6,
+      "min_bullish_score": 3,
+      "atr_max_pct": 2.5
+    },
+    "aggregate": {
+      "sharpe": -21.12370673429973,
+      "max_dd": 30.683918554782956,
+      "trades": 106.0,
+      "return_pct": -30.033232370995055,
+      "score": 0.015212570116519275
+    }
+  },
+  "top_10": [
+    {
+      "params": {
+        "tp_pct": 0.3,
+        "sl_pct": 0.15,
+        "trailing_pct": 0.1,
+        "min_rr": 1.5,
+        "min_profit_pct": 0.18,
+        "rsi_low": 30.0,
+        "rsi_high": 70.0,
+        "max_hold_bars": 12,
+        "min_bullish_score": 3,
+        "atr_max_pct": 2.5
+      },
+      "aggregate": {
+        "sharpe": -6.663220760453069,
+        "sortino": -12.266907197808946,
+        "max_dd": 8.21832919966232,
+        "trades": 42.0,
+        "return_pct": -7.762558123040031,
+        "win_rate": 23.809523809523807,
+        "score": 0.17247169560236372,
+        "scenarios_with_trades": 31
+      },
+      "param_idx": 13
+    },
+    {
+      "params": {
+        "tp_pct": 0.3,
+        "sl_pct": 0.25,
+        "trailing_pct": 0.22,
+        "min_rr": 1.5,
+        "min_profit_pct": 0.15,
+        "rsi_low": 28.0,
+        "rsi_high": 68.0,
+        "max_hold_bars": 12,
+        "min_bullish_score": 3,
+        "atr_max_pct": 2.5
+      },
+      "aggregate": {
+        "sharpe": -6.912286878625673,
+        "sortino": -13.171216250143459,
+        "max_dd": 11.413185587421358,
+        "trades": 50.0,
+        "return_pct": -9.654564832873758,
+        "win_rate": 26.0,
+        "score": 0.15010770088805045,
+        "scenarios_with_trades": 34
+      },
+      "param_idx": 16
+    },
+    {
+      "params": {
+        "tp_pct": 0.3,
+        "sl_pct": 0.35,
+        "trailing_pct": 0.1,
+        "min_rr": 1.2,
+        "min_profit_pct": 0.22,
+        "rsi_low": 30.0,
+        "rsi_high": 65.0,
+        "max_hold_bars": 10,
+        "min_bullish_score": 4,
+        "atr_max_pct": 2.5
+      },
+      "aggregate": {
+        "sharpe": -10.495832748890532,
+        "sortino": -18.81053190104817,
+        "max_dd": 15.645202206689834,
+        "trades": 74.0,
+        "return_pct": -14.73964626238965,
+        "win_rate": 18.91891891891892,
+        "score": 0.12048358455317112,
+        "scenarios_with_trades": 41
+      },
+      "param_idx": 29
+    },
+    {
+      "params": {
+        "tp_pct": 0.5,
+        "sl_pct": 0.2,
+        "trailing_pct": 0.1,
+        "min_rr": 1.2,
+        "min_profit_pct": 0.18,
+        "rsi_low": 30.0,
+        "rsi_high": 68.0,
+        "max_hold_bars": 4,
+        "min_bullish_score": 3,
+        "atr_max_pct": 2.5
+      },
+      "aggregate": {
+        "sharpe": -41.06974982763918,
+        "sortino": -42.37094282142691,
+        "max_dd": 20.52164336693856,
+        "trades": 52.0,
+        "return_pct": -20.52164336693856,
+        "win_rate": 1.9230769230769231,
+        "score": 0.08634849643143006,
+        "scenarios_with_trades": 32
+      },
+      "param_idx": 6
+    },
+    {
+      "params": {
+        "tp_pct": 0.6,
+        "sl_pct": 0.2,
+        "trailing_pct": 0.15,
+        "min_rr": 1.5,
+        "min_profit_pct": 0.18,
+        "rsi_low": 35.0,
+        "rsi_high": 72.0,
+        "max_hold_bars": 10,
+        "min_bullish_score": 3,
+        "atr_max_pct": 2.5
+      },
+      "aggregate": {
+        "sharpe": -17.94563868214481,
+        "sortino": -32.59017151388146,
+        "max_dd": 23.363304354514742,
+        "trades": 63.0,
+        "return_pct": -21.73084884804065,
+        "win_rate": 11.11111111111111,
+        "score": 0.06645686951839677,
+        "scenarios_with_trades": 33
+      },
+      "param_idx": 43
+    },
+    {
+      "params": {
+        "tp_pct": 0.4,
+        "sl_pct": 0.2,
+        "trailing_pct": 0.15,
+        "min_rr": 1.5,
+        "min_profit_pct": 0.1,
+        "rsi_low": 35.0,
+        "rsi_high": 65.0,
+        "max_hold_bars": 8,
+        "min_bullish_score": 4,
+        "atr_max_pct": 2.5
+      },
+      "aggregate": {
+        "sharpe": -14.55668492208961,
+        "sortino": -33.153370295484976,
+        "max_dd": 26.66171459155645,
+        "trades": 122.0,
+        "return_pct": -26.66171459155645,
+        "win_rate": 22.950819672131146,
+        "score": 0.04336799785910481,
+        "scenarios_with_trades": 43
+      },
+      "param_idx": 36
+    },
+    {
+      "params": {
+        "tp_pct": 0.5,
+        "sl_pct": 0.3,
+        "trailing_pct": 0.1,
+        "min_rr": 1.2,
+        "min_profit_pct": 0.05,
+        "rsi_low": 30.0,
+        "rsi_high": 65.0,
+        "max_hold_bars": 12,
+        "min_bullish_score": 3,
+        "atr_max_pct": 2.5
+      },
+      "aggregate": {
+        "sharpe": -15.273367101616865,
+        "sortino": -28.254259653492564,
+        "max_dd": 26.758820808660538,
+        "trades": 129.0,
+        "return_pct": -25.654922405093274,
+        "win_rate": 19.379844961240313,
+        "score": 0.0426882543393762,
+        "scenarios_with_trades": 57
+      },
+      "param_idx": 1
+    },
+    {
+      "params": {
+        "tp_pct": 0.5,
+        "sl_pct": 0.2,
+        "trailing_pct": 0.1,
+        "min_rr": 1.2,
+        "min_profit_pct": 0.18,
+        "rsi_low": 28.0,
+        "rsi_high": 65.0,
+        "max_hold_bars": 4,
+        "min_bullish_score": 3,
+        "atr_max_pct": 2.5
+      },
+      "aggregate": {
+        "sharpe": -56.71243967357498,
+        "sortino": -61.809759004251326,
+        "max_dd": 28.44759993813112,
+        "trades": 73.0,
+        "return_pct": -28.44759993813112,
+        "win_rate": 2.73972602739726,
+        "score": 0.030866800433082126,
+        "scenarios_with_trades": 35
+      },
+      "param_idx": 23
+    },
+    {
+      "params": {
+        "tp_pct": 0.45,
+        "sl_pct": 0.2,
+        "trailing_pct": 0.18,
+        "min_rr": 1.2,
+        "min_profit_pct": 0.08,
+        "rsi_low": 35.0,
+        "rsi_high": 62.0,
+        "max_hold_bars": 10,
+        "min_bullish_score": 4,
+        "atr_max_pct": 2.5
+      },
+      "aggregate": {
+        "sharpe": -18.994598771201794,
+        "sortino": -39.440528230146526,
+        "max_dd": 36.599615445049686,
+        "trades": 165.0,
+        "return_pct": -36.096889523292816,
+        "win_rate": 19.393939393939394,
+        "score": -0.026197308115347845,
+        "scenarios_with_trades": 49
+      },
+      "param_idx": 30
+    },
+    {
+      "params": {
+        "tp_pct": 0.55,
+        "sl_pct": 0.3,
+        "trailing_pct": 0.22,
+        "min_rr": 1.5,
+        "min_profit_pct": 0.1,
+        "rsi_low": 38.0,
+        "rsi_high": 72.0,
+        "max_hold_bars": 10,
+        "min_bullish_score": 3,
+        "atr_max_pct": 2.5
+      },
+      "aggregate": {
+        "sharpe": -23.736177294238917,
+        "sortino": -40.75743368136448,
+        "max_dd": 38.89664346466253,
+        "trades": 143.0,
+        "return_pct": -38.68190288304299,
+        "win_rate": 18.181818181818183,
+        "score": -0.042276504252637764,
+        "scenarios_with_trades": 63
+      },
+      "param_idx": 20
+    }
+  ],
+  "recommended_env": {
+    "BOT_TP_PCT": 0.3,
+    "BOT_SL_PCT": 0.15,
+    "BOT_TRAILING_PCT": 0.1,
+    "BOT_MIN_RR_RATIO": 1.5,
+    "BOT_MIN_PROFIT_PCT": 0.18,
+    "BOT_MAX_HOLD_MIN": 60
+  }
+}

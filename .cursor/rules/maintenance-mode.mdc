@@ -1,0 +1,40 @@
+---
+description: Maintenance Mode — platform complete, support only
+alwaysApply: true
+---
+
+# Maintenance Mode
+
+The Unified Trading Bot, Research Framework, and Alpha Research Platform are **complete**.
+
+## Allowed
+
+- Bug fixes
+- Performance improvements
+- Reliability improvements
+- Logging quality
+- OKX API version compatibility
+- Data download/archive quality
+- Report quality improvements
+
+## Forbidden
+
+- New strategies, indicators, hypotheses, or research modules
+- Architectural changes
+- Trading logic changes
+- Parameter optimization / tuning
+- ML models or new features
+- Auto-integration of research findings into the trading bot
+
+## Operational cycle
+
+1. **Daily:** `npm run trading:archive` — append-only data accumulation
+2. **Periodic (weekly/biweekly):** `npm run trading:phase-x` — full coverage + quality + discovery
+3. **Compare** new reports in `bot/alpha/results/` with previous `phase_x_report_*.json` / `discovery_report_*.json`
+4. If a **statistically validated** pattern appears (Phase X accepted list): write a separate research note and **propose for human review** — never auto-deploy to bot
+
+## Architecture status
+
+Stable and finished until new quality data or an explicitly approved new research hypothesis.
+
+See `bot/MAINTENANCE.md` for commands and report locations.

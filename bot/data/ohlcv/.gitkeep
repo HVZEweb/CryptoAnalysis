@@ -1,0 +1,1 @@
+# Downloaded OHLCV datasets (parquet/csv) — run: npm run trading:download-data

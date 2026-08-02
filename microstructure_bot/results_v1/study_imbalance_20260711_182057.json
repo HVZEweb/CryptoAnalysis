@@ -1,0 +1,205 @@
+{
+  "generated_at": "2026-07-11T18:20:57.356046+00:00",
+  "phase": "Phase 3 — Quantitative Market Research",
+  "hypothesis": {
+    "id": "imbalance",
+    "question": "Что происходит после сильного imbalance стакана?",
+    "description": "Экстремальный дисбаланс bid/ask depth (верхний 1% квантиль imb_10).",
+    "event_types": [
+      "extreme_imbalance_high",
+      "extreme_imbalance_low"
+    ],
+    "quantile": "q99",
+    "economic": "Преобладание лимитной ликвидности с одной стороны создаёт краткосрочное давление; возможен импульс по направлению дисбаланса или mean-reversion после поглощения."
+  },
+  "events_total": 3,
+  "fee_cost_pct": 0.12,
+  "exploration": {
+    "event_key": "imbalance",
+    "count": 1,
+    "horizons": [
+      {
+        "horizon_sec": 1,
+        "n": 1,
+        "mean_ret_pct": 0.0,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 0.0,
+        "prob_down_pct": 0.0,
+        "win_rate": 0.0,
+        "expectancy_pct": 0.0,
+        "profit_factor": 0.0,
+        "mae_pct": 0.0,
+        "mfe_pct": 0.0
+      },
+      {
+        "horizon_sec": 3,
+        "n": 1,
+        "mean_ret_pct": 0.0,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 0.0,
+        "prob_down_pct": 0.0,
+        "win_rate": 0.0,
+        "expectancy_pct": 0.0,
+        "profit_factor": 0.0,
+        "mae_pct": 0.0,
+        "mfe_pct": 0.0
+      },
+      {
+        "horizon_sec": 5,
+        "n": 1,
+        "mean_ret_pct": -0.0096,
+        "median_ret_pct": -0.0096,
+        "prob_up_pct": 0.0,
+        "prob_down_pct": 100.0,
+        "win_rate": 0.0,
+        "expectancy_pct": -0.0096,
+        "profit_factor": 0.0,
+        "mae_pct": -0.0096,
+        "mfe_pct": -0.0096
+      },
+      {
+        "horizon_sec": 10,
+        "n": 1,
+        "mean_ret_pct": 0.0677,
+        "median_ret_pct": 0.0677,
+        "prob_up_pct": 100.0,
+        "prob_down_pct": 0.0,
+        "win_rate": 100.0,
+        "expectancy_pct": 0.0677,
+        "profit_factor": 999.0,
+        "mae_pct": 0.0677,
+        "mfe_pct": 0.0677
+      },
+      {
+        "horizon_sec": 30,
+        "n": 1,
+        "mean_ret_pct": 0.0677,
+        "median_ret_pct": 0.0677,
+        "prob_up_pct": 100.0,
+        "prob_down_pct": 0.0,
+        "win_rate": 100.0,
+        "expectancy_pct": 0.0677,
+        "profit_factor": 999.0,
+        "mae_pct": 0.0677,
+        "mfe_pct": 0.0677
+      },
+      {
+        "horizon_sec": 60,
+        "n": 1,
+        "mean_ret_pct": 0.0677,
+        "median_ret_pct": 0.0677,
+        "prob_up_pct": 100.0,
+        "prob_down_pct": 0.0,
+        "win_rate": 100.0,
+        "expectancy_pct": 0.0677,
+        "profit_factor": 999.0,
+        "mae_pct": 0.0677,
+        "mfe_pct": 0.0677
+      },
+      {
+        "horizon_sec": 300,
+        "n": 1,
+        "mean_ret_pct": 0.0677,
+        "median_ret_pct": 0.0677,
+        "prob_up_pct": 100.0,
+        "prob_down_pct": 0.0,
+        "win_rate": 100.0,
+        "expectancy_pct": 0.0677,
+        "profit_factor": 999.0,
+        "mae_pct": 0.0677,
+        "mfe_pct": 0.0677
+      }
+    ],
+    "best_horizon_sec": 10,
+    "best_expectancy": 0.0677,
+    "labeled_sample": [
+      {
+        "ts": 1783793456009,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "extreme_imbalance_high",
+        "quantile": "q99",
+        "threshold": 0.8334917505054362,
+        "mid": 64288.55,
+        "feature_value": 0.8549508437720131,
+        "fwd_ret_1s": 0.0,
+        "fwd_ret_3s": 0.0,
+        "fwd_ret_5s": -0.009644019036044659,
+        "fwd_ret_10s": 0.06766368194647414,
+        "fwd_ret_30s": 0.06766368194647414,
+        "fwd_ret_60s": 0.06766368194647414,
+        "fwd_ret_300s": 0.06766368194647414
+      }
+    ],
+    "net_expectancy": -0.05233631805352586,
+    "net_pf": 0.0
+  },
+  "validations": [
+    {
+      "event_key": "imbalance",
+      "symbol": "BTC-USDT-SWAP",
+      "horizon_sec": 10,
+      "n_events": 1,
+      "train_ev": 0.0,
+      "test_ev": 0.0,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 1.0,
+      "independent_days_pass": false,
+      "accepted": false,
+      "verdict": "insufficient events (1 < 10)",
+      "daily_ev": []
+    },
+    {
+      "event_key": "imbalance",
+      "symbol": "ETH-USDT-SWAP",
+      "horizon_sec": 3,
+      "n_events": 1,
+      "train_ev": 0.0,
+      "test_ev": 0.0,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 1.0,
+      "independent_days_pass": false,
+      "accepted": false,
+      "verdict": "insufficient events (1 < 10)",
+      "daily_ev": []
+    },
+    {
+      "event_key": "imbalance",
+      "symbol": "SOL-USDT-SWAP",
+      "horizon_sec": 1,
+      "n_events": 1,
+      "train_ev": 0.0,
+      "test_ev": 0.0,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 1.0,
+      "independent_days_pass": false,
+      "accepted": false,
+      "verdict": "insufficient events (1 < 10)",
+      "daily_ev": []
+    }
+  ],
+  "accepted": false,
+  "rejection_reasons": [
+    "Cross-symbol fail — нет данных/валидации: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+    "Закономерность не воспроизведена на BTC+ETH+SOL",
+    "BTC-USDT-SWAP: insufficient events (1 < 10)",
+    "ETH-USDT-SWAP: insufficient events (1 < 10)",
+    "SOL-USDT-SWAP: insufficient events (1 < 10)"
+  ],
+  "data_summary": {
+    "symbols": [
+      "BTC-USDT-SWAP",
+      "ETH-USDT-SWAP",
+      "SOL-USDT-SWAP"
+    ],
+    "symbols_with_data": [
+      "BTC-USDT-SWAP",
+      "ETH-USDT-SWAP",
+      "SOL-USDT-SWAP"
+    ],
+    "orderbook_rows": 1012,
+    "trade_rows": 465
+  }
+}

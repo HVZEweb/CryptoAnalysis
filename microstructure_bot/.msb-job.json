@@ -1,0 +1,10 @@
+{
+  "id": "collect",
+  "label": "Сборщик данных (WebSocket → Parquet)",
+  "pid": 19048,
+  "startedAt": "2026-07-11T18:49:21.483Z",
+  "status": "failed",
+  "exitCode": -1,
+  "finishedAt": "2026-07-12T08:40:09.297Z",
+  "expectedMinutes": 0
+}

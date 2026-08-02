@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"/><title>Phase X — Alpha Discovery 2.0</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:2rem;background:#0a0e17;color:#e8e8e8;max-width:1400px}
+h1,h2{color:#a78bfa} table{border-collapse:collapse;width:100%;font-size:12px;margin:1rem 0}
+td,th{border:1px solid #333;padding:6px} tr:nth-child(even){background:#111827}
+.verdict{background:#1e293b;padding:1.2rem;border-radius:8px;line-height:1.6}
+.ok{color:#4ade80} .fail{color:#f87171}
+</style></head><body>
+<h1>Phase X — Alpha Discovery 2.0</h1>
+<p>2026-07-11T16:52:26.593927+00:00 · 2.2s</p>
+
+<div class="verdict"><h2>Итоговый вердикт</h2><p>В рамках имеющихся данных и проверенных гипотез воспроизводимое торговое преимущество не обнаружено. Проблемы качества данных: 6 источников не прошли проверку. Потенциально изменить вывод могут: OI hypotheses: accumulate 7+ days 5m OI per symbol; Liquidation hypotheses: fix API + daily liquidation archive; Microstructure: run daily L2/ticker collector (npm run trading:archive) Новые типы данных: длительная история funding/OI, поток ликвидаций, L2 orderbook, trades tape, cross-exchange basis.</p>
+<p>Accepted: <span class="ok">0</span> · Data sources: 21/24 ·
+Quality passed: 16/22</p></div>
+
+<h2>1. Качество данных</h2>
+<table><tr><th>Dataset</th><th>Status</th><th>Gaps</th><th>Dupes</th><th>Issues</th></tr><tr><td>BTC_USDT_USDT_funding</td><td>OK</td><td>0</td><td>0</td><td></td></tr><tr><td>BTC_USDT_USDT_oi_5m</td><td>OK</td><td>0</td><td>0</td><td></td></tr><tr><td>BTC_USDT_USDT_orderbook</td><td>FAIL</td><td>9</td><td>0</td><td>9 gaps > 2× expected interval</td></tr><tr><td>BTC_USDT_USDT_ticker</td><td>FAIL</td><td>6</td><td>0</td><td>6 gaps > 2× expected interval</td></tr><tr><td>BTC_USDT_USDT_trades</td><td>FAIL</td><td>0</td><td>529</td><td>529 duplicate keys</td></tr><tr><td>ETH_USDT_USDT_funding</td><td>OK</td><td>0</td><td>0</td><td></td></tr><tr><td>ETH_USDT_USDT_liquidations</td><td>FAIL</td><td>0</td><td>0</td><td>empty dataset</td></tr><tr><td>ETH_USDT_USDT_oi_5m</td><td>OK</td><td>0</td><td>0</td><td></td></tr><tr><td>ETH_USDT_USDT_orderbook</td><td>OK</td><td>5</td><td>0</td><td></td></tr><tr><td>ETH_USDT_USDT_ticker</td><td>OK</td><td>3</td><td>0</td><td></td></tr><tr><td>ETH_USDT_USDT_trades</td><td>FAIL</td><td>0</td><td>284</td><td>284 duplicate keys</td></tr><tr><td>SOL_USDT_USDT_funding</td><td>OK</td><td>0</td><td>0</td><td></td></tr><tr><td>SOL_USDT_USDT_oi_5m</td><td>OK</td><td>0</td><td>0</td><td></td></tr><tr><td>SOL_USDT_USDT_orderbook</td><td>OK</td><td>3</td><td>0</td><td></td></tr><tr><td>SOL_USDT_USDT_ticker</td><td>OK</td><td>3</td><td>0</td><td></td></tr><tr><td>SOL_USDT_USDT_trades</td><td>FAIL</td><td>0</td><td>306</td><td>306 duplicate keys</td></tr><tr><td>BTC_USDT_USDT_3m</td><td>OK</td><td>0</td><td>0</td><td></td></tr><tr><td>BTC_USDT_USDT_5m</td><td>OK</td><td>0</td><td>0</td><td></td></tr><tr><td>ETH_USDT_USDT_3m</td><td>OK</td><td>0</td><td>0</td><td></td></tr><tr><td>ETH_USDT_USDT_5m</td><td>OK</td><td>0</td><td>0</td><td></td></tr></table>
+
+<h2>2. Data Coverage Report</h2>
+<p>Discovery ready: <b>True</b> · Missing: 3</p>
+<table><tr><th>Source</th><th>Category</th><th>Rows</th><th>Span (days)</th><th>Completeness</th><th>Suitability</th></tr><tr><td>ohlcv_BTC_USDT_USDT_5m</td><td>ohlcv</td><td>103680</td><td>360.0</td><td>100.0%</td><td>ohlcv_discovery:suitable</td></tr><tr><td>ohlcv_BTC_USDT_USDT_3m</td><td>ohlcv</td><td>172800</td><td>360.0</td><td>100.0%</td><td>ohlcv_discovery:suitable</td></tr><tr><td>BTC_USDT_USDT_funding</td><td>funding</td><td>100</td><td>33.0</td><td>100.0%</td><td>funding_research:suitable</td></tr><tr><td>BTC_USDT_USDT_oi_5m</td><td>open_interest</td><td>578</td><td>2.0</td><td>100.0%</td><td>oi_research:too_short</td></tr><tr><td>BTC_USDT_USDT_liquidations</td><td>liquidations</td><td>0</td><td>0.0</td><td>0.0%</td><td>liquidation_research:missing</td></tr><tr><td>BTC_USDT_USDT_orderbook</td><td>orderbook</td><td>32</td><td>0.0</td><td>34.4%</td><td>microstructure:too_short</td></tr><tr><td>BTC_USDT_USDT_trades</td><td>trades</td><td>700</td><td>0.01</td><td>100.0%</td><td>trades_tape:too_short</td></tr><tr><td>BTC_USDT_USDT_ticker</td><td>ticker_bbo</td><td>7</td><td>0.01</td><td>0.9%</td><td>microstructure:too_short</td></tr><tr><td>ohlcv_ETH_USDT_USDT_5m</td><td>ohlcv</td><td>103680</td><td>360.0</td><td>100.0%</td><td>ohlcv_discovery:suitable</td></tr><tr><td>ohlcv_ETH_USDT_USDT_3m</td><td>ohlcv</td><td>172800</td><td>360.0</td><td>100.0%</td><td>ohlcv_discovery:suitable</td></tr><tr><td>ETH_USDT_USDT_funding</td><td>funding</td><td>100</td><td>33.0</td><td>100.0%</td><td>funding_research:suitable</td></tr><tr><td>ETH_USDT_USDT_oi_5m</td><td>open_interest</td><td>590</td><td>2.05</td><td>100.0%</td><td>oi_research:too_short</td></tr><tr><td>ETH_USDT_USDT_liquidations</td><td>liquidations</td><td>0</td><td>0.0</td><td>0.0%</td><td>liquidation_research:missing</td></tr><tr><td>ETH_USDT_USDT_orderbook</td><td>orderbook</td><td>33</td><td>0.0</td><td>53.2%</td><td>microstructure:too_short</td></tr><tr><td>ETH_USDT_USDT_trades</td><td>trades</td><td>400</td><td>0.01</td><td>100.0%</td><td>trades_tape:too_short</td></tr><tr><td>ETH_USDT_USDT_ticker</td><td>ticker_bbo</td><td>4</td><td>0.01</td><td>0.4%</td><td>microstructure:too_short</td></tr><tr><td>ohlcv_SOL_USDT_USDT_5m</td><td>ohlcv</td><td>103680</td><td>360.0</td><td>100.0%</td><td>ohlcv_discovery:suitable</td></tr><tr><td>ohlcv_SOL_USDT_USDT_3m</td><td>ohlcv</td><td>172800</td><td>360.0</td><td>100.0%</td><td>ohlcv_discovery:suitable</td></tr><tr><td>SOL_USDT_USDT_funding</td><td>funding</td><td>100</td><td>33.0</td><td>100.0%</td><td>funding_research:suitable</td></tr><tr><td>SOL_USDT_USDT_oi_5m</td><td>open_interest</td><td>579</td><td>2.01</td><td>100.0%</td><td>oi_research:too_short</td></tr><tr><td>SOL_USDT_USDT_liquidations</td><td>liquidations</td><td>0</td><td>0.0</td><td>0.0%</td><td>liquidation_research:missing</td></tr><tr><td>SOL_USDT_USDT_orderbook</td><td>orderbook</td><td>29</td><td>0.0</td><td>48.3%</td><td>microstructure:too_short</td></tr><tr><td>SOL_USDT_USDT_trades</td><td>trades</td><td>400</td><td>0.01</td><td>100.0%</td><td>trades_tape:too_short</td></tr><tr><td>SOL_USDT_USDT_ticker</td><td>ticker_bbo</td><td>4</td><td>0.01</td><td>0.4%</td><td>microstructure:too_short</td></tr></table>
+
+<h2>3. Исследованные признаки</h2><ul><li>Discovery не запускался</li></ul>
+
+<h2>4. Статистически значимые признаки</h2><ul><li>Нет</li></ul>
+
+<h2>5. Отклонённые гипотезы</h2><ul><li>Нет валидированных паттернов</li></ul>
+
+<h2>6. Причины отклонения</h2><ul><li>—</li></ul>
+
+<h2>7. Отсутствующие данные</h2><ul><li>BTC_USDT_USDT_liquidations</li><li>ETH_USDT_USDT_liquidations</li><li>SOL_USDT_USDT_liquidations</li></ul>
+
+<h2>8. Повторить после накопления данных</h2><ul><li>OI hypotheses: accumulate 7+ days 5m OI per symbol</li><li>Liquidation hypotheses: fix API + daily liquidation archive</li><li>Microstructure: run daily L2/ticker collector (npm run trading:archive)</li></ul>
+
+<footer><p>Research only — NOT auto-integrated into trading bot. Schedule daily archive: npm run trading:archive</p></footer>
+</body></html>

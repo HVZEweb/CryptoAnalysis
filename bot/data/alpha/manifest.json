@@ -1,0 +1,117 @@
+{
+  "datasets": {
+    "BTC_USDT_USDT_funding": {
+      "rows": 101,
+      "updated_at": "2026-07-11T18:48:00.577705+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\BTC_USDT_USDT_funding.csv",
+      "from": "2026-06-08T08:00:00+00:00",
+      "to": "2026-07-11T16:00:00+00:00",
+      "span_days": 33.33
+    },
+    "BTC_USDT_USDT_oi_5m": {
+      "rows": 614,
+      "updated_at": "2026-07-11T18:48:02.360588+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\BTC_USDT_USDT_oi_5m.csv",
+      "from": "2026-07-09T15:40:00+00:00",
+      "to": "2026-07-11T18:45:00+00:00",
+      "span_days": 2.13
+    },
+    "BTC_USDT_USDT_trades": {
+      "rows": 800,
+      "updated_at": "2026-07-11T18:48:04.912160+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\BTC_USDT_USDT_trades.csv",
+      "from": "2026-07-11T15:37:10.849000+00:00",
+      "to": "2026-07-11T18:48:06.872000+00:00",
+      "span_days": 0.13
+    },
+    "BTC_USDT_USDT_ticker": {
+      "rows": 7,
+      "updated_at": "2026-07-11T15:50:26.877001+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\BTC_USDT_USDT_ticker.csv",
+      "from": "2026-07-11T15:37:13.858000+00:00",
+      "to": "2026-07-11T15:50:29.329000+00:00",
+      "span_days": 0.01
+    },
+    "ETH_USDT_USDT_oi_5m": {
+      "rows": 590,
+      "updated_at": "2026-07-11T15:52:33.327969+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\ETH_USDT_USDT_oi_5m.csv",
+      "from": "2026-07-09T14:45:00+00:00",
+      "to": "2026-07-11T15:50:00+00:00",
+      "span_days": 2.05
+    },
+    "ETH_USDT_USDT_trades": {
+      "rows": 400,
+      "updated_at": "2026-07-11T15:52:56.662976+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\ETH_USDT_USDT_trades.csv",
+      "from": "2026-07-11T15:37:20.883000+00:00",
+      "to": "2026-07-11T15:52:58.879000+00:00",
+      "span_days": 0.01
+    },
+    "ETH_USDT_USDT_ticker": {
+      "rows": 4,
+      "updated_at": "2026-07-11T15:52:58.457997+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\ETH_USDT_USDT_ticker.csv",
+      "from": "2026-07-11T15:37:21.266000+00:00",
+      "to": "2026-07-11T15:53:00.776000+00:00",
+      "span_days": 0.01
+    },
+    "SOL_USDT_USDT_funding": {
+      "rows": 100,
+      "updated_at": "2026-07-11T15:37:20.395861+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\SOL_USDT_USDT_funding.csv",
+      "from": "2026-06-08T08:00:00+00:00",
+      "to": "2026-07-11T08:00:00+00:00",
+      "span_days": 33.0
+    },
+    "SOL_USDT_USDT_oi_5m": {
+      "rows": 579,
+      "updated_at": "2026-07-11T15:55:07.575341+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\SOL_USDT_USDT_oi_5m.csv",
+      "from": "2026-07-09T15:40:00+00:00",
+      "to": "2026-07-11T15:50:00+00:00",
+      "span_days": 2.01
+    },
+    "SOL_USDT_USDT_trades": {
+      "rows": 400,
+      "updated_at": "2026-07-11T15:55:08.875698+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\SOL_USDT_USDT_trades.csv",
+      "from": "2026-07-11T15:37:26.122000+00:00",
+      "to": "2026-07-11T15:55:10.265000+00:00",
+      "span_days": 0.01
+    },
+    "SOL_USDT_USDT_ticker": {
+      "rows": 4,
+      "updated_at": "2026-07-11T15:55:09.640213+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\SOL_USDT_USDT_ticker.csv",
+      "from": "2026-07-11T15:37:29.467000+00:00",
+      "to": "2026-07-11T15:55:12.070000+00:00",
+      "span_days": 0.01
+    },
+    "BTC_USDT_USDT_orderbook": {
+      "rows": 32,
+      "updated_at": "2026-07-11T15:52:29.077814+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\BTC_USDT_USDT_orderbook.csv",
+      "from": "2026-07-11T15:49:25.002000+00:00",
+      "to": "2026-07-11T15:52:30.052000+00:00",
+      "span_days": 0.0
+    },
+    "ETH_USDT_USDT_orderbook": {
+      "rows": 33,
+      "updated_at": "2026-07-11T15:55:04.502184+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\ETH_USDT_USDT_orderbook.csv",
+      "from": "2026-07-11T15:53:02.200000+00:00",
+      "to": "2026-07-11T15:55:05.500000+00:00",
+      "span_days": 0.0
+    },
+    "SOL_USDT_USDT_orderbook": {
+      "rows": 29,
+      "updated_at": "2026-07-11T15:57:10.843822+00:00",
+      "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\SOL_USDT_USDT_orderbook.csv",
+      "from": "2026-07-11T15:55:13.458000+00:00",
+      "to": "2026-07-11T15:57:11.858000+00:00",
+      "span_days": 0.0
+    }
+  },
+  "last_archive_run": "2026-07-11T18:48:04.913084+00:00"
+}

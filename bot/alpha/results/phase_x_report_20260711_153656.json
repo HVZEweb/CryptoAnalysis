@@ -1,0 +1,887 @@
+{
+  "generated_at": "2026-07-11T15:36:56.409112+00:00",
+  "elapsed_sec": 2.8,
+  "coverage": {
+    "generated_at": "2026-07-11T15:36:54.950465+00:00",
+    "sources": [
+      {
+        "source_id": "ohlcv_BTC_USDT_USDT_5m",
+        "category": "ohlcv",
+        "symbol": "BTC/USDT:USDT",
+        "exists": true,
+        "rows": 103680,
+        "period_start": "2025-07-16T10:50:00+00:00",
+        "period_end": "2026-07-11T10:45:00+00:00",
+        "span_days": 360.0,
+        "completeness_pct": 100.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "ohlcv_discovery": "suitable"
+        },
+        "blocked_research": [],
+        "notes": []
+      },
+      {
+        "source_id": "ohlcv_BTC_USDT_USDT_3m",
+        "category": "ohlcv",
+        "symbol": "BTC/USDT:USDT",
+        "exists": true,
+        "rows": 172800,
+        "period_start": "2025-07-16T10:57:00+00:00",
+        "period_end": "2026-07-11T10:54:00+00:00",
+        "span_days": 360.0,
+        "completeness_pct": 100.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "ohlcv_discovery": "suitable"
+        },
+        "blocked_research": [],
+        "notes": []
+      },
+      {
+        "source_id": "BTC_USDT_USDT_funding",
+        "category": "funding",
+        "symbol": "BTC/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "funding_research": "missing"
+        },
+        "blocked_research": [
+          "funding_research"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "BTC_USDT_USDT_oi_5m",
+        "category": "open_interest",
+        "symbol": "BTC/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "oi_research": "missing"
+        },
+        "blocked_research": [
+          "oi_research"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "BTC_USDT_USDT_liquidations",
+        "category": "liquidations",
+        "symbol": "BTC/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "liquidation_research": "missing"
+        },
+        "blocked_research": [
+          "liquidation_research"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "BTC_USDT_USDT_orderbook",
+        "category": "orderbook",
+        "symbol": "BTC/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "microstructure": "missing"
+        },
+        "blocked_research": [
+          "microstructure"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "BTC_USDT_USDT_trades",
+        "category": "trades",
+        "symbol": "BTC/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "trades_tape": "missing"
+        },
+        "blocked_research": [
+          "trades_tape"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "BTC_USDT_USDT_ticker",
+        "category": "ticker_bbo",
+        "symbol": "BTC/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "microstructure": "missing"
+        },
+        "blocked_research": [
+          "microstructure"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "ohlcv_ETH_USDT_USDT_5m",
+        "category": "ohlcv",
+        "symbol": "ETH/USDT:USDT",
+        "exists": true,
+        "rows": 103680,
+        "period_start": "2025-07-16T11:10:00+00:00",
+        "period_end": "2026-07-11T11:05:00+00:00",
+        "span_days": 360.0,
+        "completeness_pct": 100.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "ohlcv_discovery": "suitable"
+        },
+        "blocked_research": [],
+        "notes": []
+      },
+      {
+        "source_id": "ohlcv_ETH_USDT_USDT_3m",
+        "category": "ohlcv",
+        "symbol": "ETH/USDT:USDT",
+        "exists": true,
+        "rows": 172800,
+        "period_start": "2025-07-16T11:15:00+00:00",
+        "period_end": "2026-07-11T11:12:00+00:00",
+        "span_days": 360.0,
+        "completeness_pct": 100.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "ohlcv_discovery": "suitable"
+        },
+        "blocked_research": [],
+        "notes": []
+      },
+      {
+        "source_id": "ETH_USDT_USDT_funding",
+        "category": "funding",
+        "symbol": "ETH/USDT:USDT",
+        "exists": true,
+        "rows": 100,
+        "period_start": "2026-06-08T08:00:00+00:00",
+        "period_end": "2026-07-11T08:00:00+00:00",
+        "span_days": 33.0,
+        "completeness_pct": 100.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "funding_research": "suitable"
+        },
+        "blocked_research": [],
+        "notes": []
+      },
+      {
+        "source_id": "ETH_USDT_USDT_oi_5m",
+        "category": "open_interest",
+        "symbol": "ETH/USDT:USDT",
+        "exists": true,
+        "rows": 576,
+        "period_start": "2026-07-09T14:45:00+00:00",
+        "period_end": "2026-07-11T14:40:00+00:00",
+        "span_days": 2.0,
+        "completeness_pct": 100.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "oi_research": "too_short"
+        },
+        "blocked_research": [
+          "oi_research"
+        ],
+        "notes": []
+      },
+      {
+        "source_id": "ETH_USDT_USDT_liquidations",
+        "category": "liquidations",
+        "symbol": "ETH/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "liquidation_research": "missing"
+        },
+        "blocked_research": [
+          "liquidation_research"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "ETH_USDT_USDT_orderbook",
+        "category": "orderbook",
+        "symbol": "ETH/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "microstructure": "missing"
+        },
+        "blocked_research": [
+          "microstructure"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "ETH_USDT_USDT_trades",
+        "category": "trades",
+        "symbol": "ETH/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "trades_tape": "missing"
+        },
+        "blocked_research": [
+          "trades_tape"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "ETH_USDT_USDT_ticker",
+        "category": "ticker_bbo",
+        "symbol": "ETH/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "microstructure": "missing"
+        },
+        "blocked_research": [
+          "microstructure"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "ohlcv_SOL_USDT_USDT_5m",
+        "category": "ohlcv",
+        "symbol": "SOL/USDT:USDT",
+        "exists": true,
+        "rows": 103680,
+        "period_start": "2025-07-16T11:25:00+00:00",
+        "period_end": "2026-07-11T11:20:00+00:00",
+        "span_days": 360.0,
+        "completeness_pct": 100.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "ohlcv_discovery": "suitable"
+        },
+        "blocked_research": [],
+        "notes": []
+      },
+      {
+        "source_id": "ohlcv_SOL_USDT_USDT_3m",
+        "category": "ohlcv",
+        "symbol": "SOL/USDT:USDT",
+        "exists": true,
+        "rows": 172800,
+        "period_start": "2025-07-16T11:30:00+00:00",
+        "period_end": "2026-07-11T11:27:00+00:00",
+        "span_days": 360.0,
+        "completeness_pct": 100.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "ohlcv_discovery": "suitable"
+        },
+        "blocked_research": [],
+        "notes": []
+      },
+      {
+        "source_id": "SOL_USDT_USDT_funding",
+        "category": "funding",
+        "symbol": "SOL/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "funding_research": "missing"
+        },
+        "blocked_research": [
+          "funding_research"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "SOL_USDT_USDT_oi_5m",
+        "category": "open_interest",
+        "symbol": "SOL/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "oi_research": "missing"
+        },
+        "blocked_research": [
+          "oi_research"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "SOL_USDT_USDT_liquidations",
+        "category": "liquidations",
+        "symbol": "SOL/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "liquidation_research": "missing"
+        },
+        "blocked_research": [
+          "liquidation_research"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "SOL_USDT_USDT_orderbook",
+        "category": "orderbook",
+        "symbol": "SOL/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "microstructure": "missing"
+        },
+        "blocked_research": [
+          "microstructure"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "SOL_USDT_USDT_trades",
+        "category": "trades",
+        "symbol": "SOL/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "trades_tape": "missing"
+        },
+        "blocked_research": [
+          "trades_tape"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      },
+      {
+        "source_id": "SOL_USDT_USDT_ticker",
+        "category": "ticker_bbo",
+        "symbol": "SOL/USDT:USDT",
+        "exists": false,
+        "rows": 0,
+        "period_start": null,
+        "period_end": null,
+        "span_days": 0.0,
+        "completeness_pct": 0.0,
+        "gaps_count": 0,
+        "max_gap_hours": 0.0,
+        "duplicates": 0,
+        "suitability": {
+          "microstructure": "missing"
+        },
+        "blocked_research": [
+          "microstructure"
+        ],
+        "notes": [
+          "dataset absent or empty"
+        ]
+      }
+    ],
+    "summary": {
+      "total_sources": 24,
+      "present": 8,
+      "missing": 16,
+      "too_short_or_insufficient": 1,
+      "discovery_ready": true
+    },
+    "missing_sources": [
+      "BTC_USDT_USDT_funding",
+      "BTC_USDT_USDT_oi_5m",
+      "BTC_USDT_USDT_liquidations",
+      "BTC_USDT_USDT_orderbook",
+      "BTC_USDT_USDT_trades",
+      "BTC_USDT_USDT_ticker",
+      "ETH_USDT_USDT_liquidations",
+      "ETH_USDT_USDT_orderbook",
+      "ETH_USDT_USDT_trades",
+      "ETH_USDT_USDT_ticker",
+      "SOL_USDT_USDT_funding",
+      "SOL_USDT_USDT_oi_5m",
+      "SOL_USDT_USDT_liquidations",
+      "SOL_USDT_USDT_orderbook",
+      "SOL_USDT_USDT_trades",
+      "SOL_USDT_USDT_ticker"
+    ],
+    "blocked_research": {
+      "funding_research": [
+        "BTC_USDT_USDT_funding",
+        "SOL_USDT_USDT_funding"
+      ],
+      "oi_research": [
+        "BTC_USDT_USDT_oi_5m",
+        "ETH_USDT_USDT_oi_5m",
+        "SOL_USDT_USDT_oi_5m"
+      ],
+      "liquidation_research": [
+        "BTC_USDT_USDT_liquidations",
+        "ETH_USDT_USDT_liquidations",
+        "SOL_USDT_USDT_liquidations"
+      ],
+      "microstructure": [
+        "BTC_USDT_USDT_orderbook",
+        "BTC_USDT_USDT_ticker",
+        "ETH_USDT_USDT_orderbook",
+        "ETH_USDT_USDT_ticker",
+        "SOL_USDT_USDT_orderbook",
+        "SOL_USDT_USDT_ticker"
+      ],
+      "trades_tape": [
+        "BTC_USDT_USDT_trades",
+        "ETH_USDT_USDT_trades",
+        "SOL_USDT_USDT_trades"
+      ]
+    },
+    "retry_after_accumulation": [
+      "Funding hypotheses: accumulate 30+ days funding archive per symbol",
+      "OI hypotheses: accumulate 7+ days 5m OI per symbol",
+      "Liquidation hypotheses: fix API + daily liquidation archive",
+      "Microstructure: run daily L2/ticker collector (npm run trading:archive)"
+    ]
+  },
+  "quality": {
+    "checked_at": "2026-07-11T15:36:56.408785+00:00",
+    "total": 9,
+    "passed": 8,
+    "failed": 1,
+    "results": [
+      {
+        "dataset": "ETH_USDT_USDT_funding",
+        "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\ETH_USDT_USDT_funding.csv",
+        "rows": 100,
+        "ok": true,
+        "gaps": 0,
+        "max_gap_ms": 0.0,
+        "duplicates": 0,
+        "non_monotonic": 0,
+        "null_pct": 0.0,
+        "issues": []
+      },
+      {
+        "dataset": "ETH_USDT_USDT_liquidations",
+        "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\ETH_USDT_USDT_liquidations.csv",
+        "rows": 0,
+        "ok": false,
+        "gaps": 0,
+        "max_gap_ms": 0.0,
+        "duplicates": 0,
+        "non_monotonic": 0,
+        "null_pct": 0.0,
+        "issues": [
+          "empty dataset"
+        ]
+      },
+      {
+        "dataset": "ETH_USDT_USDT_oi_5m",
+        "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\ETH_USDT_USDT_oi_5m.csv",
+        "rows": 576,
+        "ok": true,
+        "gaps": 0,
+        "max_gap_ms": 0.0,
+        "duplicates": 0,
+        "non_monotonic": 0,
+        "null_pct": 0.0,
+        "issues": []
+      },
+      {
+        "dataset": "BTC_USDT_USDT_3m",
+        "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\BTC_USDT_USDT_3m.csv",
+        "rows": 172800,
+        "ok": true,
+        "gaps": 0,
+        "max_gap_ms": 0.0,
+        "duplicates": 0,
+        "non_monotonic": 0,
+        "null_pct": 0.0,
+        "issues": []
+      },
+      {
+        "dataset": "BTC_USDT_USDT_5m",
+        "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\BTC_USDT_USDT_5m.csv",
+        "rows": 103680,
+        "ok": true,
+        "gaps": 0,
+        "max_gap_ms": 0.0,
+        "duplicates": 0,
+        "non_monotonic": 0,
+        "null_pct": 0.0,
+        "issues": []
+      },
+      {
+        "dataset": "ETH_USDT_USDT_3m",
+        "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\ETH_USDT_USDT_3m.csv",
+        "rows": 172800,
+        "ok": true,
+        "gaps": 0,
+        "max_gap_ms": 0.0,
+        "duplicates": 0,
+        "non_monotonic": 0,
+        "null_pct": 0.0,
+        "issues": []
+      },
+      {
+        "dataset": "ETH_USDT_USDT_5m",
+        "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\ETH_USDT_USDT_5m.csv",
+        "rows": 103680,
+        "ok": true,
+        "gaps": 0,
+        "max_gap_ms": 0.0,
+        "duplicates": 0,
+        "non_monotonic": 0,
+        "null_pct": 0.0,
+        "issues": []
+      },
+      {
+        "dataset": "SOL_USDT_USDT_3m",
+        "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\SOL_USDT_USDT_3m.csv",
+        "rows": 172800,
+        "ok": true,
+        "gaps": 0,
+        "max_gap_ms": 0.0,
+        "duplicates": 0,
+        "non_monotonic": 0,
+        "null_pct": 0.0,
+        "issues": []
+      },
+      {
+        "dataset": "SOL_USDT_USDT_5m",
+        "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\SOL_USDT_USDT_5m.csv",
+        "rows": 103680,
+        "ok": true,
+        "gaps": 0,
+        "max_gap_ms": 0.0,
+        "duplicates": 0,
+        "non_monotonic": 0,
+        "null_pct": 0.0,
+        "issues": []
+      }
+    ]
+  },
+  "archive": null,
+  "discovery": null,
+  "final_verdict": "В рамках имеющихся данных и проверенных гипотез воспроизводимое торговое преимущество не обнаружено. Проблемы качества данных: 1 источников не прошли проверку. Потенциально изменить вывод могут: Funding hypotheses: accumulate 30+ days funding archive per symbol; OI hypotheses: accumulate 7+ days 5m OI per symbol; Liquidation hypotheses: fix API + daily liquidation archive; Microstructure: run daily L2/ticker collector (npm run trading:archive) Новые типы данных: длительная история funding/OI, поток ликвидаций, L2 orderbook, trades tape, cross-exchange basis.",
+  "sections": {
+    "data_quality": {
+      "passed": 8,
+      "failed": 1,
+      "details": [
+        {
+          "dataset": "ETH_USDT_USDT_funding",
+          "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\ETH_USDT_USDT_funding.csv",
+          "rows": 100,
+          "ok": true,
+          "gaps": 0,
+          "max_gap_ms": 0.0,
+          "duplicates": 0,
+          "non_monotonic": 0,
+          "null_pct": 0.0,
+          "issues": []
+        },
+        {
+          "dataset": "ETH_USDT_USDT_liquidations",
+          "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\ETH_USDT_USDT_liquidations.csv",
+          "rows": 0,
+          "ok": false,
+          "gaps": 0,
+          "max_gap_ms": 0.0,
+          "duplicates": 0,
+          "non_monotonic": 0,
+          "null_pct": 0.0,
+          "issues": [
+            "empty dataset"
+          ]
+        },
+        {
+          "dataset": "ETH_USDT_USDT_oi_5m",
+          "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\alpha\\ETH_USDT_USDT_oi_5m.csv",
+          "rows": 576,
+          "ok": true,
+          "gaps": 0,
+          "max_gap_ms": 0.0,
+          "duplicates": 0,
+          "non_monotonic": 0,
+          "null_pct": 0.0,
+          "issues": []
+        },
+        {
+          "dataset": "BTC_USDT_USDT_3m",
+          "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\BTC_USDT_USDT_3m.csv",
+          "rows": 172800,
+          "ok": true,
+          "gaps": 0,
+          "max_gap_ms": 0.0,
+          "duplicates": 0,
+          "non_monotonic": 0,
+          "null_pct": 0.0,
+          "issues": []
+        },
+        {
+          "dataset": "BTC_USDT_USDT_5m",
+          "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\BTC_USDT_USDT_5m.csv",
+          "rows": 103680,
+          "ok": true,
+          "gaps": 0,
+          "max_gap_ms": 0.0,
+          "duplicates": 0,
+          "non_monotonic": 0,
+          "null_pct": 0.0,
+          "issues": []
+        },
+        {
+          "dataset": "ETH_USDT_USDT_3m",
+          "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\ETH_USDT_USDT_3m.csv",
+          "rows": 172800,
+          "ok": true,
+          "gaps": 0,
+          "max_gap_ms": 0.0,
+          "duplicates": 0,
+          "non_monotonic": 0,
+          "null_pct": 0.0,
+          "issues": []
+        },
+        {
+          "dataset": "ETH_USDT_USDT_5m",
+          "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\ETH_USDT_USDT_5m.csv",
+          "rows": 103680,
+          "ok": true,
+          "gaps": 0,
+          "max_gap_ms": 0.0,
+          "duplicates": 0,
+          "non_monotonic": 0,
+          "null_pct": 0.0,
+          "issues": []
+        },
+        {
+          "dataset": "SOL_USDT_USDT_3m",
+          "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\SOL_USDT_USDT_3m.csv",
+          "rows": 172800,
+          "ok": true,
+          "gaps": 0,
+          "max_gap_ms": 0.0,
+          "duplicates": 0,
+          "non_monotonic": 0,
+          "null_pct": 0.0,
+          "issues": []
+        },
+        {
+          "dataset": "SOL_USDT_USDT_5m",
+          "path": "C:\\xampp\\htdocs\\crypto\\bot\\data\\ohlcv\\SOL_USDT_USDT_5m.csv",
+          "rows": 103680,
+          "ok": true,
+          "gaps": 0,
+          "max_gap_ms": 0.0,
+          "duplicates": 0,
+          "non_monotonic": 0,
+          "null_pct": 0.0,
+          "issues": []
+        }
+      ]
+    },
+    "features_investigated": [],
+    "statistically_significant_features": [],
+    "rejected_hypotheses": [],
+    "rejection_reasons": [],
+    "missing_data": [
+      "BTC_USDT_USDT_funding",
+      "BTC_USDT_USDT_oi_5m",
+      "BTC_USDT_USDT_liquidations",
+      "BTC_USDT_USDT_orderbook",
+      "BTC_USDT_USDT_trades",
+      "BTC_USDT_USDT_ticker",
+      "ETH_USDT_USDT_liquidations",
+      "ETH_USDT_USDT_orderbook",
+      "ETH_USDT_USDT_trades",
+      "ETH_USDT_USDT_ticker",
+      "SOL_USDT_USDT_funding",
+      "SOL_USDT_USDT_oi_5m",
+      "SOL_USDT_USDT_liquidations",
+      "SOL_USDT_USDT_orderbook",
+      "SOL_USDT_USDT_trades",
+      "SOL_USDT_USDT_ticker"
+    ],
+    "retry_after_accumulation": [
+      "Funding hypotheses: accumulate 30+ days funding archive per symbol",
+      "OI hypotheses: accumulate 7+ days 5m OI per symbol",
+      "Liquidation hypotheses: fix API + daily liquidation archive",
+      "Microstructure: run daily L2/ticker collector (npm run trading:archive)"
+    ],
+    "blocked_research": {
+      "funding_research": [
+        "BTC_USDT_USDT_funding",
+        "SOL_USDT_USDT_funding"
+      ],
+      "oi_research": [
+        "BTC_USDT_USDT_oi_5m",
+        "ETH_USDT_USDT_oi_5m",
+        "SOL_USDT_USDT_oi_5m"
+      ],
+      "liquidation_research": [
+        "BTC_USDT_USDT_liquidations",
+        "ETH_USDT_USDT_liquidations",
+        "SOL_USDT_USDT_liquidations"
+      ],
+      "microstructure": [
+        "BTC_USDT_USDT_orderbook",
+        "BTC_USDT_USDT_ticker",
+        "ETH_USDT_USDT_orderbook",
+        "ETH_USDT_USDT_ticker",
+        "SOL_USDT_USDT_orderbook",
+        "SOL_USDT_USDT_ticker"
+      ],
+      "trades_tape": [
+        "BTC_USDT_USDT_trades",
+        "ETH_USDT_USDT_trades",
+        "SOL_USDT_USDT_trades"
+      ]
+    }
+  }
+}

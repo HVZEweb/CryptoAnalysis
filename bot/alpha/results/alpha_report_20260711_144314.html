@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <title>Alpha Research Platform Report</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; background: #0a0e17; color: #e8e8e8; max-width: 1500px; }
+    h1, h2 { color: #38bdf8; }
+    table { border-collapse: collapse; width: 100%; font-size: 12px; margin: 1rem 0; }
+    td, th { border: 1px solid #333; padding: 5px 7px; }
+    tr:nth-child(even) { background: #111827; }
+    .verdict { background: #1e293b; padding: 1rem; border-radius: 8px; margin: 1rem 0; }
+    .accepted { color: #4ade80; }
+    .rejected { color: #f87171; }
+  </style>
+</head>
+<body>
+  <h1>Alpha Research Platform</h1>
+  <p>Generated: 2026-07-11T14:43:14.179543+00:00 · Modules: 10 · 20.3s</p>
+  <div class="verdict">
+    <p>Ни один модуль не прошёл полную статистическую валидацию. Продолжайте сбор данных (funding/OI/liquidations/L2) и тестирование новых гипотез. Не интегрировать в бота до появления ACCEPTED модуля.</p>
+    <p>Accepted: <span class="accepted">0</span> ·
+       Rejected: <span class="rejected">10</span> ·
+       Skipped L2: 0</p>
+  </div>
+  <h2>Results by Category</h2>
+  <h3>session (0/6 accepted)</h3><ul><li>✗ session_asia_edge @ ETH/USDT:USDT — Negative OOS expectancy (-0.6183%)</li><li>✗ session_europe_edge @ ETH/USDT:USDT — Negative OOS expectancy (-0.5227%)</li><li>✗ session_us_edge @ ETH/USDT:USDT — Negative OOS expectancy (-0.3968%)</li><li>✗ session_overlap_edge @ ETH/USDT:USDT — Negative OOS expectancy (-0.3969%)</li><li>✗ day_of_week_effect @ ETH/USDT:USDT — Negative OOS expectancy (-0.5152%)</li><li>✗ hour_of_day_effect @ ETH/USDT:USDT — Negative OOS expectancy (-0.3592%)</li></ul><h3>volatility (0/4 accepted)</h3><ul><li>✗ vol_expansion_breakout @ ETH/USDT:USDT — Negative OOS expectancy (-0.4943%)</li><li>✗ vol_compression_breakout @ ETH/USDT:USDT — Negative OOS expectancy (-0.5005%)</li><li>✗ realised_vol_regime_shift @ ETH/USDT:USDT — OOS trades 4 < 5</li><li>✗ atr_regime_shift @ ETH/USDT:USDT — Negative OOS expectancy (-0.4423%)</li></ul>
+  <h2>Full Results Table</h2>
+  <table>
+    <tr><th>Module</th><th>Category</th><th>Symbol</th><th>Status</th><th>OOS Trades</th>
+    <th>OOS EV%</th><th>PF</th><th>Sharpe</th><th>Stability</th><th>Overfit</th><th>p-value</th><th>Verdict</th></tr>
+    <tr><td>hour_of_day_effect</td><td>session</td><td>ETH/USDT:USDT</td><td style='background:#7f1d1d'>rejected_negative_oos</td><td>21</td><td>-0.3592</td><td>0.049</td><td>-15.986</td><td>0.0</td><td>0.0</td><td>0.0</td><td>Negative OOS expectancy (-0.3592%)</td></tr><tr><td>realised_vol_regime_shift</td><td>volatility</td><td>ETH/USDT:USDT</td><td style='background:#7f1d1d'>rejected_insufficient_trades</td><td>4</td><td>-0.3738</td><td>0.031</td><td>-5.762</td><td>0.0</td><td>1.0</td><td>1.0</td><td>OOS trades 4 < 5</td></tr><tr><td>session_us_edge</td><td>session</td><td>ETH/USDT:USDT</td><td style='background:#7f1d1d'>rejected_negative_oos</td><td>28</td><td>-0.3968</td><td>0.042</td><td>-20.301</td><td>0.0</td><td>0.0</td><td>0.0</td><td>Negative OOS expectancy (-0.3968%)</td></tr><tr><td>session_overlap_edge</td><td>session</td><td>ETH/USDT:USDT</td><td style='background:#7f1d1d'>rejected_negative_oos</td><td>27</td><td>-0.3969</td><td>0.042</td><td>-19.956</td><td>0.0</td><td>0.0</td><td>0.0</td><td>Negative OOS expectancy (-0.3969%)</td></tr><tr><td>atr_regime_shift</td><td>volatility</td><td>ETH/USDT:USDT</td><td style='background:#7f1d1d'>rejected_negative_oos</td><td>52</td><td>-0.4423</td><td>0.048</td><td>-31.039</td><td>0.0</td><td>0.0</td><td>0.0</td><td>Negative OOS expectancy (-0.4423%)</td></tr><tr><td>vol_expansion_breakout</td><td>volatility</td><td>ETH/USDT:USDT</td><td style='background:#7f1d1d'>rejected_negative_oos</td><td>9</td><td>-0.4943</td><td>0.011</td><td>-16.118</td><td>0.0</td><td>0.0</td><td>0.0</td><td>Negative OOS expectancy (-0.4943%)</td></tr><tr><td>vol_compression_breakout</td><td>volatility</td><td>ETH/USDT:USDT</td><td style='background:#7f1d1d'>rejected_negative_oos</td><td>20</td><td>-0.5005</td><td>0.041</td><td>-22.981</td><td>0.0</td><td>0.0</td><td>0.0</td><td>Negative OOS expectancy (-0.5005%)</td></tr><tr><td>day_of_week_effect</td><td>session</td><td>ETH/USDT:USDT</td><td style='background:#7f1d1d'>rejected_negative_oos</td><td>34</td><td>-0.5152</td><td>0.01</td><td>-29.497</td><td>0.0</td><td>0.0</td><td>0.0</td><td>Negative OOS expectancy (-0.5152%)</td></tr><tr><td>session_europe_edge</td><td>session</td><td>ETH/USDT:USDT</td><td style='background:#7f1d1d'>rejected_negative_oos</td><td>13</td><td>-0.5227</td><td>0.0</td><td>-26.935</td><td>0.0</td><td>0.011</td><td>0.0</td><td>Negative OOS expectancy (-0.5227%)</td></tr><tr><td>session_asia_edge</td><td>session</td><td>ETH/USDT:USDT</td><td style='background:#7f1d1d'>rejected_negative_oos</td><td>13</td><td>-0.6183</td><td>0.009</td><td>-20.91</td><td>0.0</td><td>0.0</td><td>0.0</td><td>Negative OOS expectancy (-0.6183%)</td></tr>
+  </table>
+  <footer><p>Alpha Research Platform — no integration until ACCEPTED status.</p></footer>
+</body>
+</html>

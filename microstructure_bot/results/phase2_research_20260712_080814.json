@@ -1,0 +1,2293 @@
+{
+  "generated_at": "2026-07-12T08:08:14.412915+00:00",
+  "research_methodology_version": "2.0",
+  "phase": "Phase 2 — Market Microstructure Research",
+  "data_summary": {
+    "symbols": [
+      "BTC-USDT-SWAP",
+      "ETH-USDT-SWAP",
+      "SOL-USDT-SWAP"
+    ],
+    "orderbook_rows": 165980,
+    "trade_rows": 53116,
+    "stats_rows": 9
+  },
+  "stats_synced": 0,
+  "event_keys_tested": 30,
+  "ranking": [
+    {
+      "event_key": "spread_expand_q99",
+      "horizon_sec": 300,
+      "events": 59,
+      "expectancy": 0.0655,
+      "profit_factor": 3.579,
+      "prob_up_pct": 64.41,
+      "prob_down_pct": 35.59,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.505,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.505; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "spread_expand_q99",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 59,
+          "train_ev": 0.0051,
+          "test_ev": 0.0655,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.505,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.505; independent days fail",
+          "daily_ev": [
+            0.0655
+          ]
+        },
+        {
+          "event_key": "spread_expand_q99",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 3,
+          "n_events": 62,
+          "train_ev": -0.0015,
+          "test_ev": 0.0018,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.4915,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; walk-forward unstable; bootstrap p=0.491; independent days fail",
+          "daily_ev": [
+            0.0018
+          ]
+        },
+        {
+          "event_key": "spread_expand_q99",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 131,
+          "train_ev": 0.0004,
+          "test_ev": 0.001,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.491,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.491; independent days fail",
+          "daily_ev": [
+            0.001
+          ]
+        }
+      ],
+      "rank": 1
+    },
+    {
+      "event_key": "spread_expand_q90",
+      "horizon_sec": 300,
+      "events": 126,
+      "expectancy": 0.0553,
+      "profit_factor": 2.882,
+      "prob_up_pct": 69.84,
+      "prob_down_pct": 30.16,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.511,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.511; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "spread_expand_q90",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 126,
+          "train_ev": 0.0046,
+          "test_ev": 0.0553,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.511,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.511; independent days fail",
+          "daily_ev": [
+            0.0553
+          ]
+        },
+        {
+          "event_key": "spread_expand_q90",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 3,
+          "n_events": 187,
+          "train_ev": 0.0001,
+          "test_ev": 0.0017,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.514,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.514; independent days fail",
+          "daily_ev": [
+            0.0017
+          ]
+        },
+        {
+          "event_key": "spread_expand_q90",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 285,
+          "train_ev": 0.0002,
+          "test_ev": 0.0008,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.5105,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "walk-forward unstable; bootstrap p=0.510; independent days fail",
+          "daily_ev": [
+            0.0008
+          ]
+        }
+      ],
+      "rank": 2
+    },
+    {
+      "event_key": "delta_dump_q9",
+      "horizon_sec": 300,
+      "events": 120,
+      "expectancy": 0.028,
+      "profit_factor": 1.58,
+      "prob_up_pct": 64.55,
+      "prob_down_pct": 35.45,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.515,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "negative train EV; bootstrap p=0.515; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "delta_dump_q9",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 110,
+          "train_ev": -0.0013,
+          "test_ev": 0.028,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.515,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; bootstrap p=0.515; independent days fail",
+          "daily_ev": [
+            0.03
+          ]
+        },
+        {
+          "event_key": "delta_dump_q9",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 142,
+          "train_ev": 0.0028,
+          "test_ev": 0.0199,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4865,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.486; independent days fail",
+          "daily_ev": [
+            0.0199
+          ]
+        },
+        {
+          "event_key": "delta_dump_q9",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 60,
+          "n_events": 83,
+          "train_ev": 0.0072,
+          "test_ev": -0.0085,
+          "oos_pass": false,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.521,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; bootstrap p=0.521; independent days fail",
+          "daily_ev": [
+            -0.0085
+          ]
+        }
+      ],
+      "rank": 3
+    },
+    {
+      "event_key": "absorption_strong_flag",
+      "horizon_sec": 300,
+      "events": 142,
+      "expectancy": 0.0182,
+      "profit_factor": 1.304,
+      "prob_up_pct": 58.96,
+      "prob_down_pct": 41.04,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.4925,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "negative train EV; bootstrap p=0.492; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "absorption_strong_flag",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 134,
+          "train_ev": -0.001,
+          "test_ev": 0.0182,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4925,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; bootstrap p=0.492; independent days fail",
+          "daily_ev": [
+            0.0173
+          ]
+        },
+        {
+          "event_key": "absorption_strong_flag",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 10,
+          "n_events": 183,
+          "train_ev": -0.0003,
+          "test_ev": -0.0006,
+          "oos_pass": false,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; OOS fail; bootstrap p=0.500; independent days fail",
+          "daily_ev": [
+            -0.0006
+          ]
+        },
+        {
+          "event_key": "absorption_strong_flag",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 127,
+          "train_ev": 0.0105,
+          "test_ev": 0.008,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.51,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.510; independent days fail",
+          "daily_ev": [
+            0.0114
+          ]
+        }
+      ],
+      "rank": 4
+    },
+    {
+      "event_key": "delta_surge_q99",
+      "horizon_sec": 300,
+      "events": 53,
+      "expectancy": 0.0143,
+      "profit_factor": 1.529,
+      "prob_up_pct": 75.47,
+      "prob_down_pct": 24.53,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.537,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.537; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "delta_surge_q99",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 53,
+          "train_ev": 0.0002,
+          "test_ev": 0.0143,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.537,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.537; independent days fail",
+          "daily_ev": [
+            0.0143
+          ]
+        },
+        {
+          "event_key": "delta_surge_q99",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 19,
+          "train_ev": 0.0,
+          "test_ev": 0.0,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "insufficient events (19 < 20)",
+          "daily_ev": []
+        },
+        {
+          "event_key": "delta_surge_q99",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 27,
+          "train_ev": 0.0,
+          "test_ev": 0.0,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=1.000; independent days fail",
+          "daily_ev": [
+            0.0
+          ]
+        }
+      ],
+      "rank": 5
+    },
+    {
+      "event_key": "depth_vanish_q1",
+      "horizon_sec": 300,
+      "events": 310,
+      "expectancy": 0.0121,
+      "profit_factor": 1.329,
+      "prob_up_pct": 57.63,
+      "prob_down_pct": 42.37,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.502,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.502; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "depth_vanish_q1",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 295,
+          "train_ev": 0.0009,
+          "test_ev": 0.0121,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.502,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.502; independent days fail",
+          "daily_ev": [
+            0.0106
+          ]
+        },
+        {
+          "event_key": "depth_vanish_q1",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 3,
+          "n_events": 331,
+          "train_ev": -0.0002,
+          "test_ev": 0.0003,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.4985,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; walk-forward unstable; bootstrap p=0.498; independent days fail",
+          "daily_ev": [
+            0.0003
+          ]
+        },
+        {
+          "event_key": "depth_vanish_q1",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 329,
+          "train_ev": 0.0091,
+          "test_ev": 0.0037,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.491,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "walk-forward unstable; bootstrap p=0.491; independent days fail",
+          "daily_ev": [
+            0.0042
+          ]
+        }
+      ],
+      "rank": 6
+    },
+    {
+      "event_key": "aggressive_buy_surge_q99",
+      "horizon_sec": 300,
+      "events": 48,
+      "expectancy": 0.0112,
+      "profit_factor": 1.779,
+      "prob_up_pct": 75.0,
+      "prob_down_pct": 25.0,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.551,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.551; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "aggressive_buy_surge_q99",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 48,
+          "train_ev": 0.0025,
+          "test_ev": 0.0112,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.551,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.551; independent days fail",
+          "daily_ev": [
+            0.0112
+          ]
+        },
+        {
+          "event_key": "aggressive_buy_surge_q99",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 30,
+          "n_events": 16,
+          "train_ev": 0.0,
+          "test_ev": 0.0,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "insufficient events (16 < 20)",
+          "daily_ev": []
+        },
+        {
+          "event_key": "aggressive_buy_surge_q99",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 41,
+          "train_ev": 0.0009,
+          "test_ev": 0.0012,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5455,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.545; independent days fail",
+          "daily_ev": [
+            0.0012
+          ]
+        }
+      ],
+      "rank": 7
+    },
+    {
+      "event_key": "replenishment_fast_flag",
+      "horizon_sec": 300,
+      "events": 2101,
+      "expectancy": 0.0097,
+      "profit_factor": 1.266,
+      "prob_up_pct": 58.49,
+      "prob_down_pct": 41.51,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.5065,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.506; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "replenishment_fast_flag",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 2009,
+          "train_ev": 0.0011,
+          "test_ev": 0.0097,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5065,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.506; independent days fail",
+          "daily_ev": [
+            0.0087
+          ]
+        },
+        {
+          "event_key": "replenishment_fast_flag",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 1295,
+          "train_ev": 0.0015,
+          "test_ev": 0.0193,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.508,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.508; independent days fail",
+          "daily_ev": [
+            0.0135
+          ]
+        },
+        {
+          "event_key": "replenishment_fast_flag",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 91,
+          "train_ev": 0.0187,
+          "test_ev": 0.0234,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5055,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.505; independent days fail",
+          "daily_ev": [
+            0.0154
+          ]
+        }
+      ],
+      "rank": 8
+    },
+    {
+      "event_key": "sweep_series_flag",
+      "horizon_sec": 300,
+      "events": 2816,
+      "expectancy": 0.0086,
+      "profit_factor": 1.22,
+      "prob_up_pct": 56.59,
+      "prob_down_pct": 43.41,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.494,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.494; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "sweep_series_flag",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 2718,
+          "train_ev": 0.0007,
+          "test_ev": 0.0086,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.494,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.494; independent days fail",
+          "daily_ev": [
+            0.0072
+          ]
+        },
+        {
+          "event_key": "sweep_series_flag",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 2639,
+          "train_ev": -0.0002,
+          "test_ev": -0.0002,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.493,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.493; independent days fail",
+          "daily_ev": [
+            -0.0002
+          ]
+        },
+        {
+          "event_key": "sweep_series_flag",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 2324,
+          "train_ev": 0.0038,
+          "test_ev": 0.0069,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5065,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.506; independent days fail",
+          "daily_ev": [
+            0.0061
+          ]
+        }
+      ],
+      "rank": 9
+    },
+    {
+      "event_key": "spread_expand_q95",
+      "horizon_sec": 30,
+      "events": 93,
+      "expectancy": 0.0079,
+      "profit_factor": 1.263,
+      "prob_up_pct": 48.39,
+      "prob_down_pct": 50.54,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.511,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.511; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "spread_expand_q95",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 30,
+          "n_events": 93,
+          "train_ev": 0.0004,
+          "test_ev": 0.0079,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.511,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.511; independent days fail",
+          "daily_ev": [
+            0.0079
+          ]
+        },
+        {
+          "event_key": "spread_expand_q95",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 134,
+          "train_ev": 0.0036,
+          "test_ev": 0.0531,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.500; independent days fail",
+          "daily_ev": [
+            0.0531
+          ]
+        },
+        {
+          "event_key": "spread_expand_q95",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 229,
+          "train_ev": 0.0002,
+          "test_ev": 0.0001,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.481,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "walk-forward unstable; bootstrap p=0.481; independent days fail",
+          "daily_ev": [
+            0.0001
+          ]
+        }
+      ],
+      "rank": 10
+    },
+    {
+      "event_key": "extreme_imbalance_high_q90",
+      "horizon_sec": 30,
+      "events": 273,
+      "expectancy": 0.0078,
+      "profit_factor": 2.708,
+      "prob_up_pct": 59.41,
+      "prob_down_pct": 19.19,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.5055,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.505; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "extreme_imbalance_high_q90",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 30,
+          "n_events": 271,
+          "train_ev": 0.0042,
+          "test_ev": 0.0078,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5055,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.505; independent days fail",
+          "daily_ev": [
+            0.0079
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_high_q90",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 303,
+          "train_ev": 0.015,
+          "test_ev": 0.0131,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4905,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.490; independent days fail",
+          "daily_ev": [
+            0.0119
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_high_q90",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 244,
+          "train_ev": 0.0154,
+          "test_ev": 0.0082,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.498,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.498; independent days fail",
+          "daily_ev": [
+            0.0106
+          ]
+        }
+      ],
+      "rank": 11
+    },
+    {
+      "event_key": "delta_surge_q95",
+      "horizon_sec": 300,
+      "events": 113,
+      "expectancy": 0.0072,
+      "profit_factor": 1.406,
+      "prob_up_pct": 74.07,
+      "prob_down_pct": 25.93,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.497,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.497; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "delta_surge_q95",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 108,
+          "train_ev": 0.002,
+          "test_ev": 0.0072,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.497,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.497; independent days fail",
+          "daily_ev": [
+            0.006
+          ]
+        },
+        {
+          "event_key": "delta_surge_q95",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 60,
+          "n_events": 71,
+          "train_ev": 0.0017,
+          "test_ev": -0.0001,
+          "oos_pass": false,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.567,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; bootstrap p=0.567; independent days fail",
+          "daily_ev": [
+            -0.0001
+          ]
+        },
+        {
+          "event_key": "delta_surge_q95",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 54,
+          "train_ev": 0.0,
+          "test_ev": 0.0009,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.558,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; bootstrap p=0.558; independent days fail",
+          "daily_ev": [
+            0.0009
+          ]
+        }
+      ],
+      "rank": 12
+    },
+    {
+      "event_key": "extreme_imbalance_high_q99",
+      "horizon_sec": 30,
+      "events": 71,
+      "expectancy": 0.0067,
+      "profit_factor": 2.925,
+      "prob_up_pct": 69.01,
+      "prob_down_pct": 23.94,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.4915,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.491; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "extreme_imbalance_high_q99",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 30,
+          "n_events": 71,
+          "train_ev": 0.0054,
+          "test_ev": 0.0067,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4915,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.491; independent days fail",
+          "daily_ev": [
+            0.0067
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_high_q99",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 78,
+          "train_ev": 0.0168,
+          "test_ev": 0.0218,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.499,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.499; independent days fail",
+          "daily_ev": [
+            0.02
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_high_q99",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 46,
+          "train_ev": 0.0045,
+          "test_ev": 0.0128,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.487,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.487; independent days fail",
+          "daily_ev": [
+            0.0128
+          ]
+        }
+      ],
+      "rank": 13
+    },
+    {
+      "event_key": "extreme_imbalance_high_q95",
+      "horizon_sec": 30,
+      "events": 184,
+      "expectancy": 0.006,
+      "profit_factor": 3.352,
+      "prob_up_pct": 63.59,
+      "prob_down_pct": 16.85,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.498,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.498; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "extreme_imbalance_high_q95",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 30,
+          "n_events": 184,
+          "train_ev": 0.0062,
+          "test_ev": 0.006,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.498,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.498; independent days fail",
+          "daily_ev": [
+            0.006
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_high_q95",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 203,
+          "train_ev": 0.017,
+          "test_ev": 0.0109,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5035,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.503; independent days fail",
+          "daily_ev": [
+            0.0123
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_high_q95",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 164,
+          "train_ev": 0.0129,
+          "test_ev": -0.0031,
+          "oos_pass": false,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.485,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; bootstrap p=0.485; independent days fail",
+          "daily_ev": [
+            -0.0031
+          ]
+        }
+      ],
+      "rank": 14
+    },
+    {
+      "event_key": "extreme_imbalance_low_q9",
+      "horizon_sec": 300,
+      "events": 245,
+      "expectancy": 0.0042,
+      "profit_factor": 1.377,
+      "prob_up_pct": 58.74,
+      "prob_down_pct": 41.26,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.481,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.481; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "extreme_imbalance_low_q9",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 223,
+          "train_ev": 0.0042,
+          "test_ev": 0.0042,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.481,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.481; independent days fail",
+          "daily_ev": [
+            0.0117
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_low_q9",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 320,
+          "train_ev": -0.0028,
+          "test_ev": -0.0026,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.506,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.506; independent days fail",
+          "daily_ev": [
+            -0.0026
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_low_q9",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 154,
+          "train_ev": -0.0001,
+          "test_ev": -0.0033,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.511,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.511; independent days fail",
+          "daily_ev": [
+            -0.0033
+          ]
+        }
+      ],
+      "rank": 15
+    },
+    {
+      "event_key": "aggressive_buy_surge_q95",
+      "horizon_sec": 10,
+      "events": 82,
+      "expectancy": 0.0041,
+      "profit_factor": 3.225,
+      "prob_up_pct": 21.95,
+      "prob_down_pct": 4.88,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.4825,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.482; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "aggressive_buy_surge_q95",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 10,
+          "n_events": 82,
+          "train_ev": 0.0009,
+          "test_ev": 0.0041,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4825,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.482; independent days fail",
+          "daily_ev": [
+            0.0041
+          ]
+        },
+        {
+          "event_key": "aggressive_buy_surge_q95",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 10,
+          "n_events": 75,
+          "train_ev": 0.0055,
+          "test_ev": -0.0002,
+          "oos_pass": false,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5005,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; bootstrap p=0.500; independent days fail",
+          "daily_ev": [
+            -0.0002
+          ]
+        },
+        {
+          "event_key": "aggressive_buy_surge_q95",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 83,
+          "train_ev": 0.0129,
+          "test_ev": 0.0885,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4905,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.490; independent days fail",
+          "daily_ev": [
+            0.0885
+          ]
+        }
+      ],
+      "rank": 16
+    },
+    {
+      "event_key": "extreme_imbalance_low_q5",
+      "horizon_sec": 300,
+      "events": 174,
+      "expectancy": 0.004,
+      "profit_factor": 1.142,
+      "prob_up_pct": 56.96,
+      "prob_down_pct": 43.04,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.4885,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.488; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "extreme_imbalance_low_q5",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 158,
+          "train_ev": 0.001,
+          "test_ev": 0.004,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4885,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.488; independent days fail",
+          "daily_ev": [
+            0.005
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_low_q5",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 201,
+          "train_ev": -0.0058,
+          "test_ev": 0.0043,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.498,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; walk-forward unstable; bootstrap p=0.498; independent days fail",
+          "daily_ev": [
+            -0.0002
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_low_q5",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 30,
+          "n_events": 94,
+          "train_ev": 0.0017,
+          "test_ev": 0.0064,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4785,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.478; independent days fail",
+          "daily_ev": [
+            0.0064
+          ]
+        }
+      ],
+      "rank": 17
+    },
+    {
+      "event_key": "aggressive_sell_surge_q95",
+      "horizon_sec": 10,
+      "events": 61,
+      "expectancy": 0.0027,
+      "profit_factor": 1.164,
+      "prob_up_pct": 35.59,
+      "prob_down_pct": 28.81,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.48,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "negative train EV; bootstrap p=0.480; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "aggressive_sell_surge_q95",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 10,
+          "n_events": 59,
+          "train_ev": -0.0001,
+          "test_ev": 0.0027,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.48,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; bootstrap p=0.480; independent days fail",
+          "daily_ev": [
+            0.0015
+          ]
+        },
+        {
+          "event_key": "aggressive_sell_surge_q95",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 93,
+          "train_ev": 0.0044,
+          "test_ev": 0.0301,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5015,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.501; independent days fail",
+          "daily_ev": [
+            0.0301
+          ]
+        },
+        {
+          "event_key": "aggressive_sell_surge_q95",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 3,
+          "n_events": 110,
+          "train_ev": 0.0005,
+          "test_ev": -0.0032,
+          "oos_pass": false,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5135,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; bootstrap p=0.513; independent days fail",
+          "daily_ev": [
+            -0.0032
+          ]
+        }
+      ],
+      "rank": 18
+    },
+    {
+      "event_key": "extreme_imbalance_low_q1",
+      "horizon_sec": 300,
+      "events": 62,
+      "expectancy": 0.002,
+      "profit_factor": 0.733,
+      "prob_up_pct": 56.9,
+      "prob_down_pct": 43.1,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.4955,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "negative train EV; bootstrap p=0.495; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "extreme_imbalance_low_q1",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 58,
+          "train_ev": -0.0062,
+          "test_ev": 0.002,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4955,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; bootstrap p=0.495; independent days fail",
+          "daily_ev": [
+            -0.0003
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_low_q1",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 73,
+          "train_ev": 0.0092,
+          "test_ev": 0.0053,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4925,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.492; independent days fail",
+          "daily_ev": [
+            0.0013
+          ]
+        },
+        {
+          "event_key": "extreme_imbalance_low_q1",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 32,
+          "train_ev": -0.0011,
+          "test_ev": -0.0128,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=1.000; independent days fail",
+          "daily_ev": [
+            -0.0128
+          ]
+        }
+      ],
+      "rank": 19
+    },
+    {
+      "event_key": "aggressive_buy_surge_q90",
+      "horizon_sec": 5,
+      "events": 168,
+      "expectancy": 0.0017,
+      "profit_factor": 8.317,
+      "prob_up_pct": 19.64,
+      "prob_down_pct": 2.38,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.453,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.453; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "aggressive_buy_surge_q90",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 5,
+          "n_events": 168,
+          "train_ev": 0.0016,
+          "test_ev": 0.0017,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.453,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.453; independent days fail",
+          "daily_ev": [
+            0.0017
+          ]
+        },
+        {
+          "event_key": "aggressive_buy_surge_q90",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 10,
+          "n_events": 137,
+          "train_ev": 0.0035,
+          "test_ev": 0.0002,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.4895,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "walk-forward unstable; bootstrap p=0.489; independent days fail",
+          "daily_ev": [
+            0.0002
+          ]
+        },
+        {
+          "event_key": "aggressive_buy_surge_q90",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 155,
+          "train_ev": -0.0001,
+          "test_ev": 0.0003,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.648,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; walk-forward unstable; bootstrap p=0.648; independent days fail",
+          "daily_ev": [
+            0.0003
+          ]
+        }
+      ],
+      "rank": 20
+    },
+    {
+      "event_key": "delta_surge_q90",
+      "horizon_sec": 5,
+      "events": 189,
+      "expectancy": 0.0013,
+      "profit_factor": 1.933,
+      "prob_up_pct": 15.87,
+      "prob_down_pct": 5.82,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.4835,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.483; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "delta_surge_q90",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 5,
+          "n_events": 189,
+          "train_ev": 0.0004,
+          "test_ev": 0.0013,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4835,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.483; independent days fail",
+          "daily_ev": [
+            0.0013
+          ]
+        },
+        {
+          "event_key": "delta_surge_q90",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 60,
+          "n_events": 112,
+          "train_ev": 0.0046,
+          "test_ev": -0.0013,
+          "oos_pass": false,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.518,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; bootstrap p=0.518; independent days fail",
+          "daily_ev": [
+            -0.0013
+          ]
+        },
+        {
+          "event_key": "delta_surge_q90",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 101,
+          "train_ev": 0.021,
+          "test_ev": 0.0685,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4995,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.499; independent days fail",
+          "daily_ev": [
+            0.0685
+          ]
+        }
+      ],
+      "rank": 21
+    },
+    {
+      "event_key": "spread_compress_q1",
+      "horizon_sec": 3,
+      "events": 52,
+      "expectancy": 0.0005,
+      "profit_factor": 1.534,
+      "prob_up_pct": 7.69,
+      "prob_down_pct": 5.77,
+      "oos_pass": true,
+      "walk_forward_stable": true,
+      "bootstrap_p": 0.533,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "bootstrap p=0.533; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "spread_compress_q1",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 3,
+          "n_events": 52,
+          "train_ev": 0.0002,
+          "test_ev": 0.0005,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.533,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.533; independent days fail",
+          "daily_ev": [
+            0.0005
+          ]
+        },
+        {
+          "event_key": "spread_compress_q1",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 12,
+          "train_ev": 0.0,
+          "test_ev": 0.0,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "insufficient events (12 < 20)",
+          "daily_ev": []
+        },
+        {
+          "event_key": "spread_compress_q1",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 113,
+          "train_ev": 0.0038,
+          "test_ev": -0.0181,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.5005,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; walk-forward unstable; bootstrap p=0.500; independent days fail",
+          "daily_ev": [
+            -0.0192
+          ]
+        }
+      ],
+      "rank": 22
+    },
+    {
+      "event_key": "spread_compress_q5",
+      "horizon_sec": 1,
+      "events": 168,
+      "expectancy": 0.0004,
+      "profit_factor": 1.658,
+      "prob_up_pct": 2.98,
+      "prob_down_pct": 1.79,
+      "oos_pass": true,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.4565,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "negative train EV; walk-forward unstable; bootstrap p=0.457; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "spread_compress_q5",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 168,
+          "train_ev": -0.0,
+          "test_ev": 0.0004,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.4565,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; walk-forward unstable; bootstrap p=0.457; independent days fail",
+          "daily_ev": [
+            0.0004
+          ]
+        },
+        {
+          "event_key": "spread_compress_q5",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 3,
+          "n_events": 29,
+          "train_ev": 0.0019,
+          "test_ev": 0.0003,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "walk-forward unstable; bootstrap p=1.000; independent days fail",
+          "daily_ev": [
+            0.0003
+          ]
+        },
+        {
+          "event_key": "spread_compress_q5",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 257,
+          "train_ev": 0.0003,
+          "test_ev": -0.0004,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.7405,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; walk-forward unstable; bootstrap p=0.741; independent days fail",
+          "daily_ev": [
+            -0.0004
+          ]
+        }
+      ],
+      "rank": 23
+    },
+    {
+      "event_key": "aggressive_sell_surge_q90",
+      "horizon_sec": 5,
+      "events": 154,
+      "expectancy": 0.0001,
+      "profit_factor": 0.778,
+      "prob_up_pct": 15.69,
+      "prob_down_pct": 23.53,
+      "oos_pass": true,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.508,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "negative train EV; walk-forward unstable; bootstrap p=0.508; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "aggressive_sell_surge_q90",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 5,
+          "n_events": 153,
+          "train_ev": -0.0007,
+          "test_ev": 0.0001,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.508,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; walk-forward unstable; bootstrap p=0.508; independent days fail",
+          "daily_ev": [
+            0.0001
+          ]
+        },
+        {
+          "event_key": "aggressive_sell_surge_q90",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 3,
+          "n_events": 144,
+          "train_ev": 0.0007,
+          "test_ev": -0.0019,
+          "oos_pass": false,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.499,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; bootstrap p=0.499; independent days fail",
+          "daily_ev": [
+            -0.0019
+          ]
+        },
+        {
+          "event_key": "aggressive_sell_surge_q90",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 140,
+          "train_ev": 0.0001,
+          "test_ev": -0.0011,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.533,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; walk-forward unstable; bootstrap p=0.533; independent days fail",
+          "daily_ev": [
+            -0.0011
+          ]
+        }
+      ],
+      "rank": 24
+    },
+    {
+      "event_key": "aggressive_sell_surge_q99",
+      "horizon_sec": 5,
+      "events": 17,
+      "expectancy": 0.0,
+      "profit_factor": 1.481,
+      "prob_up_pct": 25.0,
+      "prob_down_pct": 56.25,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 1.0,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "insufficient events (16 < 20); missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "aggressive_sell_surge_q99",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 5,
+          "n_events": 16,
+          "train_ev": 0.0,
+          "test_ev": 0.0,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "insufficient events (16 < 20)",
+          "daily_ev": []
+        },
+        {
+          "event_key": "aggressive_sell_surge_q99",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 5,
+          "n_events": 29,
+          "train_ev": 0.0007,
+          "test_ev": -0.0024,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; walk-forward unstable; bootstrap p=1.000; independent days fail",
+          "daily_ev": [
+            -0.0024
+          ]
+        },
+        {
+          "event_key": "aggressive_sell_surge_q99",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 50,
+          "train_ev": -0.0,
+          "test_ev": 0.002,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.545,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; bootstrap p=0.545; independent days fail",
+          "daily_ev": [
+            0.002
+          ]
+        }
+      ],
+      "rank": 25
+    },
+    {
+      "event_key": "depth_vanish_q5",
+      "horizon_sec": 1,
+      "events": 694,
+      "expectancy": 0.0,
+      "profit_factor": 1.22,
+      "prob_up_pct": 5.91,
+      "prob_down_pct": 4.47,
+      "oos_pass": true,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.468,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "walk-forward unstable; bootstrap p=0.468; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "depth_vanish_q5",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 694,
+          "train_ev": 0.0001,
+          "test_ev": 0.0,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.468,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "walk-forward unstable; bootstrap p=0.468; independent days fail",
+          "daily_ev": [
+            0.0
+          ]
+        },
+        {
+          "event_key": "depth_vanish_q5",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 3,
+          "n_events": 708,
+          "train_ev": -0.0001,
+          "test_ev": -0.0001,
+          "oos_pass": false,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5035,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; OOS fail; bootstrap p=0.503; independent days fail",
+          "daily_ev": [
+            -0.0001
+          ]
+        },
+        {
+          "event_key": "depth_vanish_q5",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 681,
+          "train_ev": 0.0048,
+          "test_ev": 0.0093,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4885,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.488; independent days fail",
+          "daily_ev": [
+            0.0103
+          ]
+        }
+      ],
+      "rank": 26
+    },
+    {
+      "event_key": "depth_vanish_q9",
+      "horizon_sec": 3,
+      "events": 919,
+      "expectancy": -0.0001,
+      "profit_factor": 0.951,
+      "prob_up_pct": 7.83,
+      "prob_down_pct": 7.18,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.498,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "OOS fail; walk-forward unstable; bootstrap p=0.498; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "depth_vanish_q9",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 3,
+          "n_events": 919,
+          "train_ev": 0.0,
+          "test_ev": -0.0001,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.498,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; walk-forward unstable; bootstrap p=0.498; independent days fail",
+          "daily_ev": [
+            -0.0001
+          ]
+        },
+        {
+          "event_key": "depth_vanish_q9",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 10,
+          "n_events": 911,
+          "train_ev": 0.0001,
+          "test_ev": -0.0002,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.4885,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; walk-forward unstable; bootstrap p=0.488; independent days fail",
+          "daily_ev": [
+            -0.0001
+          ]
+        },
+        {
+          "event_key": "depth_vanish_q9",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 300,
+          "n_events": 844,
+          "train_ev": 0.0066,
+          "test_ev": 0.0076,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.4805,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.480; independent days fail",
+          "daily_ev": [
+            0.0085
+          ]
+        }
+      ],
+      "rank": 27
+    },
+    {
+      "event_key": "delta_dump_q5",
+      "horizon_sec": 1,
+      "events": 71,
+      "expectancy": -0.0002,
+      "profit_factor": 0.49,
+      "prob_up_pct": 4.23,
+      "prob_down_pct": 11.27,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.742,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.742; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "delta_dump_q5",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 71,
+          "train_ev": -0.0003,
+          "test_ev": -0.0002,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.742,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.742; independent days fail",
+          "daily_ev": [
+            -0.0002
+          ]
+        },
+        {
+          "event_key": "delta_dump_q5",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 5,
+          "n_events": 96,
+          "train_ev": 0.0001,
+          "test_ev": 0.0019,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.46,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.460; independent days fail",
+          "daily_ev": [
+            0.0019
+          ]
+        },
+        {
+          "event_key": "delta_dump_q5",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 60,
+          "n_events": 68,
+          "train_ev": 0.0068,
+          "test_ev": -0.0045,
+          "oos_pass": false,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.5085,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; bootstrap p=0.508; independent days fail",
+          "daily_ev": [
+            -0.0045
+          ]
+        }
+      ],
+      "rank": 28
+    },
+    {
+      "event_key": "spread_compress_q9",
+      "horizon_sec": 1,
+      "events": 205,
+      "expectancy": -0.0003,
+      "profit_factor": 0.924,
+      "prob_up_pct": 3.9,
+      "prob_down_pct": 2.44,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.5015,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "OOS fail; walk-forward unstable; bootstrap p=0.501; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "spread_compress_q9",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 205,
+          "train_ev": 0.0001,
+          "test_ev": -0.0003,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.5015,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; walk-forward unstable; bootstrap p=0.501; independent days fail",
+          "daily_ev": [
+            -0.0003
+          ]
+        },
+        {
+          "event_key": "spread_compress_q9",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 1,
+          "n_events": 88,
+          "train_ev": -0.0,
+          "test_ev": -0.0003,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 0.515,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.515; independent days fail",
+          "daily_ev": [
+            -0.0003
+          ]
+        },
+        {
+          "event_key": "spread_compress_q9",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 3,
+          "n_events": 355,
+          "train_ev": 0.0001,
+          "test_ev": 0.0004,
+          "oos_pass": true,
+          "walk_forward_stable": true,
+          "bootstrap_p": 0.478,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "bootstrap p=0.478; independent days fail",
+          "daily_ev": [
+            0.0004
+          ]
+        }
+      ],
+      "rank": 29
+    },
+    {
+      "event_key": "delta_dump_q1",
+      "horizon_sec": 10,
+      "events": 28,
+      "expectancy": -0.0007,
+      "profit_factor": 1.056,
+      "prob_up_pct": 28.57,
+      "prob_down_pct": 35.71,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 1.0,
+      "independent_days_pass": false,
+      "cross_symbol_pass": false,
+      "symbols_passed": [],
+      "accepted": false,
+      "verdict": "OOS fail; walk-forward unstable; bootstrap p=1.000; independent days fail; missing symbols: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+      "cross_missing": [
+        "BTC-USDT-SWAP",
+        "ETH-USDT-SWAP",
+        "SOL-USDT-SWAP"
+      ],
+      "validations": [
+        {
+          "event_key": "delta_dump_q1",
+          "symbol": "BTC-USDT-SWAP",
+          "horizon_sec": 10,
+          "n_events": 28,
+          "train_ev": 0.0006,
+          "test_ev": -0.0007,
+          "oos_pass": false,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "OOS fail; walk-forward unstable; bootstrap p=1.000; independent days fail",
+          "daily_ev": [
+            -0.0007
+          ]
+        },
+        {
+          "event_key": "delta_dump_q1",
+          "symbol": "ETH-USDT-SWAP",
+          "horizon_sec": 30,
+          "n_events": 25,
+          "train_ev": 0.0045,
+          "test_ev": 0.0275,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "walk-forward unstable; bootstrap p=1.000; independent days fail",
+          "daily_ev": [
+            0.0275
+          ]
+        },
+        {
+          "event_key": "delta_dump_q1",
+          "symbol": "SOL-USDT-SWAP",
+          "horizon_sec": 60,
+          "n_events": 27,
+          "train_ev": 0.0077,
+          "test_ev": 0.0128,
+          "oos_pass": true,
+          "walk_forward_stable": false,
+          "bootstrap_p": 1.0,
+          "independent_days_pass": false,
+          "accepted": false,
+          "verdict": "walk-forward unstable; bootstrap p=1.000; independent days fail",
+          "daily_ev": [
+            0.0128
+          ]
+        }
+      ],
+      "rank": 30
+    }
+  ],
+  "accepted_count": 0,
+  "accepted": []
+}

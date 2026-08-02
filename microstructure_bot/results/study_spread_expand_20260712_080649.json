@@ -1,0 +1,275 @@
+{
+  "generated_at": "2026-07-12T08:06:49.179164+00:00",
+  "research_methodology_version": "2.0",
+  "phase": "Phase 3 — Quantitative Market Research",
+  "hypothesis": {
+    "id": "spread_expand",
+    "question": "Что происходит после резкого расширения spread?",
+    "description": "Spread расширяется до верхнего 1% квантиля.",
+    "event_types": [
+      "spread_expand"
+    ],
+    "quantile": "q99",
+    "economic": "Маркет-мейкеры расширяют спред из-за риска — задержка реакции участников, возможен импульс."
+  },
+  "events_total": 252,
+  "fee_cost_pct": 0.12,
+  "exploration": {
+    "event_key": "spread_expand",
+    "count": 59,
+    "horizons": [
+      {
+        "horizon_sec": 1,
+        "n": 59,
+        "mean_ret_pct": -0.0003,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 5.08,
+        "prob_down_pct": 10.17,
+        "win_rate": 5.08,
+        "expectancy_pct": -0.0003,
+        "profit_factor": 0.502,
+        "mae_pct": -0.0086,
+        "mfe_pct": 0.0071
+      },
+      {
+        "horizon_sec": 3,
+        "n": 59,
+        "mean_ret_pct": -0.001,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 13.56,
+        "prob_down_pct": 23.73,
+        "win_rate": 13.56,
+        "expectancy_pct": -0.001,
+        "profit_factor": 0.476,
+        "mae_pct": -0.0356,
+        "mfe_pct": 0.0209
+      },
+      {
+        "horizon_sec": 5,
+        "n": 59,
+        "mean_ret_pct": 0.0008,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 23.73,
+        "prob_down_pct": 30.51,
+        "win_rate": 23.73,
+        "expectancy_pct": 0.0008,
+        "profit_factor": 1.313,
+        "mae_pct": -0.0361,
+        "mfe_pct": 0.0677
+      },
+      {
+        "horizon_sec": 10,
+        "n": 59,
+        "mean_ret_pct": 0.0022,
+        "median_ret_pct": 0.0,
+        "prob_up_pct": 38.98,
+        "prob_down_pct": 38.98,
+        "win_rate": 38.98,
+        "expectancy_pct": 0.0022,
+        "profit_factor": 1.569,
+        "mae_pct": -0.0321,
+        "mfe_pct": 0.0677
+      },
+      {
+        "horizon_sec": 30,
+        "n": 59,
+        "mean_ret_pct": 0.0056,
+        "median_ret_pct": 0.0017,
+        "prob_up_pct": 54.24,
+        "prob_down_pct": 44.07,
+        "win_rate": 54.24,
+        "expectancy_pct": 0.0056,
+        "profit_factor": 2.225,
+        "mae_pct": -0.0249,
+        "mfe_pct": 0.0677
+      },
+      {
+        "horizon_sec": 60,
+        "n": 59,
+        "mean_ret_pct": 0.0045,
+        "median_ret_pct": 0.0044,
+        "prob_up_pct": 59.32,
+        "prob_down_pct": 37.29,
+        "win_rate": 59.32,
+        "expectancy_pct": 0.0045,
+        "profit_factor": 1.665,
+        "mae_pct": -0.0626,
+        "mfe_pct": 0.0677
+      },
+      {
+        "horizon_sec": 300,
+        "n": 59,
+        "mean_ret_pct": 0.0205,
+        "median_ret_pct": 0.0181,
+        "prob_up_pct": 64.41,
+        "prob_down_pct": 35.59,
+        "win_rate": 64.41,
+        "expectancy_pct": 0.0205,
+        "profit_factor": 3.579,
+        "mae_pct": -0.0805,
+        "mfe_pct": 0.0838
+      }
+    ],
+    "best_horizon_sec": 300,
+    "best_expectancy": 0.0205,
+    "labeled_sample": [
+      {
+        "ts": 1783793453309,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "spread_expand",
+        "quantile": "q99",
+        "threshold": 0.015554869412756207,
+        "mid": 64288.55,
+        "feature_value": 0.015554869412756207,
+        "fwd_ret_1s": 0.0,
+        "fwd_ret_3s": 0.0,
+        "fwd_ret_5s": 0.0,
+        "fwd_ret_10s": 0.06766368194647414,
+        "fwd_ret_30s": 0.06766368194647414,
+        "fwd_ret_60s": 0.06766368194647414,
+        "fwd_ret_300s": 0.06766368194647414
+      },
+      {
+        "ts": 1783793458309,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "spread_expand",
+        "quantile": "q99",
+        "threshold": 0.015554869412756207,
+        "mid": 64288.55,
+        "feature_value": 0.015554869412756207,
+        "fwd_ret_1s": 0.0,
+        "fwd_ret_3s": -0.009644019036044659,
+        "fwd_ret_5s": 0.06766368194647414,
+        "fwd_ret_10s": 0.06766368194647414,
+        "fwd_ret_30s": 0.06766368194647414,
+        "fwd_ret_60s": 0.06766368194647414,
+        "fwd_ret_300s": 0.06766368194647414
+      },
+      {
+        "ts": 1783795908902,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "spread_expand",
+        "quantile": "q99",
+        "threshold": 0.015554869412756207,
+        "mid": 64280.05,
+        "feature_value": 0.015556926293390377,
+        "fwd_ret_1s": 0.0035780930475363825,
+        "fwd_ret_3s": 0.0035780930475363825,
+        "fwd_ret_5s": 0.0035780930475363825,
+        "fwd_ret_10s": -0.009334155776170056,
+        "fwd_ret_30s": -0.02131298902225043,
+        "fwd_ret_60s": -0.00871187872443444,
+        "fwd_ret_300s": 0.01991286565583398
+      },
+      {
+        "ts": 1783795913902,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "spread_expand",
+        "quantile": "q99",
+        "threshold": 0.015556369672008694,
+        "mid": 64282.350000000006,
+        "feature_value": 0.015556369672008694,
+        "fwd_ret_1s": 0.0,
+        "fwd_ret_3s": 0.0,
+        "fwd_ret_5s": -0.012911786827959633,
+        "fwd_ret_10s": -0.01913433469685366,
+        "fwd_ret_30s": -0.02489019147557611,
+        "fwd_ret_60s": -0.012289532041079285,
+        "fwd_ret_300s": 0.01633418815584682
+      },
+      {
+        "ts": 1783795918902,
+        "inst_id": "BTC-USDT-SWAP",
+        "event": "spread_expand",
+        "quantile": "q99",
+        "threshold": 0.015556369672008694,
+        "mid": 64274.05,
+        "feature_value": 0.015558378536679235,
+        "fwd_ret_1s": 0.0,
+        "fwd_ret_3s": 0.0,
+        "fwd_ret_5s": -0.006223351414762256,
+        "fwd_ret_10s": -0.012135535258790927,
+        "fwd_ret_30s": -0.011979951473412815,
+        "fwd_ret_60s": 0.0006223351414671695,
+        "fwd_ret_300s": 0.029405335434742604
+      }
+    ],
+    "net_expectancy": -0.09952038793624772,
+    "net_pf": 0.0
+  },
+  "validations": [
+    {
+      "event_key": "spread_expand",
+      "symbol": "BTC-USDT-SWAP",
+      "horizon_sec": 300,
+      "n_events": 59,
+      "train_ev": -0.1149,
+      "test_ev": -0.0545,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.5055,
+      "independent_days_pass": false,
+      "accepted": false,
+      "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.505; independent days fail; net EV after fees negative on train",
+      "daily_ev": [
+        -0.0545
+      ]
+    },
+    {
+      "event_key": "spread_expand",
+      "symbol": "ETH-USDT-SWAP",
+      "horizon_sec": 3,
+      "n_events": 62,
+      "train_ev": -0.1215,
+      "test_ev": -0.1182,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.4915,
+      "independent_days_pass": false,
+      "accepted": false,
+      "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.491; independent days fail; net EV after fees negative on train",
+      "daily_ev": [
+        -0.1182
+      ]
+    },
+    {
+      "event_key": "spread_expand",
+      "symbol": "SOL-USDT-SWAP",
+      "horizon_sec": 1,
+      "n_events": 131,
+      "train_ev": -0.1196,
+      "test_ev": -0.119,
+      "oos_pass": false,
+      "walk_forward_stable": false,
+      "bootstrap_p": 0.441,
+      "independent_days_pass": false,
+      "accepted": false,
+      "verdict": "negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.441; independent days fail; net EV after fees negative on train",
+      "daily_ev": [
+        -0.119
+      ]
+    }
+  ],
+  "accepted": false,
+  "rejection_reasons": [
+    "Cross-symbol fail — нет данных/валидации: ['BTC-USDT-SWAP', 'ETH-USDT-SWAP', 'SOL-USDT-SWAP']",
+    "Закономерность не воспроизведена на BTC+ETH+SOL",
+    "BTC-USDT-SWAP: negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.505; independent days fail; net EV after fees negative on train",
+    "ETH-USDT-SWAP: negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.491; independent days fail; net EV after fees negative on train",
+    "SOL-USDT-SWAP: negative train EV; OOS fail; walk-forward unstable; bootstrap p=0.441; independent days fail; net EV after fees negative on train"
+  ],
+  "data_summary": {
+    "symbols": [
+      "BTC-USDT-SWAP",
+      "ETH-USDT-SWAP",
+      "SOL-USDT-SWAP"
+    ],
+    "symbols_with_data": [
+      "BTC-USDT-SWAP",
+      "ETH-USDT-SWAP",
+      "SOL-USDT-SWAP"
+    ],
+    "orderbook_rows": 165980,
+    "trade_rows": 53116
+  }
+}
