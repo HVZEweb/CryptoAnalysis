@@ -7,6 +7,7 @@
  */
 
 import type { Timeframe } from "@/types";
+import { installOutboundProxy } from "@/lib/outbound-proxy";
 import { trainAll } from "@/services/predictor/training-run";
 
 function arg(name: string): string | undefined {
@@ -21,7 +22,9 @@ const symbols = arg("symbols")
   .map((s) => s.toUpperCase().replace(/USDT$/, "") + "USDT");
 const days = arg("days") ? Number(arg("days")) : undefined;
 
-trainAll({ source, timeframes, symbols, days, log: console.log }).then((models) => {
-  console.log(`\nГотово: обучено моделей ${models.length}.`);
-  process.exit(models.length ? 0 : 1);
-});
+installOutboundProxy()
+  .then(() => trainAll({ source, timeframes, symbols, days, log: console.log }))
+  .then((models) => {
+    console.log(`\nГотово: обучено моделей ${models.length}.`);
+    process.exit(models.length ? 0 : 1);
+  });
