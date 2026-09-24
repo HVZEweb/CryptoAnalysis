@@ -47,17 +47,18 @@ ok "curl, openssl, xz готовы"
 
 # ---------------------------------------------------------------------------
 say "Проверка доступа в интернет (Binance, OpenRouter)"
-# code <url> [proxy] -> HTTP-код или 000
+# code <url> [proxy] -> HTTP-код (000 — нет соединения)
 code() {
   local args=(-s -o /dev/null -m 12 -w '%{http_code}')
   [ -n "${2:-}" ] && args+=(-x "$2")
-  curl "${args[@]}" "$1" 2>/dev/null || echo 000
+  curl "${args[@]}" "$1" 2>/dev/null
+  true
 }
-reach_all() { # все ключевые хосты отвечают?
+reachable() { [[ "$(code "$@")" == 2* ]]; }
+reach_all() { # все ключевые хосты отвечают 2xx?
   local p="${1:-}"
   for u in https://api.binance.com/api/v3/ping https://fapi.binance.com/fapi/v1/ping https://openrouter.ai/api/v1/models; do
-    local c; c=$(code "$u" "$p")
-    [ "$c" != 000 ] && [ "$c" != 451 ] && [ "$c" != 403 ] || return 1
+    reachable "$u" "$p" || return 1
   done
 }
 report() {
@@ -97,7 +98,7 @@ fi
 
 # npm/nodejs.org: напрямую, а если не выходит и прокси http — через него
 NPM_PROXY_ARGS=()
-if [ "$(code https://registry.npmjs.org/)" = 000 ] && [[ "$PROXY" == http* ]]; then
+if ! reachable https://registry.npmjs.org/ && [[ "$PROXY" == http* ]]; then
   export https_proxy="$PROXY" HTTPS_PROXY="$PROXY"
   NPM_PROXY_ARGS=(--https-proxy "$PROXY")
   warn "npm будет работать через прокси"
