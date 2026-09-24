@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { EnsemblePredictor, scoreToDirectionCalibrated } from "@/services/ensemble-prediction";
 import { extractMlFeatures } from "@/services/ml-features";
-import * as mlBackend from "@/services/ml-backend";
+import * as predictorModule from "@/services/predictor";
+import type { PricePrediction } from "@/services/predictor";
 import type { AnalysisContext, TechnicalIndicators } from "@/types";
 
 function mockInd(): TechnicalIndicators {
@@ -125,6 +126,29 @@ describe("scoreToDirectionCalibrated", () => {
 
 describe("EnsemblePredictor", () => {
   it("combines LLM and ML without throwing", async () => {
+    vi.spyOn(predictorModule, "runPricePredictor").mockReturnValueOnce({
+      result: {
+        ml: {
+          direction: "LONG",
+          probability: 54,
+          probabilityUp: 54,
+          probabilityDown: 46,
+          model: "predictor_4h",
+          confidence: 8,
+          keyFeatures: ["RSI 14 ↑"],
+          source: "predictor",
+          validationAccuracy: 52.1,
+        },
+        priceForecast: {
+          predictedPrice: 101,
+          predictedHigh: 104,
+          predictedLow: 97,
+          confidenceBand: { low: 98, high: 103 },
+          expectedMovePct: 1,
+          source: "predictor",
+        },
+      } as PricePrediction,
+    });
     const ctx = mockContext();
     const snapshot = {
       indicators: ctx.indicators,
@@ -162,13 +186,13 @@ describe("EnsemblePredictor", () => {
     expect(breakdown.effectiveWeights).toBeDefined();
     expect(breakdown.mlAvailable).toBe(true);
     expect(prediction.ensembleScore).toBeDefined();
+    expect(prediction.priceForecast?.predictedPrice).toBe(101);
   });
 
   it("continues with LLM + rules when ML subsystem fails", async () => {
-    vi.spyOn(mlBackend, "runMlModel").mockResolvedValueOnce({
-      prediction: null,
-      ok: false,
-      error: "ml_total_failure",
+    vi.spyOn(predictorModule, "runPricePredictor").mockReturnValueOnce({
+      result: null,
+      error: "model_not_trained",
     });
 
     const ctx = mockContext();

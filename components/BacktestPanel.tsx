@@ -265,7 +265,7 @@ export function BacktestPanel() {
               Walk-Forward Backtest
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              Ensemble (proxy LLM) на истории Binance · экспорт JSONL для ml-train.py
+              Ensemble (proxy LLM) на истории Binance · экспорт JSONL
             </p>
           </div>
         </div>

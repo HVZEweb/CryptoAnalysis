@@ -98,7 +98,7 @@ export interface BacktestConfig {
   useDynamicWeights?: boolean;
   /** Collect and export training JSONL after run */
   exportTraining?: boolean;
-  /** Run scripts/ml-train.py after export (requires exportTraining) */
+  /** Retrain the price predictor after export (requires exportTraining) */
   retrainMl?: boolean;
 }
 

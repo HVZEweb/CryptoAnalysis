@@ -189,7 +189,7 @@ export function NewsImpactPanel() {
             <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
-                variant="outline"
+                variant="secondary"
                 className={cn(
                   "rounded-xl",
                   state?.alertsEnabled && "border-amber-500/40 text-amber-200"
@@ -208,7 +208,7 @@ export function NewsImpactPanel() {
               </Button>
               <Button
                 size="sm"
-                variant="outline"
+                variant="secondary"
                 className="rounded-xl"
                 disabled={!!actionLoading || state?.running}
                 onClick={() => void runAction("start")}
@@ -222,7 +222,7 @@ export function NewsImpactPanel() {
               </Button>
               <Button
                 size="sm"
-                variant="outline"
+                variant="secondary"
                 className="rounded-xl"
                 disabled={!!actionLoading || !state?.running}
                 onClick={() => void runAction("stop")}

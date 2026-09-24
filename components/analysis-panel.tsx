@@ -195,7 +195,7 @@ function EnsembleBreakdownSection({ breakdown }: { breakdown: EnsembleBreakdown 
             probability={breakdown.ml.probability}
             score={mlScore}
             muted={!breakdown.mlAvailable}
-            extra={breakdown.ml.fallbackReason ? `fallback: ${breakdown.ml.fallbackReason}` : undefined}
+            extra={breakdown.ml.validationAccuracy != null ? `точность на истории ${breakdown.ml.validationAccuracy}%` : breakdown.mlError}
           />
           <Row label="Rules (agg.)" value={`score ${(breakdown.rulesAggregateScore * 100).toFixed(1)}%`} />
           {breakdown.rules.length > 0 && (

@@ -15,7 +15,7 @@ export interface TrainingOutcome {
   exitPrice: number;
 }
 
-/** Row for scripts/ml-train.py — label: 1=bullish move, -1=bearish, 0=neutral (skipped) */
+/** Training row — label: 1=bullish move, -1=bearish, 0=neutral (skipped) */
 export interface BacktestTrainingRecord {
   timestamp: number;
   symbol: string;
@@ -69,7 +69,7 @@ export function buildTrainingRecord(params: {
   };
 }
 
-/** Write JSONL (one JSON object per line) — ml-train.py compatible */
+/** Write JSONL (one JSON object per line)  */
 export async function writeTrainingJsonl(
   records: BacktestTrainingRecord[],
   filePath: string = TRAINING_JSONL_PATH

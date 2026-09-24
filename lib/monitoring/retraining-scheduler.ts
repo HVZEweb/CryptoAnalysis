@@ -272,7 +272,7 @@ export async function runScheduledRetrain(
     return { run, decision, skipped: false };
   }
 
-  const result = await runMlRetrain(MERGED_ARRAY_PATH);
+  const result = await runMlRetrain();
   const run: RetrainRunRecord = {
     id,
     startedAt,
