@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, X, FlaskConical, History, BarChart3, ClipboardList, Microscope, BookMarked, LineChart, Radar } from "lucide-react";
+import { Wrench, X, FlaskConical, History, BarChart3, LineChart, Radar } from "lucide-react";
 import Link from "next/link";
 
 export function DevMenu() {
@@ -20,36 +20,6 @@ export function DevMenu() {
       icon: LineChart,
       label: "Backtest Panel",
       description: "Backtest, export JSONL, live performance monitoring",
-    },
-    {
-      href: "/alpha-registry",
-      icon: BookMarked,
-      label: "Alpha Registry",
-      description: "Реестр гипотез · validated → бот",
-    },
-    {
-      href: "/continuous-research",
-      icon: FlaskConical,
-      label: "Continuous Research",
-      description: "MSB: сбор данных, ежедневно/еженедельно",
-    },
-    {
-      href: "/execution-lab",
-      icon: Microscope,
-      label: "Execution Intelligence Lab",
-      description: "Исполнение крупных ордеров, TWAP/VWAP",
-    },
-    {
-      href: "/maintenance",
-      icon: ClipboardList,
-      label: "Maintenance Mode",
-      description: "Phase X, архив данных, отчёты",
-    },
-    {
-      href: "/spread",
-      icon: Wrench,
-      label: "Spread Trading Bot",
-      description: "Автоматический сбор спреда OKX",
     },
     {
       href: "/check-prediction",
