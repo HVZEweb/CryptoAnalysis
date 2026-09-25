@@ -1,25 +1,47 @@
 # Установка на VPS
 
-1. Скопировать архив на сервер (с компьютера, где лежит SSH-ключ):
-   `scp cryptoanalysis.tar.gz root@<IP>:/root/`
-2. На сервере:
-   ```bash
-   mkdir -p /opt/cryptoanalysis && tar xzf /root/cryptoanalysis.tar.gz -C /opt/cryptoanalysis
-   bash /opt/cryptoanalysis/deploy/install.sh
-   ```
-3. Скрипт спросит OpenRouter API-ключ (ввод скрыт) и, если нужно, пароль root от MySQL.
+Первая установка — на сервере от root:
 
-Сайт запускается как сервис `cryptoanalysis` на первом свободном порту начиная с 3100 и не трогает
-другие сервисы. Настройки — `/opt/cryptoanalysis/.env`; после правки: `systemctl restart cryptoanalysis`.
+```bash
+curl -fsSL https://raw.githubusercontent.com/HVZEweb/CryptoAnalysis/main/deploy/update.sh | bash
+```
 
-- Логи: `journalctl -u cryptoanalysis -f`
-- VPN-прокси для Binance/OpenRouter: `OUTBOUND_PROXY=http://127.0.0.1:ПОРТ` (или `socks5h://...`) в `.env`
-- Обновление: распаковать новый архив поверх и снова запустить `install.sh` (`.env` и база сохраняются)
+Код ставится в `/opt/cryptoanalysis`, сайт — сервис `cryptoanalysis`. Повторный запуск — это
+обновление: `.env`, база и переобученные модели (`/opt/cryptoanalysis-data`) сохраняются.
+Соседние сервисы не трогаются.
+
+| | |
+|---|---|
+| Настройки | `/opt/cryptoanalysis/.env` → после правки `systemctl restart cryptoanalysis` |
+| Логи | `journalctl -u cryptoanalysis -f` |
+| Переобучение модели | `cryptoanalysis-train.timer` (вс 04:00), `journalctl -u cryptoanalysis-train -f` |
+
+## Доступ к Binance/OpenRouter из РФ
+
+Установщик сам проверяет доступ и выбирает способ:
+
+- **IPsec-VPN (strongSwan и т.п.)** — туннель пропускает трафик только с «своего» адреса.
+  Установщик находит этот адрес (`OUTBOUND_SOURCE_IP` в `.env`) и через правило маршрутизации
+  отправляет весь трафик пользователя `cryptoanalysis` с него (`cryptoanalysis-vpn-route.service`).
+  Остальные процессы сервера ходят как раньше.
+- **VPN-клиент с локальным прокси** — `OUTBOUND_PROXY=http://127.0.0.1:ПОРТ` (или `socks5h://…`).
+
+## Как сайт открывается снаружи
+
+Если на сервере есть Caddy, сайт слушает только `127.0.0.1`, а наружу выходит по
+`https://PUBLIC_HOST:PUBLIC_PORT` (по умолчанию порт 8443) с паролем `SITE_USER` / `SITE_PASSWORD`
+из `.env`. Без Caddy — `http://IP:порт` без шифрования.
 
 ## Автоматическая публикация
 
-После каждого изменения в `main` (когда CI зелёный) GitHub заходит на сервер по SSH и запускает
-`deploy/update.sh`: забирает свежий код и перезапускает сайт. Нужны секреты репозитория
-`VPS_HOST` (IP сервера) и `VPS_SSH_KEY` (закрытый ключ, чья открытая часть есть в
-`/root/.ssh/authorized_keys` на сервере). Пока секретов нет, шаг публикации пропускается.
-Если задан секрет `OPENROUTER_API_KEY`, он при каждой публикации записывается в `.env` на сервере.
+После каждого изменения в `main` (когда CI зелёный) GitHub заходит на сервер по SSH как
+пользователь `deploy`. Его ключ на сервере привязан к одной команде — обновить сайт из `main`
+(`/usr/local/sbin/cryptoanalysis-deploy`); ничего другого с этим ключом сделать нельзя.
+
+Секреты репозитория:
+
+- `VPS_HOST` — IP сервера;
+- `VPS_SSH_KEY` — закрытый ключ; его открытую часть добавить строкой в
+  `/var/lib/cryptoanalysis-deploy/.ssh/authorized_keys` (ограничение команды установщик допишет сам);
+- `VPS_USER` — необязательно, по умолчанию `deploy`;
+- `OPENROUTER_API_KEY` — при каждой публикации записывается в `.env`.

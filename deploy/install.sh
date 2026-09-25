@@ -6,7 +6,9 @@
 # Что делает (повторный запуск безопасен — это и есть обновление):
 #   - свой Node.js в /opt/cryptoanalysis-node (системный Node и другие сервисы не трогаются)
 #   - отдельная база и пользователь MySQL/MariaDB `cryptoanalysis`
-#   - проверяет доступ к Binance/OpenRouter напрямую и через локальный VPN-прокси
+#   - проверяет доступ к Binance/OpenRouter напрямую, через IPsec-VPN (адрес-источник) или прокси
+#   - при наличии Caddy: сайт только на 127.0.0.1, снаружи https с паролем
+#   - пользователь deploy для автопубликации из GitHub (может только запустить обновление)
 #   - .env (существующие значения не перезаписываются), сборка, systemd-сервис на свободном порту
 #   - еженедельное переобучение модели прогнозов
 set -euo pipefail
@@ -53,13 +55,19 @@ if [ ${#missing[@]} -gt 0 ]; then
   DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${missing[@]}" >/dev/null
 fi
 ok "curl, openssl, xz готовы"
+id -u "$APP" >/dev/null 2>&1 || useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$APP"
 
 # ---------------------------------------------------------------------------
 say "Проверка доступа в интернет (Binance, OpenRouter)"
-# code <url> [proxy] -> HTTP-код (000 — нет соединения)
+# code <url> [route] -> HTTP-код (000 — нет соединения).
+# route: пусто — напрямую, src:IP — с адреса-источника (IPsec-VPN), иначе — URL прокси.
 code() {
   local args=(-s -o /dev/null -m 12 -w '%{http_code}')
-  [ -n "${2:-}" ] && args+=(-x "$2")
+  case "${2:-}" in
+    "") ;;
+    src:*) args+=(--interface "${2#src:}") ;;
+    *) args+=(-x "$2") ;;
+  esac
   curl "${args[@]}" "$1" 2>/dev/null
   true
 }
@@ -78,13 +86,29 @@ report() {
 }
 
 PROXY="$(env_get OUTBOUND_PROXY)"
+VPN_SRC="$(env_get OUTBOUND_SOURCE_IP)"
+# Адрес, с которого сервер ходит в интернет по умолчанию; остальные глобальные адреса —
+# кандидаты в адрес IPsec-туннеля (policy-based VPN пропускает только трафик с этого адреса).
+MAIN_SRC=$(ip -4 route get 1.1.1.1 2>/dev/null | grep -oE 'src [0-9.]+' | cut -d' ' -f2)
 if [ -n "$PROXY" ]; then
   ok "используется прокси из .env: $PROXY"
+elif [ -n "$VPN_SRC" ]; then
+  ok "используется VPN-адрес из .env: $VPN_SRC"
 elif reach_all; then
   ok "все сервисы доступны напрямую (или через системный VPN)"
 else
-  warn "напрямую доступно не всё — ищу локальный VPN-прокси"
+  warn "напрямую доступно не всё — ищу VPN"
   report
+  for ip in $(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1); do
+    [ "$ip" = "$MAIN_SRC" ] && continue
+    if reach_all "src:$ip"; then VPN_SRC="$ip"; break; fi
+  done
+  if [ -n "$VPN_SRC" ]; then
+    ok "найден IPsec-VPN: трафик с адреса $VPN_SRC проходит"
+    env_set OUTBOUND_SOURCE_IP "$VPN_SRC"
+  fi
+fi
+if [ -z "$PROXY" ] && [ -z "$VPN_SRC" ] && ! reach_all; then
   candidates=()
   for v in "${https_proxy:-}" "${HTTPS_PROXY:-}" "${all_proxy:-}" "${ALL_PROXY:-}"; do [ -n "$v" ] && candidates+=("$v"); done
   # любые слушающие порты, кроме заведомо не-прокси (ssh, почта, базы)
@@ -104,6 +128,40 @@ else
   fi
 fi
 [ -n "$PROXY" ] && report "$PROXY"
+
+# IPsec-VPN: весь исходящий трафик пользователя $APP уходит с адреса $VPN_SRC (в туннель),
+# остальные процессы сервера не затрагиваются.
+if [ -n "$VPN_SRC" ]; then
+  read -r GW DEV < <(ip -4 route show default | awk '{for(i=1;i<NF;i++){if($i=="via")g=$(i+1);if($i=="dev")d=$(i+1)}} END{print g, d}')
+  [ -n "$GW" ] && [ -n "$DEV" ] || die "не удалось определить шлюз по умолчанию"
+  APP_UID=$(id -u "$APP")
+  cat > /usr/local/sbin/$APP-vpn-route <<EOF
+#!/bin/sh
+ip route replace default via $GW dev $DEV onlink src $VPN_SRC table 7077
+ip rule del priority 1078 2>/dev/null || true
+ip rule add uidrange $APP_UID-$APP_UID lookup 7077 priority 1078
+EOF
+  chmod 755 /usr/local/sbin/$APP-vpn-route
+  cat > /etc/systemd/system/$APP-vpn-route.service <<UNIT
+[Unit]
+Description=CryptoAnalysis: исходящий трафик через VPN (src $VPN_SRC)
+After=network-online.target strongswan.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/$APP-vpn-route
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+  systemctl daemon-reload
+  systemctl enable $APP-vpn-route >/dev/null 2>&1
+  systemctl restart $APP-vpn-route
+  printf '   от имени %s: openrouter.ai → %s\n' "$APP" \
+    "$(sudo -u "$APP" curl -s -o /dev/null -m 12 -w '%{http_code}' https://openrouter.ai/api/v1/models || true)"
+fi
 
 # npm/nodejs.org: напрямую, а если не выходит и прокси http — через него
 NPM_PROXY_ARGS=()
@@ -177,8 +235,8 @@ if [ -z "$PORT" ]; then
 fi
 env_set APP_PORT "$PORT"
 if [ "$PORT" != 3100 ]; then
-  holder=$(ss -ltnpH 2>/dev/null | awk '$4 ~ /:3100$/' | grep -o 'users:(("[^"]*"' | head -1 | cut -d'"' -f2)
-  warn "порт 3100 занят${holder:+ процессом '$holder'} — сайт будет на порту $PORT"
+  holder=$(ss -ltnpH 2>/dev/null | awk '$4 ~ /:3100$/' | grep -o 'users:(("[^"]*"' | head -1 | cut -d'"' -f2 || true)
+  [ -n "$holder" ] && warn "порт 3100 занят процессом '$holder' — сайт будет на порту $PORT"
 fi
 env_set DB_HOST 127.0.0.1
 env_set DB_PORT 3306
@@ -190,8 +248,6 @@ env_set OPENROUTER_MODEL deepseek/deepseek-chat
 env_set OPENROUTER_FALLBACK_MODELS google/gemini-2.5-flash
 env_set ADMIN_SECRET "$(rand 16)"
 env_set PAYMENT_WEBHOOK_SECRET "$(rand 24)"
-# Сайт открывается по http://IP:порт — без https браузер не сохранит secure-cookie
-env_set COOKIE_SECURE false
 env_set PREDICTOR_MODELS_DIR "$DATA_DIR/models"
 # Ключ из секрета GitHub (передаётся автопубликацией) всегда главнее того, что в .env.
 if [ -n "${OPENROUTER_API_KEY:-}" ]; then
@@ -204,7 +260,26 @@ elif [ -z "$(env_get OPENROUTER_API_KEY)" ]; then
   fi
   [ -n "$(env_get OPENROUTER_API_KEY)" ] || warn "OPENROUTER_API_KEY не задан — добавьте секрет OPENROUTER_API_KEY в GitHub или впишите его в $ENV_FILE"
 fi
-chmod 600 "$ENV_FILE"
+
+# Если на сервере есть Caddy — сайт слушает только 127.0.0.1, а наружу выходит по https
+# через Caddy (порт PUBLIC_PORT) с паролем. Без Caddy — как раньше, http://IP:порт.
+CADDYFILE=/etc/caddy/Caddyfile
+if command -v caddy >/dev/null && [ -f "$CADDYFILE" ]; then
+  USE_CADDY=1
+  BIND=127.0.0.1
+  env_set PUBLIC_PORT 8443
+  env_set PUBLIC_HOST "$MAIN_SRC"
+  env_set SITE_USER admin
+  env_set SITE_PASSWORD "$(rand 9)"
+  env_put COOKIE_SECURE true
+else
+  USE_CADDY=0
+  BIND=0.0.0.0
+  # Сайт открывается по http://IP:порт — без https браузер не сохранит secure-cookie
+  env_put COOKIE_SECURE false
+fi
+chown root:"$APP" "$ENV_FILE"
+chmod 640 "$ENV_FILE"
 ok "порт $PORT, файл $ENV_FILE"
 
 # ---------------------------------------------------------------------------
@@ -216,29 +291,39 @@ npm ci --no-audit --no-fund --loglevel=error "${NPM_PROXY_ARGS[@]}"
 NODE_ENV=production npm run build --silent >/tmp/$APP-build.log 2>&1 || { tail -40 /tmp/$APP-build.log; die "сборка не удалась (лог: /tmp/$APP-build.log)"; }
 ok "сборка готова"
 
-id -u "$APP" >/dev/null 2>&1 || useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$APP"
 MODELS_DIR="$(env_get PREDICTOR_MODELS_DIR)"
 mkdir -p "$MODELS_DIR"
 # First install: start from the models shipped in the repo; afterwards the weekly retrain owns them.
 [ -n "$(ls -A "$MODELS_DIR" 2>/dev/null)" ] || cp "$APP_DIR"/models/predictor/*.json "$MODELS_DIR"/
-chown -R "$APP:$APP" "$APP_DIR" "$DATA_DIR"
+# Код принадлежит root: root запускает из этой папки скрипты обновления, поэтому сервис
+# (если его взломают) не должен иметь права их менять. Писать сайт может только в кэши и данные.
+chown -R root:root "$APP_DIR"
+mkdir -p "$APP_DIR/.cache" "$APP_DIR/data"
+chown -R "$APP:$APP" "$APP_DIR/.next" "$APP_DIR/.cache" "$APP_DIR/data" "$DATA_DIR"
+chown root:"$APP" "$ENV_FILE"
 
 # ---------------------------------------------------------------------------
 say "Сервис systemd"
+VPN_DEPS=""
+[ -n "$VPN_SRC" ] && VPN_DEPS="Requires=$APP-vpn-route.service
+After=$APP-vpn-route.service"
 cat > /etc/systemd/system/$APP.service <<UNIT
 [Unit]
 Description=CryptoAnalysis (Next.js) on port $PORT
 After=network-online.target mariadb.service mysql.service
 Wants=network-online.target
+$VPN_DEPS
 
 [Service]
 User=$APP
 WorkingDirectory=$APP_DIR
 Environment=NODE_ENV=production
 Environment=PATH=$NODE_DIR/bin:/usr/bin:/bin
-ExecStart=$NODE_DIR/bin/node $APP_DIR/node_modules/next/dist/bin/next start -p $PORT -H 0.0.0.0
+ExecStart=$NODE_DIR/bin/node $APP_DIR/node_modules/next/dist/bin/next start -p $PORT -H $BIND
 Restart=always
 RestartSec=5
+TimeoutStopSec=20
+MemoryMax=700M
 
 [Install]
 WantedBy=multi-user.target
@@ -247,8 +332,13 @@ UNIT
 cat > /etc/systemd/system/$APP-train.service <<UNIT
 [Unit]
 Description=CryptoAnalysis: переобучение модели прогнозов
+$VPN_DEPS
 
 [Service]
+Nice=10
+MemoryMax=700M
+# после переобучения сайт перечитывает модели
+ExecStartPost=+/bin/systemctl try-restart $APP.service
 Type=oneshot
 User=$APP
 WorkingDirectory=$APP_DIR
@@ -275,9 +365,83 @@ systemctl enable $APP >/dev/null 2>&1
 systemctl restart $APP
 ok "сервис $APP запущен"
 
-if command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q "Status: active"; then
+UFW=0
+command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q "Status: active" && UFW=1
+
+if [ "$USE_CADDY" = 1 ]; then
+  say "Caddy: https://$(env_get PUBLIC_HOST):$(env_get PUBLIC_PORT)"
+  HASH=$(caddy hash-password --plaintext "$(env_get SITE_PASSWORD)")
+  BEGIN="# >>> $APP (управляется deploy/install.sh) >>>"
+  END="# <<< $APP <<<"
+  cp "$CADDYFILE" "$CADDYFILE.bak-$APP"
+  # Убираем прежний блок (и старый блок ручной установки '# --- cryptoanalysis ---', он стоял в конце файла)
+  awk -v b="$BEGIN" -v e="$END" '
+    $0 == b {skip=1; next}
+    $0 == e {skip=0; next}
+    $0 == "# --- cryptoanalysis ---" {legacy=1}
+    !skip && !legacy' "$CADDYFILE.bak-$APP" > "$CADDYFILE"
+  cat >> "$CADDYFILE" <<EOF
+$BEGIN
+https://$(env_get PUBLIC_HOST):$(env_get PUBLIC_PORT) {
+	tls {
+		issuer acme {
+			profile shortlived
+		}
+	}
+	encode zstd gzip
+	basic_auth {
+		$(env_get SITE_USER) $HASH
+	}
+	reverse_proxy 127.0.0.1:$PORT
+}
+$END
+EOF
+  if caddy validate --config "$CADDYFILE" --adapter caddyfile >/dev/null 2>&1; then
+    systemctl reload caddy
+    ok "Caddy обновлён"
+  else
+    cp "$CADDYFILE.bak-$APP" "$CADDYFILE"
+    die "новый Caddyfile не прошёл проверку — возвращён прежний"
+  fi
+  if [ "$UFW" = 1 ]; then
+    ufw allow "$(env_get PUBLIC_PORT)/tcp" >/dev/null
+    ufw delete allow "$PORT/tcp" >/dev/null 2>&1 || true
+    ok "ufw: открыт $(env_get PUBLIC_PORT), порт $PORT закрыт снаружи"
+  fi
+elif [ "$UFW" = 1 ]; then
   ufw allow "$PORT/tcp" >/dev/null && ok "порт $PORT открыт в ufw"
 fi
+
+# ---------------------------------------------------------------------------
+# Автопубликация из GitHub заходит как пользователь deploy, которому разрешено ровно одно:
+# запустить обновление сайта из main. Ключ в authorized_keys привязывается к этой команде.
+say "Доступ для автопубликации (пользователь deploy)"
+DEPLOY_USER=deploy
+DEPLOY_HOME=/var/lib/$APP-deploy
+id -u "$DEPLOY_USER" >/dev/null 2>&1 || useradd --system --create-home --home-dir "$DEPLOY_HOME" --shell /bin/sh "$DEPLOY_USER"
+cat > /usr/local/sbin/$APP-deploy <<EOF
+#!/bin/bash
+# Вызывается по SSH от GitHub Actions (через sudo). На stdin может прийти одна строка
+# OPENROUTER_API_KEY=... — ключ из секрета GitHub.
+set -euo pipefail
+line=""
+IFS= read -r line || true
+case "\$line" in OPENROUTER_API_KEY=?*) export OPENROUTER_API_KEY="\${line#OPENROUTER_API_KEY=}" ;; esac
+exec bash $APP_DIR/deploy/update.sh
+EOF
+chmod 755 /usr/local/sbin/$APP-deploy
+echo "$DEPLOY_USER ALL=(root) NOPASSWD: /usr/local/sbin/$APP-deploy" > /etc/sudoers.d/$APP-deploy
+chmod 440 /etc/sudoers.d/$APP-deploy
+visudo -cf /etc/sudoers.d/$APP-deploy >/dev/null || { rm -f /etc/sudoers.d/$APP-deploy; die "ошибка в sudoers"; }
+install -d -m 700 -o "$DEPLOY_USER" -g "$DEPLOY_USER" "$DEPLOY_HOME/.ssh"
+AK="$DEPLOY_HOME/.ssh/authorized_keys"
+touch "$AK"
+FORCED="command=\"sudo /usr/local/sbin/$APP-deploy\",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty"
+# любая строка ключа без ограничения получает принудительную команду
+sed -i -E "/^(ssh-|ecdsa-|sk-)/s|^|$FORCED |" "$AK"
+chown "$DEPLOY_USER:$DEPLOY_USER" "$AK"
+chmod 600 "$AK"
+ok "ключей автопубликации: $(grep -c . "$AK" || true)"
 
 # ---------------------------------------------------------------------------
 say "Проверка"
@@ -291,12 +455,19 @@ done
 # Модель переобучается на свежих данных Binance в фоне (5–15 минут), сайт тем временем работает
 systemctl start --no-block $APP-train.service
 
-IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+if [ "$USE_CADDY" = 1 ]; then
+  URL="https://$(env_get PUBLIC_HOST):$(env_get PUBLIC_PORT)"
+  LOGIN="  Вход на сайт:    логин $(env_get SITE_USER), пароль SITE_PASSWORD в $ENV_FILE"
+else
+  URL="http://$MAIN_SRC:$PORT"
+  LOGIN=""
+fi
 cat <<DONE
 
 $(printf '\033[1;32m')Готово!$(printf '\033[0m')
-  Сайт:            http://$IP:$PORT
-  Админка:         http://$IP:$PORT/admin  (пароль: ADMIN_SECRET в $ENV_FILE)
+  Сайт:            $URL
+$LOGIN
+  Админка:         $URL/admin  (пароль: ADMIN_SECRET в $ENV_FILE)
   Логи:            journalctl -u $APP -f
   Перезапуск:      systemctl restart $APP
   Переобучение:    journalctl -u $APP-train -f   (идёт сейчас, дальше — по воскресеньям)
