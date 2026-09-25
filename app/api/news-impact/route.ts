@@ -1,3 +1,4 @@
+import { denyUnlessAdmin } from "@/lib/admin-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { getNewsImpactEngine } from "@/services/news-impact/news-impact-engine";
@@ -15,6 +16,9 @@ import {
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
+  const denied = await denyUnlessAdmin(request);
+  if (denied) return denied;
+
   const ip = getClientIp(request);
   const rate = await checkRateLimit(`news-impact:${ip}`, 60, 60_000);
   if (!rate.allowed) {
@@ -48,6 +52,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await denyUnlessAdmin(request);
+  if (denied) return denied;
+
   const ip = getClientIp(request);
   const rate = await checkRateLimit(`news-impact-post:${ip}`, 20, 60_000);
   if (!rate.allowed) {

@@ -1,10 +1,14 @@
+import { denyUnlessAdmin } from "@/lib/admin-auth";
 import { NextResponse } from "next/server";
 import fs from "fs/promises";
 import { backtester } from "@/lib/backtesting/backtester";
 import { TRAINING_JSONL_PATH } from "@/lib/backtesting/training-export";
 
 /** Export in-memory training rows or return existing JSONL */
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await denyUnlessAdmin(request);
+  if (denied) return denied;
+
   try {
     const result = await backtester.exportTrainingData();
     return NextResponse.json({ ok: true, export: result });
@@ -17,7 +21,10 @@ export async function POST() {
 }
 
 /** Download `.cache/backtest-training.jsonl` */
-export async function GET() {
+export async function GET(request: Request) {
+  const denied = await denyUnlessAdmin(request);
+  if (denied) return denied;
+
   try {
     const raw = await fs.readFile(TRAINING_JSONL_PATH, "utf-8");
     return new NextResponse(raw, {

@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const { user, token } = await loginUser(body.email, body.password);
 
     const response = NextResponse.json({
-      user: { email: user.email, tier: user.tier, predictionsUsed: user.predictionsUsed },
+      user: { email: user.email, tier: user.tier, role: user.role, predictionsUsed: user.predictionsUsed },
     });
     response.cookies.set(SESSION_COOKIE, token, {
       httpOnly: true,

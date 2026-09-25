@@ -8,16 +8,20 @@ export interface UserRecord {
   email: string;
   passwordHash: string;
   tier: UserTier;
+  role: UserRole;
   predictionsUsed: number;
   deviceId?: string;
   createdAt: string;
 }
+
+export type UserRole = "user" | "admin";
 
 interface DbUserRow {
   id: string;
   email: string;
   password_hash: string;
   tier: "registered" | "paid";
+  role?: UserRole;
   predictions_used: number;
   device_id: string | null;
   created_at: Date;
@@ -32,6 +36,7 @@ function mapUser(row: DbUserRow): UserRecord {
     email: row.email,
     passwordHash: row.password_hash,
     tier: row.tier,
+    role: row.role === "admin" ? "admin" : "user",
     predictionsUsed: row.predictions_used,
     deviceId: row.device_id ?? undefined,
     createdAt: row.created_at.toISOString(),
@@ -81,11 +86,47 @@ export async function findUserByEmail(email: string): Promise<UserRecord | null>
   return rows[0] ? mapUser(rows[0]) : null;
 }
 
-export async function registerUser(
-  email: string,
-  password: string,
-  deviceId?: string
-): Promise<{ user: UserRecord; token: string }> {
+/** Emails listed in ADMIN_EMAILS (comma-separated) are always admins. */
+function configuredAdminEmails(): string[] {
+  return (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/**
+ * One login for everyone; the role decides what they can open. A user becomes admin when their
+ * email is in ADMIN_EMAILS, or when they are the first account on a site that has no admin yet.
+ */
+async function ensureRole(user: UserRecord): Promise<UserRecord> {
+  if (user.role === "admin") return user;
+  let promote = configuredAdminEmails().includes(user.email);
+  if (!promote) {
+    const rows = await query<Array<{ c: number }>>("SELECT COUNT(*) AS c FROM users WHERE role = 'admin'");
+    promote = (rows[0]?.c ?? 0) === 0;
+  }
+  if (!promote) return user;
+  await execute("UPDATE users SET role = 'admin' WHERE id = ?", [user.id]);
+  return { ...user, role: "admin" };
+}
+
+/** SITE_PRIVATE=true: only signed-in users see the site; signup is closed once the first admin exists. */
+export function isSitePrivate(): boolean {
+  return process.env.SITE_PRIVATE?.trim() === "true";
+}
+
+export async function countUsers(): Promise<number> {
+  const rows = await query<Array<{ c: number }>>("SELECT COUNT(*) AS c FROM users");
+  return rows[0]?.c ?? 0;
+}
+
+/** Open signup on a public site; on a private one only for the very first account or with ALLOW_SIGNUP=true. */
+export async function isSignupOpen(): Promise<boolean> {
+  if (!isSitePrivate() || process.env.ALLOW_SIGNUP?.trim() === "true") return true;
+  return (await countUsers()) === 0;
+}
+
+async function insertUser(email: string, password: string, deviceId?: string, role: UserRole = "user"): Promise<UserRecord> {
   const normalized = email.trim().toLowerCase();
   if (!normalized.includes("@") || password.length < 8) {
     throw new Error("Некорректный email или пароль (мин. 8 символов)");
@@ -98,26 +139,40 @@ export async function registerUser(
   const id = randomBytes(12).toString("hex");
 
   await execute(
-    `INSERT INTO users (id, email, password_hash, tier, predictions_used, device_id)
-     VALUES (?, ?, ?, 'registered', ?, ?)`,
-    [id, normalized, hashPassword(password), deviceUsed, deviceId ?? null]
+    `INSERT INTO users (id, email, password_hash, tier, role, predictions_used, device_id)
+     VALUES (?, ?, ?, 'registered', ?, ?, ?)`,
+    [id, normalized, hashPassword(password), role, deviceUsed, deviceId ?? null]
   );
 
-  const user = await findUserById(id);
-  if (!user) throw new Error("Ошибка создания пользователя");
+  const created = await findUserById(id);
+  if (!created) throw new Error("Ошибка создания пользователя");
+  return ensureRole(created);
+}
 
+export async function registerUser(
+  email: string,
+  password: string,
+  deviceId?: string
+): Promise<{ user: UserRecord; token: string }> {
+  const user = await insertUser(email, password, deviceId);
   const token = await createSession(user.id);
   return { user, token };
+}
+
+/** Account created by an admin (no session is started for it). */
+export async function createUser(email: string, password: string, role: UserRole = "user"): Promise<UserRecord> {
+  return insertUser(email, password, undefined, role);
 }
 
 export async function loginUser(
   email: string,
   password: string
 ): Promise<{ user: UserRecord; token: string }> {
-  const user = await findUserByEmail(email);
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  const found = await findUserByEmail(email);
+  if (!found || !verifyPassword(password, found.passwordHash)) {
     throw new Error("Неверный email или пароль");
   }
+  const user = await ensureRole(found);
   const token = await createSession(user.id);
   return { user, token };
 }
@@ -184,25 +239,58 @@ export async function setUserTier(email: string, tier: "registered" | "paid"): P
   return result.affectedRows > 0;
 }
 
+export async function setUserTierById(id: string, tier: "registered" | "paid"): Promise<boolean> {
+  const result = await execute("UPDATE users SET tier = ? WHERE id = ?", [tier, id]);
+  return result.affectedRows > 0;
+}
+
+/** Admin-set password; also signs the user out everywhere. */
+export async function setUserPassword(id: string, password: string): Promise<boolean> {
+  if (password.length < 8) throw new Error("Пароль — минимум 8 символов");
+  const result = await execute("UPDATE users SET password_hash = ? WHERE id = ?", [hashPassword(password), id]);
+  if (result.affectedRows > 0) await execute("DELETE FROM sessions WHERE user_id = ?", [id]);
+  return result.affectedRows > 0;
+}
+
+/** Changes a role; refuses to remove the last admin so the site can't lock itself out. */
+export async function setUserRole(id: string, role: UserRole): Promise<"ok" | "not_found" | "last_admin"> {
+  if (role === "user") {
+    const rows = await query<Array<{ c: number }>>("SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND id <> ?", [id]);
+    if ((rows[0]?.c ?? 0) === 0) return "last_admin";
+  }
+  const result = await execute("UPDATE users SET role = ? WHERE id = ?", [role, id]);
+  return result.affectedRows > 0 ? "ok" : "not_found";
+}
+
 export async function listUsers(limit = 100): Promise<
-  Array<{ id: string; email: string; tier: string; predictionsUsed: number; deviceId: string | null; createdAt: string }>
+  Array<{
+    id: string;
+    email: string;
+    tier: string;
+    role: UserRole;
+    predictionsUsed: number;
+    deviceId: string | null;
+    createdAt: string;
+  }>
 > {
   const rows = await query<
     Array<{
       id: string;
       email: string;
       tier: string;
+      role: UserRole;
       predictions_used: number;
       device_id: string | null;
       created_at: Date;
     }>
-  >("SELECT id, email, tier, predictions_used, device_id, created_at FROM users ORDER BY created_at DESC LIMIT ?", [
+  >("SELECT id, email, tier, role, predictions_used, device_id, created_at FROM users ORDER BY created_at DESC LIMIT ?", [
     limit,
   ]);
   return rows.map((r) => ({
     id: r.id,
     email: r.email,
     tier: r.tier,
+    role: r.role === "admin" ? "admin" : "user",
     predictionsUsed: r.predictions_used,
     deviceId: r.device_id,
     createdAt: r.created_at.toISOString(),

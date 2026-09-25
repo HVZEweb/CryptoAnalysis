@@ -77,6 +77,13 @@ export function HomePage() {
     [quota, openRegister, openUpgrade]
   );
 
+  // Admin pages redirect here with ?admin=required when nobody (or a non-admin) is signed in.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("admin") === "required" && !user) openLogin();
+  }, [user, openLogin]);
+
   useEffect(() => {
     if (error?.code === "QUOTA_EXCEEDED") {
       if (quota?.requiresPayment) openUpgrade();

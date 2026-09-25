@@ -57,6 +57,7 @@ async function initializeSchema(): Promise<void> {
       email VARCHAR(255) NOT NULL UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
       tier ENUM('registered', 'paid') NOT NULL DEFAULT 'registered',
+      role ENUM('user', 'admin') NOT NULL DEFAULT 'user',
       predictions_used INT NOT NULL DEFAULT 0,
       device_id CHAR(36) NULL,
       reset_token CHAR(64) NULL,
@@ -121,6 +122,9 @@ async function initializeSchema(): Promise<void> {
   }
   if (!(await columnExists("users", "reset_expires_at"))) {
     await db.execute("ALTER TABLE users ADD COLUMN reset_expires_at BIGINT NULL");
+  }
+  if (!(await columnExists("users", "role"))) {
+    await db.execute("ALTER TABLE users ADD COLUMN role ENUM('user', 'admin') NOT NULL DEFAULT 'user'");
   }
 
   schemaReady = true;

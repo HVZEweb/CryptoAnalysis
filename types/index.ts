@@ -422,6 +422,7 @@ export interface QuotaStatus {
 export interface AuthUser {
   email: string;
   tier: "anon" | "registered" | "paid";
+  role?: "user" | "admin";
   predictionsUsed: number;
 }
 

@@ -1,3 +1,4 @@
+import { denyUnlessAdmin } from "@/lib/admin-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveCoinBySymbol } from "@/lib/coins";
 import { backtester } from "@/lib/backtesting/backtester";
@@ -8,6 +9,9 @@ import { backtestFormSchema } from "@/lib/schemas";
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
+  const denied = await denyUnlessAdmin(request);
+  if (denied) return denied;
+
   const ip = getClientIp(request);
   const burst = await checkRateLimit(`backtest:${ip}`, 3, 300_000);
   if (!burst.allowed) {
@@ -56,6 +60,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const denied = await denyUnlessAdmin(request);
+  if (denied) return denied;
+
   const id = request.nextUrl.searchParams.get("id");
   if (id) {
     const report = await loadBacktestRun(id);

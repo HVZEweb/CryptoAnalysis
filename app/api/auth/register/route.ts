@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-import { registerUser } from "@/lib/auth";
+import { isSignupOpen, registerUser } from "@/lib/auth";
 import { DEVICE_COOKIE, SESSION_COOKIE, secureCookies } from "@/lib/request-context";
 
 const authSchema = z.object({
@@ -26,13 +26,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Слишком много регистраций" }, { status: 429 });
   }
 
+  if (!(await isSignupOpen().catch(() => false))) {
+    return NextResponse.json(
+      { error: "Регистрация закрыта. Попросите администратора добавить вас." },
+      { status: 403 }
+    );
+  }
+
   try {
     const body = authSchema.parse(await request.json());
     const deviceId = request.cookies.get(DEVICE_COOKIE)?.value;
     const { user, token } = await registerUser(body.email, body.password, deviceId);
 
     const response = NextResponse.json({
-      user: { email: user.email, tier: user.tier, predictionsUsed: user.predictionsUsed },
+      user: { email: user.email, tier: user.tier, role: user.role, predictionsUsed: user.predictionsUsed },
     });
     setSessionCookie(response, token);
     return response;
