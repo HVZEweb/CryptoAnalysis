@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, X, FlaskConical, History, BarChart3, LineChart, Radar, Users } from "lucide-react";
+import { Wrench, X, FlaskConical, LineChart, Radar, Users } from "lucide-react";
 import Link from "next/link";
 
 export function DevMenu() {
@@ -18,34 +18,20 @@ export function DevMenu() {
     {
       href: "/news-impact",
       icon: Radar,
-      label: "News Impact",
-      description: "Мониторинг новостей · impact score · срочность",
+      label: "Новости",
+      description: "Мониторинг новостей и их влияния на цену",
     },
     {
       href: "/backtest",
       icon: LineChart,
-      label: "Backtest Panel",
-      description: "Backtest, export JSONL, live performance monitoring",
+      label: "Бэктест и стратегии",
+      description: "Проверка моделей на истории, лаборатория стратегий, мониторинг",
     },
     {
       href: "/check-prediction",
       icon: FlaskConical,
       label: "Проверка точности",
       description: "Оценка последнего прогноза",
-    },
-    {
-      href: "/api/predictions/latest",
-      icon: History,
-      label: "API: Последний прогноз",
-      description: "JSON последнего прогноза",
-      external: true,
-    },
-    {
-      href: "/api/status",
-      icon: BarChart3,
-      label: "API: Статус системы",
-      description: "Диагностика OpenRouter",
-      external: true,
     },
   ];
 
@@ -99,9 +85,7 @@ export function DevMenu() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    target={item.external ? "_blank" : undefined}
-                    rel={item.external ? "noopener noreferrer" : undefined}
-                    onClick={() => !item.external && setIsOpen(false)}
+                    onClick={() => setIsOpen(false)}
                     className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-3 transition-all hover:border-indigo-500/30 hover:bg-indigo-500/10"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/20 to-violet-500/20">
@@ -111,9 +95,6 @@ export function DevMenu() {
                       <p className="font-medium text-foreground">{item.label}</p>
                       <p className="text-xs text-muted-foreground">{item.description}</p>
                     </div>
-                    {item.external && (
-                      <span className="text-xs text-muted-foreground">↗</span>
-                    )}
                   </Link>
                 ))}
               </div>

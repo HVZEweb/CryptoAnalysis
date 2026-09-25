@@ -25,6 +25,20 @@ interface PredictionFormProps {
 
 const DEFAULT_MODEL = "__default__";
 
+interface TimeframeStatus {
+  timeframe: string;
+  hasEdge: boolean;
+  tradeProfitable: boolean;
+}
+
+/** What the model of each timeframe can offer, as a short suffix for the selector. */
+function timeframeNote(s: TimeframeStatus | undefined): string {
+  if (!s) return "";
+  if (s.tradeProfitable) return " · проверенные сделки";
+  if (s.hasEdge) return " · направление";
+  return " · только коридор цены";
+}
+
 const TIMEFRAMES = [
   { value: "15m", label: "15 минут" },
   { value: "30m", label: "30 минут" },
@@ -45,10 +59,20 @@ export function PredictionForm({
   onNeedUpgrade,
 }: PredictionFormProps) {
   const [selectedCoin, setSelectedCoin] = useState<Coin | null>(null);
+  const [tfStatus, setTfStatus] = useState<Record<string, TimeframeStatus>>({});
+
+  useEffect(() => {
+    fetch("/api/models")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { timeframes: TimeframeStatus[] } | null) => {
+        if (d) setTfStatus(Object.fromEntries(d.timeframes.map((t) => [t.timeframe, t])));
+      })
+      .catch(() => undefined);
+  }, []);
 
   const { control, handleSubmit, setValue, reset, watch, formState: { errors } } = useForm<PredictionFormValues>({
     resolver: zodResolver(predictionFormSchema),
-    defaultValues: { coinSymbol: defaultSymbol ?? "", market: "Futures", timeframe: "24h", model: DEFAULT_MODEL },
+    defaultValues: { coinSymbol: defaultSymbol ?? "", market: "Futures", timeframe: "1h", model: DEFAULT_MODEL },
   });
 
   const watchedMarket = watch("market");
@@ -57,7 +81,7 @@ export function PredictionForm({
 
   useEffect(() => {
     if (defaultSymbol) {
-      reset({ coinSymbol: defaultSymbol, market: "Futures", timeframe: "24h" });
+      reset({ coinSymbol: defaultSymbol, market: "Futures", timeframe: "1h" });
       setSelectedCoin((prev) => (prev?.symbol === defaultSymbol ? prev : { id: defaultSymbol, symbol: defaultSymbol, name: defaultSymbol }));
     }
   }, [defaultSymbol, reset]);
@@ -145,7 +169,10 @@ export function PredictionForm({
               <SelectTrigger className="rounded-xl border-white/8 bg-white/5"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {TIMEFRAMES.map((tf) => (
-                  <SelectItem key={tf.value} value={tf.value}>{tf.label}</SelectItem>
+                  <SelectItem key={tf.value} value={tf.value}>
+                    {tf.label}
+                    <span className="text-muted-foreground">{timeframeNote(tfStatus[tf.value])}</span>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -154,7 +181,7 @@ export function PredictionForm({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Модель AI</Label>
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">ИИ для текста объяснения</Label>
         <Controller name="model" control={control} render={({ field }) => (
           <Select value={field.value ?? DEFAULT_MODEL} onValueChange={field.onChange}>
             <SelectTrigger className="rounded-xl border-white/8 bg-white/5"><SelectValue placeholder="По умолчанию" /></SelectTrigger>

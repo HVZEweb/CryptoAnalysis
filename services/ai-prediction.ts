@@ -4,9 +4,9 @@ import type { AnalysisContext, PredictionResult } from "@/types";
 type LlmPrediction = Omit<PredictionResult, "priceAtPrediction" | "coinId" | "analysis">;
 
 /**
- * Neutral stand-in when the LLM is unreachable (region block, no key, outage). The LLM carries only
- * 15% of the vote and has no measured accuracy, so the prediction goes on with the validated model
- * and the rules; SIDEWAYS 50% contributes nothing to the vote.
+ * Neutral stand-in when the LLM is unreachable or switched off (region block, no key, outage,
+ * PREDICTION_LLM=off). The LLM has no vote in the direction, so the prediction is the same; only
+ * its text explanation is missing.
  */
 export function neutralLlmPrediction(ctx: AnalysisContext, reason: string): LlmPrediction {
   const price = ctx.marketData.price;
@@ -32,7 +32,16 @@ export function neutralLlmPrediction(ctx: AnalysisContext, reason: string): LlmP
   };
 }
 
+/**
+ * PREDICTION_LLM=off skips the LLM entirely: it has no vote in the direction (see ensemble-prediction),
+ * only writes the text explanation, and a request takes 1–3 minutes and costs money.
+ */
+export function llmEnabled(): boolean {
+  return process.env.PREDICTION_LLM?.trim().toLowerCase() !== "off";
+}
+
 export async function generatePrediction(ctx: AnalysisContext, modelOverride?: string): Promise<LlmPrediction> {
+  if (!llmEnabled()) return neutralLlmPrediction(ctx, "выключен настройкой PREDICTION_LLM=off");
   try {
     return await generateOpenRouterPrediction(ctx, modelOverride);
   } catch (error) {
