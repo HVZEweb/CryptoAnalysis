@@ -248,7 +248,7 @@ export class EnsemblePredictor {
       await setCachedMlFeatures(cacheKey, features).catch(() => undefined);
     }
 
-    const predictorRun = runPricePredictor(ctx);
+    const predictorRun = await runPricePredictor(ctx);
     const model = predictorRun.result;
     const validation = model?.model.validation;
     const hasEdge = validation?.hasEdge === true;

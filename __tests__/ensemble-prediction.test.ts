@@ -185,7 +185,7 @@ describe("directionEdge / probabilityToCall", () => {
 
 describe("EnsemblePredictor", () => {
   it("does not turn weak 58%/56% votes into 64% (the reported BTC 15m case)", async () => {
-    vi.spyOn(predictorModule, "runPricePredictor").mockReturnValueOnce({ result: modelResult(0.48, true) });
+    vi.spyOn(predictorModule, "runPricePredictor").mockResolvedValueOnce({ result: modelResult(0.48, true) });
     const ctx = mockContext();
     const { prediction, breakdown } = await new EnsemblePredictor().combine(ctx, snapshotOf(ctx), llm("LONG", 58));
 
@@ -200,7 +200,7 @@ describe("EnsemblePredictor", () => {
   });
 
   it("follows the validated model when it has an edge", async () => {
-    vi.spyOn(predictorModule, "runPricePredictor").mockReturnValueOnce({ result: modelResult(0.56, true) });
+    vi.spyOn(predictorModule, "runPricePredictor").mockResolvedValueOnce({ result: modelResult(0.56, true) });
     const ctx = mockContext();
     const { prediction, breakdown } = await new EnsemblePredictor().combine(ctx, snapshotOf(ctx), llm("SHORT", 60));
 
@@ -211,7 +211,7 @@ describe("EnsemblePredictor", () => {
   });
 
   it("hides the direction when the model has no validated edge", async () => {
-    vi.spyOn(predictorModule, "runPricePredictor").mockReturnValueOnce({
+    vi.spyOn(predictorModule, "runPricePredictor").mockResolvedValueOnce({
       result: modelResult(0.6, false),
       error: "model_has_no_edge",
     });
@@ -226,7 +226,7 @@ describe("EnsemblePredictor", () => {
   });
 
   it("gives no direction when the model is not trained", async () => {
-    vi.spyOn(predictorModule, "runPricePredictor").mockReturnValueOnce({ result: null, error: "model_not_trained" });
+    vi.spyOn(predictorModule, "runPricePredictor").mockResolvedValueOnce({ result: null, error: "model_not_trained" });
     const ctx = mockContext();
     const { prediction, breakdown } = await new EnsemblePredictor().combine(ctx, snapshotOf(ctx), llm("LONG", 70));
 

@@ -29,6 +29,8 @@ export interface Candle {
   closeTime: number;
   quoteVolume: number;
   trades: number;
+  /** Base volume bought by market (taker) orders; Binance klines only */
+  takerBuyVolume?: number;
 }
 
 export interface MarketData {

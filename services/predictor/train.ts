@@ -4,15 +4,57 @@
 
 import type { Candle, Timeframe } from "@/types";
 import { HORIZONS } from "@/services/predictor/config";
-import { computeFeatureSeries, FEATURE_NAMES } from "@/services/predictor/features";
+import { computeFeatureSeries, FEATURE_NAMES, type FeatureContext } from "@/services/predictor/features";
 import {
   computeMoveQuantiles,
+  featureContributions,
   fitExpectedMove,
+  fitGbm,
   fitLogistic,
+  gbmContributions,
+  predictGbm,
   predictProbability,
+  type GbmModel,
   type LogisticModel,
   type MoveQuantiles,
 } from "@/services/predictor/model";
+
+export type Classifier = { kind: "logistic"; logistic: LogisticModel } | { kind: "gbm"; gbm: GbmModel };
+
+export interface CandidateSpec {
+  name: string;
+  kind: Classifier["kind"];
+  /**
+   * Skip training rows whose move is smaller than a round-trip fee: they are coin flips the model can't
+   * profit from anyway. Validation still scores every row.
+   */
+  feeDeadZone: boolean;
+}
+
+export const CANDIDATES: CandidateSpec[] = [
+  { name: "logistic", kind: "logistic", feeDeadZone: false },
+  { name: "logistic+fee", kind: "logistic", feeDeadZone: true },
+  { name: "gbm", kind: "gbm", feeDeadZone: false },
+  { name: "gbm+fee", kind: "gbm", feeDeadZone: true },
+];
+
+/** Round-trip taker fee on Binance futures, as a fraction. */
+export const FEE_DEAD_ZONE = 0.001;
+
+export function predictClassifier(c: Classifier, x: number[]): number {
+  return c.kind === "gbm" ? predictGbm(c.gbm, x) : predictProbability(c.logistic, x);
+}
+
+export function classifierContributions(c: Classifier, x: number[], names: readonly string[]) {
+  return c.kind === "gbm" ? gbmContributions(c.gbm, x, names) : featureContributions(c.logistic, x, names);
+}
+
+function fitClassifier(train: Sample[], spec: CandidateSpec): Classifier {
+  const rows = spec.feeDeadZone ? train.filter((s) => Math.abs(s.ret) >= FEE_DEAD_ZONE) : train;
+  const X = rows.map((s) => s.x);
+  const y = rows.map((s) => s.y);
+  return spec.kind === "gbm" ? { kind: "gbm", gbm: fitGbm(X, y) } : { kind: "logistic", logistic: fitLogistic(X, y) };
+}
 
 export interface Sample {
   symbol: string;
@@ -22,6 +64,8 @@ export interface Sample {
   y: number;
   /** Close move in volatility units */
   z: number;
+  /** Raw close-to-close return over the horizon */
+  ret: number;
   zHigh: number;
   zLow: number;
 }
@@ -47,13 +91,25 @@ export interface ValidationReport {
   hasEdge: boolean;
 }
 
+export interface CandidateReport {
+  name: string;
+  accuracy: number;
+  logLoss: number;
+  baselineLogLoss: number;
+  confidentAccuracy: number;
+  hasEdge: boolean;
+}
+
 export interface PredictorModel {
-  version: 1;
+  version: 2;
   timeframe: Timeframe;
   interval: string;
   horizon: number;
   featureNames: string[];
-  logistic: LogisticModel;
+  /** Name of the candidate that won walk-forward validation */
+  chosen: string;
+  classifier: Classifier;
+  candidates: CandidateReport[];
   expectedMove: { intercept: number; slope: number };
   quantiles: MoveQuantiles;
   validation: ValidationReport;
@@ -65,8 +121,13 @@ export interface PredictorModel {
   samples: number;
 }
 
-export function buildSamples(symbol: string, candles: Candle[], horizon: number): Sample[] {
-  const { rows, vol } = computeFeatureSeries(candles);
+export function buildSamples(
+  symbol: string,
+  candles: Candle[],
+  horizon: number,
+  context: FeatureContext = {}
+): Sample[] {
+  const { rows, vol } = computeFeatureSeries(candles, context);
   const samples: Sample[] = [];
   for (let i = 0; i + horizon < candles.length; i++) {
     const x = rows[i];
@@ -87,6 +148,7 @@ export function buildSamples(symbol: string, candles: Candle[], horizon: number)
       x,
       y: future > close ? 1 : 0,
       z: Math.log(future / close) / unit,
+      ret: future / close - 1,
       zHigh: Math.log(hi / close) / unit,
       zLow: Math.log(lo / close) / unit,
     });
@@ -120,22 +182,19 @@ function auc(scores: number[], labels: number[]): number {
   return (rankSum - (positives * (positives + 1)) / 2) / (positives * negatives);
 }
 
-function fitComponents(train: Sample[]) {
-  const logistic = fitLogistic(
-    train.map((s) => s.x),
-    train.map((s) => s.y)
-  );
+function fitComponents(train: Sample[], spec: CandidateSpec) {
+  const classifier = fitClassifier(train, spec);
   const quantiles = computeMoveQuantiles(
     train.map((s) => s.z),
     train.map((s) => s.zHigh),
     train.map((s) => s.zLow)
   );
-  const p = train.map((s) => predictProbability(logistic, s.x));
+  const p = train.map((s) => predictClassifier(classifier, s.x));
   const expectedMove = fitExpectedMove(
     p,
     train.map((s) => s.z)
   );
-  return { logistic, quantiles, expectedMove };
+  return { classifier, quantiles, expectedMove };
 }
 
 /**
@@ -146,7 +205,8 @@ export function walkForward(
   samples: Sample[],
   horizon: number,
   intervalMinutes: number,
-  folds = 5
+  folds = 5,
+  spec: CandidateSpec = CANDIDATES[0]
 ): ValidationReport {
   const sorted = [...samples].sort((a, b) => a.time - b.time);
   const gapMs = horizon * intervalMinutes * 60_000;
@@ -165,12 +225,12 @@ export function walkForward(
     const test = sorted.filter((s) => s.time >= testStart && s.time < testEnd);
     if (train.length < 200 || !test.length) continue;
 
-    const { logistic, quantiles } = fitComponents(train);
+    const { classifier, quantiles } = fitComponents(train, spec);
     const baseRate = train.reduce((s, v) => s + v.y, 0) / train.length;
     const baselineCall = baseRate >= 0.5 ? 1 : 0;
 
     for (const s of test) {
-      probs.push(predictProbability(logistic, s.x));
+      probs.push(predictClassifier(classifier, s.x));
       labels.push(s.y);
       if (s.y === baselineCall) baselineHits++;
       baselineLoss += logLoss(baseRate, s.y);
@@ -226,29 +286,50 @@ export function walkForward(
 export function trainPredictor(
   timeframe: Timeframe,
   series: Array<{ symbol: string; candles: Candle[] }>,
-  source: string
+  source: string,
+  options: { btc?: Candle[]; candidates?: CandidateSpec[]; log?: (line: string) => void } = {}
 ): PredictorModel {
   const spec = HORIZONS[timeframe];
-  const samples = series.flatMap((s) => buildSamples(s.symbol, s.candles, spec.horizon));
+  const samples = series.flatMap((s) =>
+    buildSamples(s.symbol, s.candles, spec.horizon, { btc: options.btc ?? (s.symbol === "BTCUSDT" ? s.candles : undefined) })
+  );
   if (samples.length < 500) {
     throw new Error(`${timeframe}: only ${samples.length} samples — need at least 500`);
   }
 
-  const validation = walkForward(samples, spec.horizon, spec.intervalMinutes);
-  const { logistic, quantiles, expectedMove } = fitComponents(samples);
+  // Every candidate is judged on the same walk-forward folds; the lowest out-of-sample log-loss wins.
+  const results = (options.candidates ?? CANDIDATES).map((candidate) => {
+    const validation = walkForward(samples, spec.horizon, spec.intervalMinutes, 5, candidate);
+    options.log?.(
+      `  ${candidate.name.padEnd(13)} точность ${(validation.accuracy * 100).toFixed(1)}% · log-loss ${validation.logLoss.toFixed(4)}${validation.hasEdge ? " · преимущество" : ""}`
+    );
+    return { candidate, validation };
+  });
+  const best = results.reduce((a, b) => (b.validation.logLoss < a.validation.logLoss ? b : a));
+
+  const { classifier, quantiles, expectedMove } = fitComponents(samples, best.candidate);
   const firstTime = samples.reduce((m, s) => Math.min(m, s.time), Infinity);
   const lastTime = samples.reduce((m, s) => Math.max(m, s.time), -Infinity);
 
   return {
-    version: 1,
+    version: 2,
     timeframe,
     interval: spec.interval,
     horizon: spec.horizon,
     featureNames: [...FEATURE_NAMES],
-    logistic,
+    chosen: best.candidate.name,
+    classifier,
+    candidates: results.map(({ candidate, validation: v }) => ({
+      name: candidate.name,
+      accuracy: v.accuracy,
+      logLoss: v.logLoss,
+      baselineLogLoss: v.baselineLogLoss,
+      confidentAccuracy: v.confident.accuracy,
+      hasEdge: v.hasEdge,
+    })),
     expectedMove,
     quantiles,
-    validation,
+    validation: best.validation,
     trainedAt: new Date().toISOString(),
     source,
     symbols: series.map((s) => s.symbol),

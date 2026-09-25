@@ -8,9 +8,9 @@ import fs from "fs";
 import path from "path";
 import type { AnalysisContext, Candle, MlPrediction, PredictionDirection, PriceForecast, Timeframe } from "@/types";
 import { HORIZONS, SIDEWAYS_BAND } from "@/services/predictor/config";
-import { computeFeatureSeries, FEATURE_LABELS, FEATURE_NAMES } from "@/services/predictor/features";
-import { featureContributions, predictProbability } from "@/services/predictor/model";
-import type { PredictorModel } from "@/services/predictor/train";
+import { computeFeatureSeries, FEATURE_LABELS, FEATURE_NAMES, type FeatureContext } from "@/services/predictor/features";
+import { classifierContributions, predictClassifier, type PredictorModel } from "@/services/predictor/train";
+import { fetchCandles } from "@/services/binance";
 
 export type { PredictorModel, ValidationReport } from "@/services/predictor/train";
 
@@ -29,7 +29,7 @@ export function loadModel(timeframe: Timeframe, dir = MODELS_DIR): PredictorMode
     const cached = modelCache.get(file);
     if (cached && cached.mtimeMs === mtimeMs) return cached.model;
     const model = JSON.parse(fs.readFileSync(file, "utf-8")) as PredictorModel;
-    if (model.version !== 1 || model.featureNames.join() !== FEATURE_NAMES.join()) return null;
+    if (model.version !== 2 || model.featureNames.join() !== FEATURE_NAMES.join()) return null;
     modelCache.set(file, { mtimeMs, model });
     return model;
   } catch {
@@ -57,13 +57,18 @@ export interface PricePrediction {
  * Pure inference: `candles` are bars of `model.interval`, oldest first.
  * The still-forming last bar must already be removed by the caller.
  */
-export function predictWithModel(model: PredictorModel, candles: Candle[], price: number): PricePrediction | null {
-  const { rows, vol } = computeFeatureSeries(candles);
+export function predictWithModel(
+  model: PredictorModel,
+  candles: Candle[],
+  price: number,
+  context: FeatureContext = {}
+): PricePrediction | null {
+  const { rows, vol } = computeFeatureSeries(candles, context);
   const i = rows.length - 1;
   const x = rows[i];
   if (!x || !(vol[i] > 0) || !(price > 0)) return null;
 
-  const pUp = predictProbability(model.logistic, x);
+  const pUp = predictClassifier(model.classifier, x);
   const unit = vol[i] * Math.sqrt(model.horizon);
   const at = (z: number) => price * Math.exp(z * unit);
   const q = model.quantiles;
@@ -79,7 +84,7 @@ export function predictWithModel(model: PredictorModel, candles: Candle[], price
     source: "predictor",
   };
 
-  const topFeatures = featureContributions(model.logistic, x, model.featureNames)
+  const topFeatures = classifierContributions(model.classifier, x, model.featureNames)
     .slice(0, 5)
     .map((f) => ({
       ...f,
@@ -119,12 +124,24 @@ export interface PredictorRunResult {
 }
 
 /** Runs the trained model for the request's timeframe on the candles already fetched for analysis. */
-export function runPricePredictor(ctx: Pick<AnalysisContext, "timeframe" | "candles" | "marketData">): PredictorRunResult {
+export async function runPricePredictor(
+  ctx: Pick<AnalysisContext, "timeframe" | "candles" | "marketData" | "coin" | "market">
+): Promise<PredictorRunResult> {
   const model = loadModel(ctx.timeframe);
   if (!model) return { result: null, error: "model_not_trained" };
 
-  const candles = closedCandles(ctx.candles[HORIZONS[ctx.timeframe].interval] ?? []);
-  const result = predictWithModel(model, candles, ctx.marketData.price);
+  const interval = HORIZONS[ctx.timeframe].interval;
+  const candles = closedCandles(ctx.candles[interval] ?? []);
+  const isBtc = ctx.coin.symbol.toUpperCase().replace(/USDT$/, "") === "BTC";
+  let btc: Candle[] | undefined = isBtc ? candles : undefined;
+  if (!isBtc) {
+    // The model was trained with BTC's move as context; without it those features fall back to 0.
+    btc = await fetchCandles("BTC", interval, ctx.market, 300)
+      .then(closedCandles)
+      .catch(() => undefined);
+  }
+
+  const result = predictWithModel(model, candles, ctx.marketData.price, { btc });
   if (!result) return { result: null, error: "not_enough_candles" };
   if (!result.ml) return { result, error: "model_has_no_edge" };
   return { result };
