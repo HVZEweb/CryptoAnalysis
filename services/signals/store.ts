@@ -24,6 +24,8 @@ export async function ensureSignalTables(): Promise<void> {
       observe TINYINT NOT NULL DEFAULT 0
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  // News alerts (services/news-impact) are on unless the chat turns them off with /news off.
+  await execute("ALTER TABLE signal_chat ADD COLUMN IF NOT EXISTS news TINYINT NOT NULL DEFAULT 1");
   await execute(`
     CREATE TABLE IF NOT EXISTS signal_log (
       id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -73,19 +75,24 @@ export async function ensureSignalTables(): Promise<void> {
 export interface ChatSettings {
   paused: boolean;
   observe: boolean;
+  news: boolean;
 }
 
 export async function getChat(chatId: string): Promise<ChatSettings> {
   await ensureSignalTables();
-  const [row] = await query<Array<{ paused: number; observe: number }>>("SELECT paused, observe FROM signal_chat WHERE chat_id = ?", [chatId]);
-  return { paused: Boolean(row?.paused), observe: Boolean(row?.observe) };
+  const [row] = await query<Array<{ paused: number; observe: number; news: number }>>(
+    "SELECT paused, observe, news FROM signal_chat WHERE chat_id = ?",
+    [chatId]
+  );
+  return { paused: Boolean(row?.paused), observe: Boolean(row?.observe), news: row ? Boolean(row.news) : true };
 }
 
 export async function setChat(chatId: string, patch: Partial<ChatSettings>): Promise<void> {
   const next = { ...(await getChat(chatId)), ...patch };
   await execute(
-    "INSERT INTO signal_chat (chat_id, paused, observe) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE paused = VALUES(paused), observe = VALUES(observe)",
-    [chatId, next.paused ? 1 : 0, next.observe ? 1 : 0]
+    `INSERT INTO signal_chat (chat_id, paused, observe, news) VALUES (?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE paused = VALUES(paused), observe = VALUES(observe), news = VALUES(news)`,
+    [chatId, next.paused ? 1 : 0, next.observe ? 1 : 0, next.news ? 1 : 0]
   );
 }
 

@@ -28,5 +28,11 @@ export async function register() {
       const { startBot } = await import("@/services/signals/bot");
       startBot();
     }
+
+    // News monitoring runs all the time; strong news goes to the connected bot (/news off in the chat mutes it).
+    if (process.env.NEWS_IMPACT_AUTO_START !== "false") {
+      const { getNewsImpactEngine } = await import("@/services/news-impact/news-impact-engine");
+      getNewsImpactEngine().catch((e) => console.warn("[news] start failed:", (e as Error).message));
+    }
   }
 }

@@ -324,7 +324,8 @@ export async function getNewsImpactEngine(): Promise<NewsImpactEngine> {
   if (!globalForEngine.__newsImpactEngine) {
     globalForEngine.__newsImpactEngine = new NewsImpactEngine();
     await globalForEngine.__newsImpactEngine.init();
-    if (process.env.NEWS_IMPACT_AUTO_START === "true") {
+    // Runs with the site unless turned off: the site starts it from instrumentation.ts.
+    if (process.env.NEWS_IMPACT_AUTO_START !== "false") {
       await globalForEngine.__newsImpactEngine.start();
     }
   }
