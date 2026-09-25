@@ -39,7 +39,7 @@ VPS `83.222.16.56`: Ubuntu 24.04, 2 CPU, **1,9 ГБ RAM** + 2 ГБ swap. Обл�
 
 | Что | Где |
 |---|---|
-| Сайт | `https://83.222.16.56:8443`: Caddy, basic auth `SITE_USER`/`SITE_PASSWORD` из `.env` |
+| Сайт | `https://83.222.16.56:8443` через Caddy; `SITE_PRIVATE=true`: только для вошедших, пользователей добавляет админ |
 | Код | `/opt/cryptoanalysis` (git checkout `main`, владелец root) |
 | Настройки | `/opt/cryptoanalysis/.env` (root:cryptoanalysis 640) |
 | Сервис | `cryptoanalysis.service`, слушает `127.0.0.1:3101`, `MemoryMax=700M` |
