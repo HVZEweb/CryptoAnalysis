@@ -246,7 +246,6 @@ env_set DB_NAME "$APP"
 env_set OPENROUTER_URL https://openrouter.ai/api/v1
 env_set OPENROUTER_MODEL deepseek/deepseek-chat
 env_set OPENROUTER_FALLBACK_MODELS google/gemini-2.5-flash
-env_set ADMIN_SECRET "$(rand 16)"
 env_set PAYMENT_WEBHOOK_SECRET "$(rand 24)"
 env_set PREDICTOR_MODELS_DIR "$DATA_DIR/models"
 # Ключ из секрета GitHub (передаётся автопубликацией) всегда главнее того, что в .env.
@@ -262,13 +261,16 @@ elif [ -z "$(env_get OPENROUTER_API_KEY)" ]; then
 fi
 
 # Если на сервере есть Caddy — сайт слушает только 127.0.0.1, а наружу выходит по https
-# через Caddy (порт PUBLIC_PORT) с паролем. Без Caddy — как раньше, http://IP:порт.
+# через Caddy (порт PUBLIC_PORT) и закрыт для всех, кроме вошедших (SITE_PRIVATE).
+# Без Caddy — как раньше, http://IP:порт.
 CADDYFILE=/etc/caddy/Caddyfile
 if command -v caddy >/dev/null && [ -f "$CADDYFILE" ]; then
   USE_CADDY=1
   BIND=127.0.0.1
   env_set PUBLIC_PORT 8443
   env_set PUBLIC_HOST "$MAIN_SRC"
+  env_set SITE_PRIVATE true
+  # Пароль Caddy нужен только до появления первого администратора (см. ниже)
   env_set SITE_USER admin
   env_set SITE_PASSWORD "$(rand 9)"
   env_put COOKIE_SECURE true
@@ -370,7 +372,16 @@ command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q "Status: active" &
 
 if [ "$USE_CADDY" = 1 ]; then
   say "Caddy: https://$(env_get PUBLIC_HOST):$(env_get PUBLIC_PORT)"
-  HASH=$(caddy hash-password --plaintext "$(env_get SITE_PASSWORD)")
+  # Первый зарегистрированный становится администратором. Пока администратора нет, сайт
+  # дополнительно закрыт паролем Caddy — иначе первым мог бы зарегистрироваться кто угодно.
+  ADMINS=$("${MYSQL_ROOT[@]}" -N "$APP" -e "SELECT COUNT(*) FROM users WHERE role='admin'" 2>/dev/null || echo 0)
+  AUTH_BLOCK=""
+  if [ "${ADMINS:-0}" = 0 ]; then
+    HASH=$(caddy hash-password --plaintext "$(env_get SITE_PASSWORD)")
+    AUTH_BLOCK="basic_auth {
+		$(env_get SITE_USER) $HASH
+	}"
+  fi
   BEGIN="# >>> $APP (управляется deploy/install.sh) >>>"
   END="# <<< $APP <<<"
   cp "$CADDYFILE" "$CADDYFILE.bak-$APP"
@@ -389,16 +400,18 @@ https://$(env_get PUBLIC_HOST):$(env_get PUBLIC_PORT) {
 		}
 	}
 	encode zstd gzip
-	basic_auth {
-		$(env_get SITE_USER) $HASH
-	}
+	$AUTH_BLOCK
 	reverse_proxy 127.0.0.1:$PORT
 }
 $END
 EOF
   if caddy validate --config "$CADDYFILE" --adapter caddyfile >/dev/null 2>&1; then
     systemctl reload caddy
-    ok "Caddy обновлён"
+    if [ -n "$AUTH_BLOCK" ]; then
+      ok "Caddy обновлён; до регистрации администратора сайт закрыт паролем $(env_get SITE_USER) / SITE_PASSWORD"
+    else
+      ok "Caddy обновлён; вход — учётной записью сайта"
+    fi
   else
     cp "$CADDYFILE.bak-$APP" "$CADDYFILE"
     die "новый Caddyfile не прошёл проверку — возвращён прежний"
@@ -446,7 +459,8 @@ ok "ключей автопубликации: $(grep -c . "$AK" || true)"
 # ---------------------------------------------------------------------------
 say "Проверка"
 for _ in $(seq 1 30); do
-  c=$(curl -s -o /dev/null -m 5 -w '%{http_code}' "http://127.0.0.1:$PORT/" || true)
+  # /login открыт и на закрытом сайте (SITE_PRIVATE), а / там отвечает редиректом
+  c=$(curl -s -o /dev/null -m 5 -w '%{http_code}' "http://127.0.0.1:$PORT/login" || true)
   [ "$c" = 200 ] && break
   sleep 2
 done
@@ -457,17 +471,22 @@ systemctl start --no-block $APP-train.service
 
 if [ "$USE_CADDY" = 1 ]; then
   URL="https://$(env_get PUBLIC_HOST):$(env_get PUBLIC_PORT)"
-  LOGIN="  Вход на сайт:    логин $(env_get SITE_USER), пароль SITE_PASSWORD в $ENV_FILE"
+  if [ -n "$AUTH_BLOCK" ]; then
+    LOGIN="  Вход:            сначала пароль Caddy (логин $(env_get SITE_USER), SITE_PASSWORD в $ENV_FILE),
+                   затем зарегистрируйтесь на $URL/login — первая учётная запись станет администратором"
+  else
+    LOGIN="  Вход:            $URL/login — учётная запись сайта; пользователей добавляет администратор в /admin"
+  fi
 else
   URL="http://$MAIN_SRC:$PORT"
-  LOGIN=""
+  LOGIN="  Вход:            $URL/login — первая учётная запись станет администратором"
 fi
 cat <<DONE
 
 $(printf '\033[1;32m')Готово!$(printf '\033[0m')
   Сайт:            $URL
 $LOGIN
-  Админка:         $URL/admin  (пароль: ADMIN_SECRET в $ENV_FILE)
+  Админка:         $URL/admin  (для администраторов)
   Логи:            journalctl -u $APP -f
   Перезапуск:      systemctl restart $APP
   Переобучение:    journalctl -u $APP-train -f   (идёт сейчас, дальше — по воскресеньям)
