@@ -13,6 +13,7 @@ import * as store from "@/services/signals/store";
 import { coinVerdict, formatTrackRecord, normalizeSymbol, parseCommand, trackRecord } from "@/services/signals/logic";
 import { loadModelEntries, scannerState, type ModelEntry } from "@/services/signal-scanner";
 import { POOLED_UNIVERSE } from "@/services/pooled/index";
+import { liveStudy, type LiveStudy } from "@/services/news-study/log";
 
 const OFFSET_FILE = path.join(process.cwd(), ".cache", "telegram-offset.json");
 const MAX_WATCH = 30;
@@ -27,6 +28,7 @@ export const HELP = [
   "/observe on|off — наблюдения: сильный взгляд модели без подтверждённой прибыли (не торговый сигнал)",
   "/news on|off — алерты по сильным новостям (включены по умолчанию)",
   "/listings on|off — новые монеты на OKX: анонсы, сводка и статистика прошлых листингов (включены по умолчанию)",
+  "/newsstats — как разные типы новостей двигали BTC",
   "",
   "Сигнал приходит, только если настройка сделок заработала после комиссий на истории, которую не видела при подборе, — в целом и на этой монете. Поэтому бот может подолгу молчать: это значит, что проверенной выгодной сделки нет.",
 ].join("\n");
@@ -35,6 +37,7 @@ export interface BotDeps {
   store: Pick<typeof store, "addWatch" | "removeWatch" | "getWatchlist" | "getChat" | "setChat" | "closedSignals" | "openSignals">;
   models: () => ModelEntry[];
   symbolExists: (symbol: string) => Promise<boolean>;
+  newsStudy?: () => Promise<LiveStudy>;
 }
 
 const knownSymbols = new Map<string, boolean>();
@@ -177,6 +180,23 @@ export async function handleCommand(chatId: string, text: string, deps: BotDeps 
       return on === "on"
         ? "🆕 Уведомления о новых монетах на OKX включены: анонс листинга, сводка по монете со статистикой прошлых листингов и итог через сутки."
         : "Уведомления о новых монетах выключены.";
+    }
+
+    case "newsstats": {
+      const study = await (deps.newsStudy ?? liveStudy)();
+      if (!study.measured) {
+        return `📊 Статистика новостей копится: записано ${study.logged} новостей, исход считается через сутки после каждой.`;
+      }
+      const shown = study.topics.filter((t) => t.verdict !== "few").slice(0, 10);
+      const waiting = study.topics.filter((t) => t.verdict === "few").length;
+      return [
+        `📊 <b>Как новости двигали BTC</b> (${study.measured} новостей с известным исходом)`,
+        ...shown.map((t) => `${t.verdict === "up" ? "🟢" : t.verdict === "down" ? "🔴" : t.verdict === "volatile" ? "🌪" : "▫️"} <b>${t.label}</b>: ${t.summary}`),
+        waiting ? `Ещё ${waiting} тем: мало случаев, вывода пока нет.` : "",
+        "Направление считается подтверждённым только при 20+ отдельных событиях, t ≥ 2 и одинаковом знаке в обеих половинах истории.",
+      ]
+        .filter(Boolean)
+        .join("\n");
     }
 
     default:

@@ -25,6 +25,8 @@ export interface DailyUniverse {
   close: number[][];
   /** Sum of funding rates settled during day d (UTC), 0 when unknown */
   funding: number[][];
+  /** Quote volume of day d, NaN when unknown */
+  volume: number[][];
 }
 
 export function buildUniverse(
@@ -47,7 +49,12 @@ export function buildUniverse(
     }
     return row;
   });
-  return { days, symbols: series.map((s) => s.symbol), close, funding };
+  const volume = series.map((s) => {
+    const row = new Array<number>(days.length).fill(NaN);
+    for (const c of s.candles) row[index.get(c.openTime - (c.openTime % DAY))!] = c.quoteVolume;
+    return row;
+  });
+  return { days, symbols: series.map((s) => s.symbol), close, funding, volume };
 }
 
 /** A strategy: target weights per coin after day d's close (only coins with a close that day). */
@@ -65,7 +72,7 @@ export interface PortfolioRun {
   exposure: number;
 }
 
-export function runStrategy(u: DailyUniverse, strategy: Strategy): PortfolioRun {
+export function runStrategy(u: DailyUniverse, strategy: Strategy, cost = REBALANCE_COST): PortfolioRun {
   const n = u.symbols.length;
   let w = new Array<number>(n).fill(0);
   const returns = new Array<number>(u.days.length).fill(0);
@@ -81,8 +88,8 @@ export function runStrategy(u: DailyUniverse, strategy: Strategy): PortfolioRun 
     w = target;
     const gross = w.reduce((s, x) => s + Math.abs(x), 0);
     if (gross > 0 && start < 0) start = d + 1;
-    let r = -traded * REBALANCE_COST;
-    costs += traded * REBALANCE_COST;
+    let r = -traded * cost;
+    costs += traded * cost;
     turnover += traded;
     for (let s = 0; s < n; s++) {
       if (!w[s]) continue;
@@ -199,19 +206,61 @@ export function trendStrategy(allowShort: boolean, targetVol = 0.25): Strategy {
  * `score`, short the highest third, equal weights, gross 1 (market-neutral). Coins without a score
  * that day are left out.
  */
-export function rankStrategy(score: (u: DailyUniverse, s: number, d: number) => number, isRebalanceDay: (day: number) => boolean): Strategy {
+export interface RankOptions {
+  /** Only these coins take part on day d (e.g. the liquid ones at that time) */
+  eligible?: (u: DailyUniverse, s: number, d: number) => boolean;
+  /** Trade both thirds (market-neutral, gross 1) or one leg alone (gross 1 in that leg) */
+  leg?: "both" | "long" | "short";
+}
+
+export function rankStrategy(
+  score: (u: DailyUniverse, s: number, d: number) => number,
+  isRebalanceDay: (day: number) => boolean,
+  options: RankOptions = {}
+): Strategy {
+  const leg = options.leg ?? "both";
   return (u, d, prev) => {
     if (!isRebalanceDay(u.days[d]) && prev.some((x) => x !== 0)) return prev;
     const ranked = u.symbols
-      .map((_, s) => ({ s, v: u.close[s][d] > 0 ? score(u, s, d) : NaN }))
+      .map((_, s) => ({ s, v: u.close[s][d] > 0 && (options.eligible?.(u, s, d) ?? true) ? score(u, s, d) : NaN }))
       .filter((x) => Number.isFinite(x.v))
       .sort((a, b) => a.v - b.v);
     const w = new Array<number>(u.symbols.length).fill(0);
     const k = Math.floor(ranked.length / 3);
     if (k < 2) return w;
-    for (const { s } of ranked.slice(0, k)) w[s] = 0.5 / k;
-    for (const { s } of ranked.slice(-k)) w[s] = -0.5 / k;
+    const size = leg === "both" ? 0.5 / k : 1 / k;
+    if (leg !== "short") for (const { s } of ranked.slice(0, k)) w[s] = size;
+    if (leg !== "long") for (const { s } of ranked.slice(-k)) w[s] = -size;
     return w;
+  };
+}
+
+/**
+ * Point-in-time liquidity: on day d a coin qualifies only if it traded for at least `minDays` and is
+ * among the `top` coins by average quote volume over the previous 30 days — as one could have known then.
+ */
+export function liquidTop(top: number, minDays = 60): NonNullable<RankOptions["eligible"]> {
+  const cache = new Map<number, Set<number>>();
+  return (u, s, d) => {
+    let set = cache.get(d);
+    if (!set) {
+      const avg = u.symbols.map((_, i) => {
+        if (d - minDays < 0 || !(u.close[i][d - minDays] > 0)) return NaN;
+        let sum = 0;
+        for (let j = d - 29; j <= d; j++) sum += Number.isFinite(u.volume[i][j]) ? u.volume[i][j] : 0;
+        return sum / 30;
+      });
+      set = new Set(
+        avg
+          .map((v, i) => ({ v, i }))
+          .filter((x) => Number.isFinite(x.v) && x.v > 0)
+          .sort((a, b) => b.v - a.v)
+          .slice(0, top)
+          .map((x) => x.i)
+      );
+      cache.set(d, set);
+    }
+    return set.has(s);
   };
 }
 
@@ -221,7 +270,7 @@ export function lowVolStrategy(window: number): Strategy {
 }
 
 /** Funding carry across perpetuals: long the lowest average funding, short the highest, weekly. */
-export function fundingStrategy(window: number): Strategy {
+export function fundingStrategy(window: number, options: RankOptions = {}): Strategy {
   return rankStrategy(
     (u, s, d) => {
       if (d - window + 1 < 0 || !(u.close[s][d - window + 1] > 0)) return NaN;
@@ -229,8 +278,19 @@ export function fundingStrategy(window: number): Strategy {
       for (let i = d - window + 1; i <= d; i++) sum += u.funding[s][i];
       return sum / window;
     },
-    (day) => new Date(day).getUTCDay() === 1
+    (day) => new Date(day).getUTCDay() === 1,
+    options
   );
+}
+
+/** Calendar-year statistics of daily returns from `start` on. */
+export function yearlyStats(u: DailyUniverse, returns: number[], start: number): Array<{ year: number; stats: PeriodStats }> {
+  const byYear = new Map<number, number[]>();
+  for (let d = start; d < returns.length; d++) {
+    const y = new Date(u.days[d]).getUTCFullYear();
+    byYear.set(y, [...(byYear.get(y) ?? []), returns[d]]);
+  }
+  return [...byYear].map(([year, r]) => ({ year, stats: periodStats(r) }));
 }
 
 /** Buy and hold one coin (the BTC benchmark). */
