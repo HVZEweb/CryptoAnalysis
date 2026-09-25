@@ -292,9 +292,7 @@ export class Backtester {
         }
       }
 
-      const { prediction, breakdown } = await this.predictor.combine(context, snapshot, llmPred, {
-        useDynamicWeights: config.useDynamicWeights !== false,
-      });
+      const { prediction, breakdown } = await this.predictor.combine(context, snapshot, llmPred);
 
       const rulesDir: PredictionDirection =
         breakdown.rulesAggregateScore > 0.08
