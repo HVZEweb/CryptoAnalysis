@@ -46,7 +46,9 @@ bot/bot.log
 bot/__pycache__/
 
 
-/docs
+# local notes stay out of git; research reports are committed
+/docs/*
+!/docs/research/
 # python
 __pycache__/
 *.pyc
