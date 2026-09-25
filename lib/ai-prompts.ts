@@ -139,7 +139,7 @@ Daily volatility: ${ctx.volatility.dailyVolatility.toFixed(2)}%
 24h Change: ${ctx.marketData.priceChangePercent24h}%
 24h High: $${ctx.marketData.high24h}
 24h Low: $${ctx.marketData.low24h}
-Volume: ${ctx.marketData.volume}
+24h Volume (base asset): ${ctx.marketData.volume}
 ${ctx.marketData.fundingRate !== undefined ? `Funding Rate: ${ctx.marketData.fundingRate}` : ""}
 ${ctx.marketData.openInterest !== undefined ? `Open Interest: ${ctx.marketData.openInterest}` : ""}
 ${onChainBlock}

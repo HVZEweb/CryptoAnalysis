@@ -283,25 +283,26 @@ function EnsembleBadge({
   score: number;
   breakdown?: EnsembleBreakdown;
 }) {
-  const pct = (score * 100).toFixed(0);
-  const signed = score > 0 ? `+${pct}` : pct;
+  // score is the weighted edge 2p − 1; half of it is the lean away from 50% in percentage points.
+  const pts = (score * 50).toFixed(1);
+  const signed = score > 0 ? `+${pts}` : pts;
   const agreement = breakdown?.agreement;
-  const mlNote = breakdown && !breakdown.mlAvailable ? " · ML off" : "";
+  const mlNote = breakdown && !breakdown.mlAvailable ? " · у модели нет подтверждённого преимущества" : "";
 
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-bold ring-1",
-        score > 0.08
+        score >= 0.04
           ? "bg-emerald-500/15 text-emerald-300 ring-emerald-500/25"
-          : score < -0.08
+          : score <= -0.04
             ? "bg-red-500/15 text-red-300 ring-red-500/25"
             : "bg-indigo-500/15 text-indigo-200 ring-indigo-400/30"
       )}
-      title={`Ensemble score (LLM+ML+rules)${agreement ? ` · ${agreement}` : ""}${mlNote}`}
+      title={`Перевес ансамбля от 50% (модель + ИИ + правила)${agreement ? ` · ${agreement}` : ""}${mlNote}`}
     >
       <span className="text-[9px] uppercase tracking-wider opacity-70">Ens</span>
-      {signed}%
+      {signed} п.п.
     </span>
   );
 }
