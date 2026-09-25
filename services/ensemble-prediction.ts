@@ -23,8 +23,12 @@ import type {
   PredictionResult,
 } from "@/types";
 
-/** The LLM and the rules have no measured accuracy, so they can only nudge the model. */
-export const SOURCE_WEIGHTS = { ml: 0.7, llm: 0.15, rules: 0.15 } as const;
+/**
+ * Only the price model has measured accuracy. The rules can nudge it; the LLM has no vote at all —
+ * it writes the text explanation, and its own call is still stored in the breakdown so its accuracy
+ * can be measured on real outcomes before it is ever given weight again.
+ */
+export const SOURCE_WEIGHTS = { ml: 0.85, llm: 0, rules: 0.15 } as const;
 
 /** Smallest |P(up) − 0.5| that is still reported as a direction. */
 export const MIN_DIRECTION_EDGE = 0.02;
