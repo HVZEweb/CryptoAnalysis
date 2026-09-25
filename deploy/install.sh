@@ -176,6 +176,10 @@ if [ -z "$PORT" ]; then
   while port_busy "$PORT"; do PORT=$((PORT + 1)); done
 fi
 env_set APP_PORT "$PORT"
+if [ "$PORT" != 3100 ]; then
+  holder=$(ss -ltnpH 2>/dev/null | awk '$4 ~ /:3100$/' | grep -o 'users:(("[^"]*"' | head -1 | cut -d'"' -f2)
+  warn "порт 3100 занят${holder:+ процессом '$holder'} — сайт будет на порту $PORT"
+fi
 env_set DB_HOST 127.0.0.1
 env_set DB_PORT 3306
 env_set DB_USER "$APP"
@@ -206,6 +210,8 @@ ok "порт $PORT, файл $ENV_FILE"
 # ---------------------------------------------------------------------------
 say "Установка зависимостей и сборка (несколько минут)"
 cd "$APP_DIR"
+# Build caches left by running Next.js from a subfolder confuse the type check — they are safe to drop.
+find "$APP_DIR" -mindepth 2 -maxdepth 3 -type d -name .next -not -path "*/node_modules/*" -prune -exec rm -rf {} +
 npm ci --no-audit --no-fund --loglevel=error "${NPM_PROXY_ARGS[@]}"
 NODE_ENV=production npm run build --silent >/tmp/$APP-build.log 2>&1 || { tail -40 /tmp/$APP-build.log; die "сборка не удалась (лог: /tmp/$APP-build.log)"; }
 ok "сборка готова"
