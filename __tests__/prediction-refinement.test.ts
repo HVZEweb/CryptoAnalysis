@@ -243,7 +243,8 @@ describe("refinePrediction with the strategy lab", () => {
     expect(refined.tradeLevels).toMatchObject({ sl: 64229.6, tp: 63629.6 });
     expect(refined.recommendation).toContain("проверенная стратегия");
     expect(refined.recommendation).toContain("4 × 15m");
-    expect(refined.recommendation).toContain("рыночным или лимитным");
+    expect(refined.recommendation).toContain("вход рыночным ордером");
+    expect(refined.recommendation).toContain("TP выставить лимитным");
   });
 });
 

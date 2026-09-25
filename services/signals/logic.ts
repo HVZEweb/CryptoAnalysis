@@ -5,7 +5,7 @@
 
 import type { Candle } from "@/types";
 import type { PredictorModel } from "@/services/predictor";
-import { LAB_FEES } from "@/services/strategy-lab/lab";
+import { tradeCost } from "@/services/strategy-lab/lab";
 import type { SignalRow } from "@/services/signals/store";
 
 /** "sol", "SOL", "solusdt", "$SOL" → "SOLUSDT" */
@@ -65,7 +65,8 @@ export function evaluateOutcome(signal: Pick<SignalRow, "side" | "entry" | "tp" 
   const bars = candles.filter((c) => c.openTime >= signal.entry_time).sort((a, b) => a.openTime - b.openTime);
   const result = (status: Outcome["status"], exitPrice: number, exitTime: number): Outcome => {
     const gross = ((long ? 1 : -1) * (exitPrice - signal.entry)) / signal.entry;
-    return { status, exitPrice, exitTime, grossBp: gross * 1e4, netBp: (gross - LAB_FEES.maker) * 1e4 };
+    const cost = tradeCost(status === "timeout" ? "time" : status);
+    return { status, exitPrice, exitTime, grossBp: gross * 1e4, netBp: (gross - cost) * 1e4 };
   };
   for (const c of bars) {
     if (c.closeTime > signal.close_by) break;

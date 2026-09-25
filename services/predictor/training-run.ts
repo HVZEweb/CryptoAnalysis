@@ -6,11 +6,17 @@
 import type { Candle, Timeframe } from "@/types";
 import { ALL_TIMEFRAMES, HORIZONS } from "@/services/predictor/config";
 import { fetchHistory, listCsvSeries, loadCsvCandles, resampleCandles } from "@/services/predictor/data";
-import { saveModel } from "@/services/predictor";
+import { MODELS_DIR, saveModel } from "@/services/predictor";
+import { archiveKlines } from "@/services/pooled/archive";
 import { trainPredictor, type PredictorModel } from "@/services/predictor/train";
 
 export interface TrainingOptions {
-  source?: "binance" | "csv";
+  /** archive — the Binance public archive (data.binance.vision), what GitHub Actions trains from */
+  source?: "binance" | "csv" | "archive";
+  /** Where models are written (default MODELS_DIR) */
+  outDir?: string;
+  /** Download cache for the archive source */
+  cacheDir?: string;
   timeframes?: Timeframe[];
   symbols?: string[];
   days?: number;
@@ -44,7 +50,7 @@ function describeStrategy(m: PredictorModel): string[] {
     lines.push(
       `  лучшая из ${s.setupsTested}: стоп ${setup.slAtr} ATR, цель ×${setup.rr}, до ${setup.horizon} баров, сигнал от ${(setup.minEdge * 100).toFixed(0)} п.п.`,
       `    подбор:   ${a.trades} сделок, ${a.avgNetBp.toFixed(1)} п./сделку, в плюс ${pct(a.winRate)}`,
-      `    проверка: ${b.trades} сделок, ${b.avgNetBp.toFixed(1)} п./сделку (рыночными ${b.avgNetBpTaker.toFixed(1)}), в плюс ${pct(b.winRate)}, t=${b.tStat.toFixed(1)}`
+      `    проверка: ${b.trades} сделок, ${b.avgNetBp.toFixed(1)} п./сделку (всё рыночными ${b.avgNetBpTaker.toFixed(1)}), в плюс ${pct(b.winRate)}, t=${b.tStat.toFixed(1)}`
     );
   }
   return lines;
@@ -55,6 +61,20 @@ async function loadSeries(
   options: Required<Omit<TrainingOptions, "timeframes">>
 ): Promise<Array<{ symbol: string; candles: Candle[] }>> {
   const spec = HORIZONS[timeframe];
+  if (options.source === "archive") {
+    // Same spot candles the Binance API gives, up to the last closed bar.
+    const to = Date.now() - 1;
+    const out: Array<{ symbol: string; candles: Candle[] }> = [];
+    for (const symbol of options.symbols) {
+      try {
+        const candles = await archiveKlines(symbol, spec.interval, to - options.days * 86_400_000, to, { cacheDir: options.cacheDir, concurrency: 12 }, "spot");
+        out.push({ symbol, candles: candles.filter((c) => c.closeTime < to) });
+      } catch (e) {
+        options.log(`  ${symbol} ${spec.interval}: ${(e as Error).message ?? e}`);
+      }
+    }
+    return out;
+  }
   if (options.source === "csv") {
     return listCsvSeries()
       .filter((s) => spec.intervalMinutes % s.minutes === 0)
@@ -77,6 +97,8 @@ async function loadSeries(
 export async function trainAll(options: TrainingOptions = {}): Promise<PredictorModel[]> {
   const opts = {
     source: options.source ?? "binance",
+    outDir: options.outDir ?? MODELS_DIR,
+    cacheDir: options.cacheDir ?? "data/archive",
     symbols: options.symbols ?? DEFAULT_TRAINING_SYMBOLS,
     days: options.days ?? 1095,
     log: options.log ?? (() => undefined),
@@ -88,12 +110,16 @@ export async function trainAll(options: TrainingOptions = {}): Promise<Predictor
     try {
       const series = (await loadSeries(timeframe, opts)).filter((s) => s.candles.length > 0);
       let btc = series.find((s) => s.symbol === "BTCUSDT")?.candles;
+      if (!btc && opts.source === "archive") {
+        const to = Date.now() - 1;
+        btc = await archiveKlines("BTCUSDT", spec.interval, to - opts.days * 86_400_000, to, { cacheDir: opts.cacheDir }, "spot").catch(() => undefined);
+      }
       if (!btc && opts.source === "binance") {
         btc = await fetchHistory("BTCUSDT", spec.interval, opts.days).catch(() => undefined);
       }
       if (!btc) opts.log("  нет свечей BTC — признаки BTC будут нулевыми");
       const model = trainPredictor(timeframe, series, opts.source, { btc, log: opts.log });
-      const file = saveModel(model);
+      const file = saveModel(model, opts.outDir);
       opts.log(describeModel(model));
       opts.log(`  сохранено: ${file}`);
       trained.push(model);

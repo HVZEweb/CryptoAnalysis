@@ -1,5 +1,9 @@
 /**
- * Whether a TP/SL trade is worth taking once exchange fees are paid.
+ * Whether a TP/SL trade is worth taking once exchange fees and slippage are paid.
+ *
+ * The signal is known only at a candle's close, so the entry is a market order; the stop is a market
+ * order too. Two cases: "market" — the take-profit also by market order (worst case); "limit" — the
+ * take-profit as a resting limit order (the realistic plan). Same cost model as the strategy lab.
  */
 
 import type { MarketType, PredictionDirection } from "@/types";
@@ -10,8 +14,11 @@ export const FEES: Record<MarketType, { taker: number; maker: number }> = {
   Spot: { taker: 0.001, maker: 0.001 },
 };
 
+/** Price slippage of a market order, per side. */
+export const SLIPPAGE = 0.0003;
+
 export interface OrderEconomics {
-  /** Round-trip fee (entry + exit) in price units */
+  /** Round-trip cost (fees + slippage) of a losing trade, in price units */
   fee: number;
   netProfit: number;
   netLoss: number;
@@ -36,9 +43,9 @@ export interface TradeEconomics {
   preferredOrder: "market" | "limit" | null;
 }
 
-function orderEconomics(entry: number, gain: number, loss: number, feeRate: number, winProbability: number): OrderEconomics {
-  const fee = entry * feeRate * 2;
-  const netProfit = gain - fee;
+function orderEconomics(entry: number, gain: number, loss: number, winCostRate: number, lossCostRate: number, winProbability: number): OrderEconomics {
+  const fee = entry * lossCostRate;
+  const netProfit = gain - entry * winCostRate;
   const netLoss = loss + fee;
   const expectedValue = winProbability * netProfit - (1 - winProbability) * netLoss;
   return {
@@ -67,8 +74,10 @@ export function computeTradeEconomics(
   const edge = probabilityPct / 100 - 0.5;
   const winProbability = Math.max(0, Math.min(1, loss / (gain + loss) + edge));
   const fees = FEES[market] ?? FEES.Futures;
-  const marketOrder = orderEconomics(entry, gain, loss, fees.taker, winProbability);
-  const limitOrder = orderEconomics(entry, gain, loss, fees.maker, winProbability);
+  const marketSide = fees.taker + SLIPPAGE;
+  // Entry and stop are market orders in both cases; only the take-profit differs.
+  const marketOrder = orderEconomics(entry, gain, loss, 2 * marketSide, 2 * marketSide, winProbability);
+  const limitOrder = orderEconomics(entry, gain, loss, marketSide + fees.maker, 2 * marketSide, winProbability);
 
   const preferredOrder = marketOrder.expectedValue > 0 ? "market" : limitOrder.expectedValue > 0 ? "limit" : null;
   return {

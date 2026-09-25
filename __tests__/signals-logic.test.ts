@@ -47,7 +47,7 @@ describe("evaluateOutcome", () => {
     const o = evaluateOutcome(signal, [bar(10, 97, 105)])!;
     expect(o.status).toBe("sl");
     expect(o.grossBp).toBeCloseTo(-200);
-    expect(o.netBp).toBeCloseTo(-204);
+    expect(o.netBp).toBeCloseTo(-216); // market in and out, with slippage
   });
 
   it("closes at the last bar's close when the holding time is over", () => {

@@ -3,8 +3,8 @@ import type { Candle } from "@/types";
 import {
   atr14,
   evaluateStrategies,
-  LAB_FEES,
   metricsOf,
+  tradeCost,
   simulateBracket,
   type LabPoint,
   type TradeSetup,
@@ -38,25 +38,36 @@ describe("simulateBracket", () => {
   const bars = [candle(0, 100, 100, 100, 100), candle(1, 100, 103, 97, 100), candle(2, 100, 101, 99, 100)];
 
   it("counts a candle that touches both levels as a stop", () => {
-    expect(simulateBracket(bars, 0, 1, 2, 2, 2)).toEqual({ ret: -0.02, exitIndex: 1 });
+    expect(simulateBracket(bars, 0, 1, 2, 2, 2)).toEqual({ ret: -0.02, exitIndex: 1, exit: "sl" });
   });
 
   it("takes profit when only the target is touched", () => {
-    expect(simulateBracket(bars, 0, -1, 2, 5, 2)).toEqual({ ret: 0.02, exitIndex: 1 });
+    expect(simulateBracket(bars, 0, -1, 2, 5, 2)).toEqual({ ret: 0.02, exitIndex: 1, exit: "tp" });
   });
 
   it("closes at the horizon when neither level is hit", () => {
     const r = simulateBracket(bars, 0, 1, 10, 10, 2);
     expect(r.exitIndex).toBe(2);
     expect(r.ret).toBe(0);
+    expect(r.exit).toBe("time");
   });
 });
 
 describe("metricsOf", () => {
-  it("charges the maker round trip on every trade", () => {
-    const m = metricsOf([{ time: 0, gross: 0.001 }, { time: 1, gross: 0.001 }], 7 * 86_400_000);
-    expect(m.avgNetBp).toBeCloseTo((0.001 - LAB_FEES.maker) * 1e4);
-    expect(m.avgNetBpTaker).toBeCloseTo((0.001 - LAB_FEES.taker) * 1e4);
+  it("charges a market entry, a limit take-profit and a market stop, with slippage", () => {
+    expect(tradeCost("tp")).toBeCloseTo(0.001); // 0.05% + 0.03% in, 0.02% out
+    expect(tradeCost("sl")).toBeCloseTo(0.0016); // market both ways
+    expect(tradeCost("time")).toBeCloseTo(0.0016);
+    expect(tradeCost("tp", true)).toBeCloseTo(0.0016);
+    const m = metricsOf(
+      [
+        { time: 0, gross: 0.01, exit: "tp" },
+        { time: 1, gross: -0.005, exit: "sl" },
+      ],
+      7 * 86_400_000
+    );
+    expect(m.avgNetBp).toBeCloseTo(((0.01 - 0.001 + -0.005 - 0.0016) / 2) * 1e4);
+    expect(m.avgNetBpTaker).toBeCloseTo(((0.01 - 0.0016 + -0.005 - 0.0016) / 2) * 1e4);
     expect(m.tradesPerWeek).toBe(2);
   });
 });

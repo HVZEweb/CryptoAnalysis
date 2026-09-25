@@ -4,6 +4,7 @@
  *   npm run predictor:train                       # Binance, 5 coins, all timeframes
  *   npm run predictor:train -- --source csv       # data/ohlcv/*.csv (no network needed)
  *   npm run predictor:train -- --timeframes 1h,4h --symbols BTC,ETH --days 730
+ *   npm run predictor:train -- --source archive --out out/candles   # Binance archive (GitHub Actions)
  */
 
 import type { Timeframe } from "@/types";
@@ -15,7 +16,9 @@ function arg(name: string): string | undefined {
   return i >= 0 ? process.argv[i + 1] : undefined;
 }
 
-const source = arg("source") === "csv" ? "csv" : "binance";
+const source = arg("source") === "csv" ? "csv" : arg("source") === "archive" ? "archive" : "binance";
+const outDir = arg("out");
+const cacheDir = arg("cache");
 const timeframes = arg("timeframes")?.split(",") as Timeframe[] | undefined;
 const symbols = arg("symbols")
   ?.split(",")
@@ -23,7 +26,7 @@ const symbols = arg("symbols")
 const days = arg("days") ? Number(arg("days")) : undefined;
 
 installOutboundProxy()
-  .then(() => trainAll({ source, timeframes, symbols, days, log: console.log }))
+  .then(() => trainAll({ source, timeframes, symbols, days, outDir, cacheDir, log: console.log }))
   .then((models) => {
     console.log(`\nГотово: обучено моделей ${models.length}.`);
     process.exit(models.length ? 0 : 1);
