@@ -98,7 +98,7 @@ describe("coinVerdict", () => {
 describe("bot commands", () => {
   function deps(): BotDeps & { watch: string[] } {
     const watch: string[] = [];
-    let settings = { paused: false, observe: false, news: true };
+    let settings = { paused: false, observe: false, news: true, listings: true };
     return {
       watch,
       store: {

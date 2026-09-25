@@ -1,10 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BarChart3, BellRing, History, LineChart, Sparkles } from "lucide-react";
+import { BarChart3, BellRing, History, LineChart, Rocket, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type TabId = "predict" | "analysis" | "history" | "accuracy" | "signals";
+export type TabId = "predict" | "analysis" | "history" | "accuracy" | "signals" | "listings";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "predict", label: "Прогноз", icon: Sparkles },
@@ -12,6 +12,7 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "history", label: "История", icon: History },
   { id: "accuracy", label: "Точность", icon: LineChart },
   { id: "signals", label: "Сигналы", icon: BellRing },
+  { id: "listings", label: "Листинги", icon: Rocket },
 ];
 
 interface TabNavProps {
@@ -22,7 +23,7 @@ interface TabNavProps {
 
 export function TabNav({ active, onChange, historyCount = 0 }: TabNavProps) {
   return (
-    <nav className="card-premium relative grid grid-cols-5 gap-1 rounded-2xl p-1.5">
+    <nav className="card-premium relative grid grid-cols-3 gap-1 sm:grid-cols-6 rounded-2xl p-1.5">
       {TABS.map((tab) => {
         const isActive = active === tab.id;
         return (
