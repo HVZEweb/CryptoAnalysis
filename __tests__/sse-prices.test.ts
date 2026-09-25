@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/services/binance", () => ({
-  fetchMarketData: vi.fn().mockResolvedValue({
-    price: 65_000,
-    priceChangePercent24h: 2.1,
-  }),
-}));
+// The stream reads one Binance futures ticker per symbol; CI runners can't reach Binance.
+const tickerGet = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({ data: { lastPrice: "65000", priceChangePercent: "2.1" } })
+);
+vi.mock("@/lib/axios", () => ({ binanceFuturesClient: { get: tickerGet } }));
 
 import { GET } from "@/app/api/stream/prices/route";
 
@@ -22,5 +21,9 @@ describe("SSE prices stream", () => {
     const chunk = new TextDecoder().decode(value);
     expect(chunk).toContain("data:");
     expect(chunk).toContain("quotes");
+    expect(chunk).toContain("65000");
+    // one ticker call per symbol, nothing else
+    expect(tickerGet).toHaveBeenCalledTimes(3);
+    expect(tickerGet).toHaveBeenCalledWith("/ticker/24hr", expect.objectContaining({ params: { symbol: "BTCUSDT" } }));
   });
 });
