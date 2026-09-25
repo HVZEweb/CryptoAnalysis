@@ -26,8 +26,28 @@ export function TradeLevelsSummary({ prediction, className }: TradeLevelsSummary
         Быстрая сводка
       </p>
       <TradeLevelsGrid levels={levels} tpPositive={tpPositive} />
-      {prediction.tradeEconomics && <TradeEconomicsNote economics={prediction.tradeEconomics} />}
+      {prediction.strategy && <StrategyNote strategy={prediction.strategy} />}
+      {prediction.tradeEconomics && prediction.strategy?.status !== "no_setup" && prediction.strategy?.status !== "weak_signal" && (
+        <TradeEconomicsNote economics={prediction.tradeEconomics} />
+      )}
     </div>
+  );
+}
+
+function StrategyNote({ strategy }: { strategy: NonNullable<PredictionResult["strategy"]> }) {
+  const h = strategy.holdout;
+  if (strategy.status !== "trade") {
+    return (
+      <p className="mt-3 border-t border-white/8 pt-2 text-[11px] font-medium text-amber-300">
+        Сделка не предлагается: {strategy.reason}
+      </p>
+    );
+  }
+  return (
+    <p className="mt-3 border-t border-white/8 pt-2 text-[11px] text-emerald-400">
+      Проверенная стратегия
+      {h && ` · на новых данных ${h.avgNetBp >= 0 ? "+" : ""}${h.avgNetBp.toFixed(1)} п./сделку после комиссий, ${(h.winRate * 100).toFixed(0)}% в плюс, ${h.trades} сделок`}
+    </p>
   );
 }
 

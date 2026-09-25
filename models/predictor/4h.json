@@ -150,7 +150,7 @@
     "zScore": 5.547899535542796,
     "hasEdge": false
   },
-  "trainedAt": "2026-09-25T08:50:04.566Z",
+  "trainedAt": "2026-09-25T12:29:08.562Z",
   "source": "csv",
   "symbols": [
     "BTCUSDT",
@@ -159,5 +159,51 @@
   ],
   "dataFrom": "2025-07-20T15:00:00.000Z",
   "dataTo": "2026-07-11T06:00:00.000Z",
-  "samples": 25562
+  "samples": 25562,
+  "strategy": {
+    "evaluatedAt": "2026-09-25T12:29:07.619Z",
+    "fees": {
+      "maker": 0.0004,
+      "taker": 0.001
+    },
+    "setupsTested": 144,
+    "selectionPeriod": {
+      "from": "2025-09-17T20:00:00.000Z",
+      "to": "2026-03-14T15:00:00.000Z"
+    },
+    "holdoutPeriod": {
+      "from": "2026-03-14T15:00:00.000Z",
+      "to": "2026-07-11T06:00:00.000Z"
+    },
+    "best": {
+      "setup": {
+        "slAtr": 2,
+        "rr": 1.5,
+        "horizon": 16,
+        "minEdge": 0.04
+      },
+      "selection": {
+        "trades": 852,
+        "winRate": 0.4800469483568075,
+        "avgNetBp": 11.546167831157689,
+        "avgNetBpTaker": 5.546167831157688,
+        "tStat": 1.5560781305106848,
+        "totalPct": 98.37334992146351,
+        "maxDrawdownPct": 65.90863449083777,
+        "tradesPerWeek": 33.544879306304196
+      },
+      "holdout": {
+        "trades": 505,
+        "winRate": 0.42376237623762375,
+        "avgNetBp": -13.926627440682463,
+        "avgNetBpTaker": -19.926627440682463,
+        "tStat": -1.9218430479173976,
+        "totalPct": -70.32946857544644,
+        "maxDrawdownPct": 86.61125533502273,
+        "tradesPerWeek": 29.799789251844043
+      }
+    },
+    "profitable": false,
+    "reason": "прибыль не подтвердилась на новых данных (-13.9 п. на сделку после комиссий)"
+  }
 }

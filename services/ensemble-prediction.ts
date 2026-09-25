@@ -10,6 +10,7 @@
 import { getHigherTimeframeBias } from "@/lib/prediction-refinement";
 import { extractMlFeatures } from "@/services/ml-features";
 import { runPricePredictor } from "@/services/predictor";
+import { strategySignal } from "@/services/strategy-lab/signal";
 import { SIDEWAYS_BAND } from "@/services/predictor/config";
 import { getCachedMlFeatures, setCachedMlFeatures } from "@/lib/feature-cache";
 import type {
@@ -278,6 +279,14 @@ export class EnsemblePredictor {
     const callSide = call.direction === "LONG" ? 1 : call.direction === "SHORT" ? -1 : 0;
     const vetoedByModel = callSide !== 0 && modelSide !== callSide;
     if (vetoedByModel) call = { direction: "SIDEWAYS", probability: 50, probabilityUp: 50 };
+    // A setup that made money after fees on unseen history trades the model's side, even where the
+    // direction test alone was inconclusive: profit on the holdout is the stricter check.
+    const strategy = strategySignal(model, ctx.marketData.price);
+    const strategyOverride = strategy.status === "trade" && strategy.side !== call.direction;
+    if (strategyOverride && model) {
+      const up = Math.round(model.probabilityUp * 1000) / 10;
+      call = { direction: strategy.side!, probability: strategy.side === "LONG" ? up : Math.round((100 - up) * 10) / 10, probabilityUp: up };
+    }
     const { direction, probability } = call;
     const probabilityUp = call.probabilityUp;
     const probabilityDown = Math.round((100 - probabilityUp) * 10) / 10;
@@ -355,7 +364,9 @@ export class EnsemblePredictor {
       refinementNotes.push(`ИИ предлагал ${llmPrediction.direction}; итог определяет проверенная модель`);
       recommendation = `${direction} ${probability}% по проверенной модели (ИИ: ${llmPrediction.direction}).`;
     }
-    if (hasEdge && validation && direction !== "SIDEWAYS") {
+    if (strategyOverride) {
+      refinementNotes.push(`Направление ${direction} задаёт проверенная стратегия сделок модели`);
+    } else if (hasEdge && validation && direction !== "SIDEWAYS") {
       refinementNotes.push(`Вероятность ограничена подтверждённой точностью ${(validation.confident.accuracy * 100).toFixed(1)}%`);
     }
 
@@ -375,6 +386,7 @@ export class EnsemblePredictor {
       refinementNotes,
       lowConfidence,
       metaTrustScore: trustScore,
+      strategy,
       ...(model ? { priceForecast: model.priceForecast } : {}),
     };
 

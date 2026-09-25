@@ -31,7 +31,23 @@ export function describeModel(m: PredictorModel): string {
     `  log-loss ${v.logLoss.toFixed(4)} vs ${v.baselineLogLoss.toFixed(4)} · AUC ${v.auc.toFixed(3)}`,
     `  попадание цены в коридор 10–90%: ${pct(v.band80Coverage)} (цель ≈ 80%)`,
     `  вывод: ${v.hasEdge ? "есть статистически значимое преимущество — направление используется" : "преимущества нет — используется только ценовой коридор"}`,
+    ...describeStrategy(m),
   ].join("\n");
+}
+
+function describeStrategy(m: PredictorModel): string[] {
+  const s = m.strategy;
+  if (!s) return [];
+  const lines = [`  сделки после комиссий: ${s.profitable ? "есть проверенная прибыльная настройка" : "выгодной сделки нет"} — ${s.reason}`];
+  if (s.best) {
+    const { setup, selection: a, holdout: b } = s.best;
+    lines.push(
+      `  лучшая из ${s.setupsTested}: стоп ${setup.slAtr} ATR, цель ×${setup.rr}, до ${setup.horizon} баров, сигнал от ${(setup.minEdge * 100).toFixed(0)} п.п.`,
+      `    подбор:   ${a.trades} сделок, ${a.avgNetBp.toFixed(1)} п./сделку, в плюс ${pct(a.winRate)}`,
+      `    проверка: ${b.trades} сделок, ${b.avgNetBp.toFixed(1)} п./сделку (рыночными ${b.avgNetBpTaker.toFixed(1)}), в плюс ${pct(b.winRate)}, t=${b.tStat.toFixed(1)}`
+    );
+  }
+  return lines;
 }
 
 async function loadSeries(
