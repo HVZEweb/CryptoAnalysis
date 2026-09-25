@@ -235,8 +235,8 @@ if [ -z "$PORT" ]; then
 fi
 env_set APP_PORT "$PORT"
 if [ "$PORT" != 3100 ]; then
-  holder=$(ss -ltnpH 2>/dev/null | awk '$4 ~ /:3100$/' | grep -o 'users:(("[^"]*"' | head -1 | cut -d'"' -f2)
-  warn "порт 3100 занят${holder:+ процессом '$holder'} — сайт будет на порту $PORT"
+  holder=$(ss -ltnpH 2>/dev/null | awk '$4 ~ /:3100$/' | grep -o 'users:(("[^"]*"' | head -1 | cut -d'"' -f2 || true)
+  [ -n "$holder" ] && warn "порт 3100 занят процессом '$holder' — сайт будет на порту $PORT"
 fi
 env_set DB_HOST 127.0.0.1
 env_set DB_PORT 3306
