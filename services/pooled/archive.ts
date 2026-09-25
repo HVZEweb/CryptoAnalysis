@@ -196,6 +196,12 @@ export async function archiveDerivs(symbol: string, from: number, to: number, op
   );
   const points = metricCsvs.flatMap((csv) => (csv ? parseMetrics(csv) : [])).sort((a, b) => a.ts - b.ts);
 
+  const funding = await archiveFunding(symbol, from, to, opts);
+  return { points, funding };
+}
+
+/** Funding settlements between `from` and `to` (monthly archive files), oldest first. */
+export async function archiveFunding(symbol: string, from: number, to: number, opts: ArchiveOptions): Promise<DerivData["funding"]> {
   const { months } = periods(from - 31 * DAY, to);
   const fundingCsvs = await mapLimit(months, opts.concurrency ?? 8, (m) =>
     fetchCsv(`${BASE}/monthly/fundingRate/${symbol}/${symbol}-fundingRate-${m}.zip`, opts, true)
@@ -208,6 +214,5 @@ export async function archiveDerivs(symbol: string, from: number, to: number, op
       if (/^\d/.test(time ?? "") && Number.isFinite(Number(rate))) funding.push({ time: Number(time), rate: Number(rate) });
     }
   }
-  funding.sort((a, b) => a.time - b.time);
-  return { points, funding };
+  return funding.sort((a, b) => a.time - b.time);
 }
