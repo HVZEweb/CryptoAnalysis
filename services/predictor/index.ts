@@ -11,6 +11,7 @@ import { HORIZONS, SIDEWAYS_BAND } from "@/services/predictor/config";
 import { computeFeatureSeries, FEATURE_LABELS, FEATURE_NAMES, type FeatureContext } from "@/services/predictor/features";
 import { classifierContributions, predictClassifier, type PredictorModel } from "@/services/predictor/train";
 import { fetchCandles } from "@/services/binance";
+import { atr14 } from "@/services/strategy-lab/lab";
 
 export type { PredictorModel, ValidationReport } from "@/services/predictor/train";
 
@@ -51,6 +52,8 @@ export interface PricePrediction {
   priceForecast: PriceForecast;
   probabilityUp: number;
   model: PredictorModel;
+  /** ATR(14) of the model's bar interval at the last closed bar — the unit the strategy lab sizes stops in */
+  atr: number;
   topFeatures: Array<{ feature: string; label: string; contribution: number }>;
 }
 
@@ -112,7 +115,8 @@ export function predictWithModel(
     };
   }
 
-  return { ml, priceForecast, probabilityUp: pUp, model, topFeatures };
+  const atr = atr14(candles).at(-1) ?? NaN;
+  return { ml, priceForecast, probabilityUp: pUp, model, atr, topFeatures };
 }
 
 function closedCandles(candles: Candle[], now = Date.now()): Candle[] {

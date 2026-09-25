@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Activity, LineChart } from "lucide-react";
+import { Activity, LineChart, Scale } from "lucide-react";
 import { BacktestPanel } from "@/components/BacktestPanel";
 import { LivePerformancePanel } from "@/components/LivePerformancePanel";
+import { StrategyLabPanel } from "@/components/StrategyLabPanel";
 import { cn } from "@/lib/utils";
 
-type Tab = "backtest" | "live";
+type Tab = "backtest" | "live" | "strategy";
 
 export default function BacktestPage() {
   const [tab, setTab] = useState<Tab>("backtest");
@@ -45,9 +46,12 @@ export default function BacktestPage() {
           <TabButton active={tab === "live"} onClick={() => setTab("live")} icon={Activity}>
             Live Performance
           </TabButton>
+          <TabButton active={tab === "strategy"} onClick={() => setTab("strategy")} icon={Scale}>
+            Сделки после комиссий
+          </TabButton>
         </div>
 
-        {tab === "backtest" ? <BacktestPanel /> : <LivePerformancePanel />}
+        {tab === "backtest" ? <BacktestPanel /> : tab === "live" ? <LivePerformancePanel /> : <StrategyLabPanel />}
       </div>
     </div>
   );

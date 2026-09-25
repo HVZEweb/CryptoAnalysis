@@ -18,6 +18,7 @@ import {
   type LogisticModel,
   type MoveQuantiles,
 } from "@/services/predictor/model";
+import { atr14, evaluateStrategies, type LabPoint, type StrategyReport } from "@/services/strategy-lab/lab";
 
 export type Classifier = { kind: "logistic"; logistic: LogisticModel } | { kind: "gbm"; gbm: GbmModel };
 
@@ -119,6 +120,15 @@ export interface PredictorModel {
   dataFrom: string;
   dataTo: string;
   samples: number;
+  /** Fee-aware trade simulation of this model's out-of-sample signals (absent in models trained before it existed) */
+  strategy?: StrategyReport;
+}
+
+/** One walk-forward prediction made by a model that never saw that bar. */
+export interface OutOfSamplePrediction {
+  symbol: string;
+  time: number;
+  pUp: number;
 }
 
 export function buildSamples(
@@ -206,7 +216,9 @@ export function walkForward(
   horizon: number,
   intervalMinutes: number,
   folds = 5,
-  spec: CandidateSpec = CANDIDATES[0]
+  spec: CandidateSpec = CANDIDATES[0],
+  /** Filled with every out-of-sample prediction, for the strategy lab */
+  oos?: OutOfSamplePrediction[]
 ): ValidationReport {
   const sorted = [...samples].sort((a, b) => a.time - b.time);
   const gapMs = horizon * intervalMinutes * 60_000;
@@ -230,7 +242,9 @@ export function walkForward(
     const baselineCall = baseRate >= 0.5 ? 1 : 0;
 
     for (const s of test) {
-      probs.push(predictClassifier(classifier, s.x));
+      const p = predictClassifier(classifier, s.x);
+      probs.push(p);
+      oos?.push({ symbol: s.symbol, time: s.time, pUp: p });
       labels.push(s.y);
       if (s.y === baselineCall) baselineHits++;
       baselineLoss += logLoss(baseRate, s.y);
@@ -298,14 +312,23 @@ export function trainPredictor(
   }
 
   // Every candidate is judged on the same walk-forward folds; the lowest out-of-sample log-loss wins.
+  // Only the leader's out-of-sample predictions are kept for the strategy lab, to save memory.
+  let bestOos: OutOfSamplePrediction[] = [];
+  let bestLoss = Infinity;
   const results = (options.candidates ?? CANDIDATES).map((candidate) => {
-    const validation = walkForward(samples, spec.horizon, spec.intervalMinutes, 5, candidate);
+    const oos: OutOfSamplePrediction[] = [];
+    const validation = walkForward(samples, spec.horizon, spec.intervalMinutes, 5, candidate, oos);
     options.log?.(
       `  ${candidate.name.padEnd(13)} точность ${(validation.accuracy * 100).toFixed(1)}% · log-loss ${validation.logLoss.toFixed(4)}${validation.hasEdge ? " · преимущество" : ""}`
     );
+    if (validation.logLoss < bestLoss) {
+      bestLoss = validation.logLoss;
+      bestOos = oos;
+    }
     return { candidate, validation };
   });
   const best = results.reduce((a, b) => (b.validation.logLoss < a.validation.logLoss ? b : a));
+  const strategy = strategyReport(series, bestOos, spec.horizon);
 
   const { classifier, quantiles, expectedMove } = fitComponents(samples, best.candidate);
   const firstTime = samples.reduce((m, s) => Math.min(m, s.time), Infinity);
@@ -336,5 +359,30 @@ export function trainPredictor(
     dataFrom: new Date(firstTime).toISOString(),
     dataTo: new Date(lastTime).toISOString(),
     samples: samples.length,
+    strategy,
   };
+}
+
+/** Runs the strategy lab on the chosen candidate's out-of-sample predictions. */
+export function strategyReport(
+  series: Array<{ symbol: string; candles: Candle[] }>,
+  oos: OutOfSamplePrediction[],
+  horizon: number
+): StrategyReport {
+  const candlesBySymbol = new Map(series.map((s) => [s.symbol, s.candles]));
+  const lookup = new Map(
+    series.map((s) => {
+      const atr = atr14(s.candles);
+      const indexByTime = new Map(s.candles.map((c, i) => [c.openTime, i]));
+      return [s.symbol, { atr, indexByTime }];
+    })
+  );
+  const points: LabPoint[] = [];
+  for (const o of oos) {
+    const l = lookup.get(o.symbol);
+    const index = l?.indexByTime.get(o.time);
+    if (!l || index === undefined) continue;
+    points.push({ symbol: o.symbol, time: o.time, index, pUp: o.pUp, atr: l.atr[index] });
+  }
+  return evaluateStrategies(points, candlesBySymbol, horizon);
 }
