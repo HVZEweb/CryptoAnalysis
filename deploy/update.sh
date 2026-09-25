@@ -27,4 +27,17 @@ git -C "$APP_DIR" fetch -q --depth 1 origin "$BRANCH"
 git -C "$APP_DIR" reset -q --hard FETCH_HEAD
 echo "==> код обновлён до $(git -C "$APP_DIR" log -1 --format='%h %s')"
 
+# Files that aren't in the repo (e.g. an old copy unpacked into a subfolder) break the build.
+# Move them aside rather than delete; .env, node_modules and other ignored files stay.
+stray=$(git -C "$APP_DIR" ls-files --others --exclude-standard --directory)
+if [ -n "$stray" ]; then
+  backup="/opt/$(basename "$APP_DIR")-stray-$(date +%Y%m%d-%H%M%S)"
+  while IFS= read -r p; do
+    p="${p%/}"
+    mkdir -p "$backup/$(dirname "$p")"
+    mv "$APP_DIR/$p" "$backup/$p"
+  done <<< "$stray"
+  echo "==> лишние файлы ($(wc -l <<< "$stray") шт.) перенесены в $backup"
+fi
+
 bash "$APP_DIR/deploy/install.sh" < /dev/null
