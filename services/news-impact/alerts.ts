@@ -6,6 +6,8 @@ import type { NewsImpactPrediction } from "@/services/news-impact/types";
 import { getTelegramConfig, sendTelegram as sendToConnectedBot } from "@/lib/telegram";
 import { getStrongNewsRecord, type NewsTrackRecord } from "@/services/news-impact/history";
 import { getChat } from "@/services/signals/store";
+import { liveStudy, similarNewsLine } from "@/services/news-study/log";
+import { newsTopic } from "@/services/news-study/study";
 
 const CACHE_DIR = path.join(process.cwd(), ".cache", "news-impact");
 const ALERTS_LOG_PATH = path.join(CACHE_DIR, "alerts.jsonl");
@@ -137,7 +139,12 @@ export function formatAlertPayload(
 const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** Alert for the bot connected in /admin (HTML), with how such alerts really did before. */
-export function formatBotAlert(prediction: NewsImpactPrediction, record: NewsTrackRecord, newsTitle?: string): string {
+export function formatBotAlert(
+  prediction: NewsImpactPrediction,
+  record: NewsTrackRecord,
+  newsTitle?: string,
+  similar?: string | null
+): string {
   const long = prediction.direction === "LONG";
   const history =
     record.count >= 10
@@ -151,6 +158,7 @@ export function formatBotAlert(prediction: NewsImpactPrediction, record: NewsTra
     `📝 ${escapeHtml(prediction.reason)}`,
     prediction.sourceUrl ? `🔗 ${escapeHtml(prediction.sourceUrl)}` : null,
     ``,
+    similar ?? null,
     history,
     `⚠️ Это оценка новости, а не проверенная стратегия: уровни и прибыль после комиссий для неё не проверялись. /news off — выключить.`,
   ]
@@ -164,7 +172,10 @@ async function sendToAdminBot(prediction: NewsImpactPrediction, newsTitle?: stri
   if (!config) return;
   if (!(await getChat(config.chatId)).news) return;
   const record = await getStrongNewsRecord().catch(() => ({ count: 0, hitRate: 0, avgMovePct: 0 }));
-  await sendToConnectedBot(formatBotAlert(prediction, record, newsTitle), config);
+  const similar = await liveStudy()
+    .then((s) => similarNewsLine(s, newsTopic(newsTitle ?? prediction.newsTitle ?? "")))
+    .catch(() => null);
+  await sendToConnectedBot(formatBotAlert(prediction, record, newsTitle, similar), config);
 }
 
 async function sendTelegram(text: string): Promise<void> {

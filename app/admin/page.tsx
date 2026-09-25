@@ -93,6 +93,9 @@ export default function AdminPage() {
           <Link href="/admin/research" className="text-sm text-indigo-300 hover:underline">
             Рейтинг монет
           </Link>
+          <Link href="/admin/news-study" className="text-sm text-indigo-300 hover:underline">
+            Новости и цена
+          </Link>
           <Link href="/" className="text-sm text-indigo-300 hover:underline">
             ← На сайт
           </Link>
