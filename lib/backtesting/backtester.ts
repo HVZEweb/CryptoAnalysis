@@ -25,7 +25,7 @@ import { fetchCandlesInRange } from "@/services/binance";
 import { isComponentCorrect } from "@/services/ensemble-meta";
 import { EnsemblePredictor } from "@/services/ensemble-prediction";
 import { extractMlFeatures } from "@/services/ml-features";
-import { generatePrediction } from "@/services/ai-prediction";
+import { generateOpenRouterPrediction } from "@/services/openrouter";
 import { runMlRetrain } from "@/services/ml-retrain";
 import type { Candle, Coin, MarketRegime, PredictionDirection } from "@/types";
 
@@ -286,7 +286,7 @@ export class Backtester {
       let llmPred = buildProxyLlmPrediction(context, snapshot);
       if (mode === "full" && asOf === sampled[sampled.length - 1]) {
         try {
-          llmPred = await generatePrediction(context);
+          llmPred = await generateOpenRouterPrediction(context);
         } catch {
           // keep proxy
         }
