@@ -1,13 +1,13 @@
 name: Research
 
-# On demand: rare positioning events and "big move" models on 2 years of the Binance archive, judged
+# On demand: rare positioning events, "big move" models (2 years, hourly) and slow daily strategies (full history), judged
 # after realistic costs on a holdout period (scripts/research.ts). The report is in the run summary
 # and the `research` artifact.
 on:
   workflow_dispatch:
     inputs:
       only:
-        description: "events, bigmove or empty for both"
+        description: "events, bigmove, portfolio or empty for all"
         default: ""
       days:
         description: "Days of history"
