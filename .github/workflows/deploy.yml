@@ -39,8 +39,24 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$KEY" > ~/.ssh/id_deploy
-          chmod 600 ~/.ssh/id_deploy
+          # Keys pasted from a Windows terminal arrive with CRLFs or flattened onto one line —
+          # rebuild the PEM layout so either paste works.
+          python3 - <<'PY'
+          import os, re
+          k = os.environ["KEY"].replace("\r", "").strip()
+          m = re.match(r"(-----BEGIN [A-Z ]+-----)\s*(.*?)\s*(-----END [A-Z ]+-----)", k, re.S)
+          if m:
+              body = "".join(m.group(2).split())
+              k = m.group(1) + "\n" + "\n".join(body[i:i + 70] for i in range(0, len(body), 70)) + "\n" + m.group(3)
+          path = os.path.expanduser("~/.ssh/id_deploy")
+          with open(path, "w") as f:
+              f.write(k + "\n")
+          os.chmod(path, 0o600)
+          PY
+          if ! ssh-keygen -y -f ~/.ssh/id_deploy > /dev/null 2>&1; then
+            echo "::error::VPS_SSH_KEY не похож на закрытый ключ. Нужен весь блок от -----BEGIN OPENSSH PRIVATE KEY----- до -----END OPENSSH PRIVATE KEY----- (файл без .pub)."
+            exit 1
+          fi
           ssh-keyscan -T 15 -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
           # The key travels inside the script on stdin, never on a command line the server could log.
           {
