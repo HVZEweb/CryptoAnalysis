@@ -42,8 +42,14 @@ jobs:
           # Keys pasted from a Windows terminal arrive with CRLFs or flattened onto one line —
           # rebuild the PEM layout so either paste works.
           python3 - <<'PY'
-          import os, re
+          import base64, os, re
           k = os.environ["KEY"].replace("\r", "").strip()
+          if "-----BEGIN" not in k:
+              # One-line form: base64 -w0 of the key file (easiest to copy from a terminal).
+              try:
+                  k = base64.b64decode("".join(k.split())).decode().strip()
+              except Exception:
+                  pass
           m = re.match(r"(-----BEGIN [A-Z ]+-----)\s*(.*?)\s*(-----END [A-Z ]+-----)", k, re.S)
           if m:
               body = "".join(m.group(2).split())
