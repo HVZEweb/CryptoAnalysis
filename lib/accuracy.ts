@@ -279,9 +279,17 @@ export function evaluatePredictionAccuracyFromPrices(
   let label: string;
   let isCorrect: boolean | null;
 
+  // Price closeness dominates the score, so a small move the wrong way could still rate "Частично".
+  // A directional call that closed on the wrong side is a miss, whatever the price error.
+  const wrongSide =
+    (input.direction === "LONG" && percentChange < 0) || (input.direction === "SHORT" && percentChange > 0);
+
   if (timeframePhase === "in_progress") {
     label = score >= 75 ? "На траектории" : score >= 50 ? "Уточняется" : "Отклонение";
     isCorrect = null;
+  } else if (wrongSide) {
+    label = "Мимо";
+    isCorrect = false;
   } else if (score >= 72) {
     label = "Точно";
     isCorrect = true;

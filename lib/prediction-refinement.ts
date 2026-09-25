@@ -41,6 +41,12 @@ function getVolatilityAdjustedMultipliers(
 const MIN_RR = 1.5;
 /** Support/resistance closer than this (in ATR) is noise, not a level worth trading against. */
 const MIN_LEVEL_DISTANCE_ATR = 0.25;
+/**
+ * Support/resistance may widen SL/TP by at most this factor over the ATR distance. A level further
+ * away belongs to a longer horizon: snapping to it (and then stretching TP to MIN_RR) produced
+ * 15m plans with ±1–2% targets that price almost never reaches within the timeframe.
+ */
+const MAX_LEVEL_STRETCH = 1.3;
 
 export type TrendBias = "bullish" | "bearish" | "neutral";
 
@@ -79,12 +85,15 @@ function buildLevelsFromAtr(
 ): { tp: number; sl: number; exit: number } {
   const slDist = atr * mult.sl;
   const tpDist = atr * mult.tp;
+  // A level is used only while it stays within MAX_LEVEL_STRETCH of the ATR distance.
+  const usable = (level: number, atrDist: number) =>
+    level > 0 && Math.abs(level - entry) <= atrDist * MAX_LEVEL_STRETCH;
 
   if (direction === "LONG") {
     let sl = entry - slDist;
     let tp = entry + tpDist;
-    if (support > 0 && support < entry) sl = Math.min(sl, support);
-    if (resistance > 0 && resistance > entry) tp = Math.max(tp, resistance);
+    if (support < entry && usable(support, slDist)) sl = Math.min(sl, support);
+    if (resistance > entry && usable(resistance, tpDist)) tp = Math.max(tp, resistance);
     if (tp - entry < (entry - sl) * MIN_RR) tp = entry + (entry - sl) * MIN_RR;
     const exit = entry + tpDist * 0.85;
     return { tp, sl, exit: Math.min(tp, Math.max(exit, entry + atr * mult.tp * 0.5)) };
@@ -93,8 +102,8 @@ function buildLevelsFromAtr(
   if (direction === "SHORT") {
     let sl = entry + slDist;
     let tp = entry - tpDist;
-    if (resistance > 0 && resistance > entry) sl = Math.max(sl, resistance);
-    if (support > 0 && support < entry) tp = Math.min(tp, support);
+    if (resistance > entry && usable(resistance, slDist)) sl = Math.max(sl, resistance);
+    if (support < entry && usable(support, tpDist)) tp = Math.min(tp, support);
     if (entry - tp < (sl - entry) * MIN_RR) tp = entry - (sl - entry) * MIN_RR;
     const exit = entry - tpDist * 0.85;
     return { tp, sl, exit: Math.max(tp, Math.min(exit, entry - atr * mult.tp * 0.5)) };
