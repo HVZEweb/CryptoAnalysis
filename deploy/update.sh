@@ -23,7 +23,8 @@ if [ ! -d "$APP_DIR/.git" ]; then
   git -C "$APP_DIR" init -q
   git -C "$APP_DIR" remote add origin "$REPO"
 fi
-git -C "$APP_DIR" fetch -q --depth 1 origin "$BRANCH"
+# Always the explicit URL, never whatever remote .git/config happens to name.
+git -C "$APP_DIR" fetch -q --depth 1 "$REPO" "$BRANCH"
 git -C "$APP_DIR" reset -q --hard FETCH_HEAD
 echo "==> код обновлён до $(git -C "$APP_DIR" log -1 --format='%h %s')"
 
