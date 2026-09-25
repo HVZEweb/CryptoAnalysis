@@ -6,6 +6,7 @@
  *   npx tsx scripts/research.ts --out out/research --days 730
  *   npx tsx scripts/research.ts --only events --symbols BTC,ETH --days 180
  *   npx tsx scripts/research.ts --only portfolio          # daily strategies on the full history since 2019
+ *   npx tsx scripts/research.ts --only funding            # robustness of the cross-sectional funding strategy
  */
 
 import fs from "fs";
@@ -16,7 +17,7 @@ import { POOLED_UNIVERSE } from "@/services/pooled/index";
 import { studyEvents } from "@/services/research/events";
 import { BIGMOVE_CONFIGS, studyBigMove } from "@/services/research/bigmove";
 import { describeVerdict } from "@/services/research/common";
-import { archiveFunding, archiveKlines } from "@/services/pooled/archive";
+import { archiveFunding, archiveKlines, listArchiveUsdtPerps } from "@/services/pooled/archive";
 import { datasetPeriod } from "@/services/pooled/dataset";
 import {
   basketStrategy,
@@ -24,7 +25,13 @@ import {
   describePortfolio,
   fundingStrategy,
   holdStrategy,
+  liquidTop,
   lowVolStrategy,
+  periodStats,
+  REBALANCE_COST,
+  yearlyStats,
+  type PeriodStats,
+  type Strategy,
   runStrategy,
   studyPortfolio,
   trendStrategy,
@@ -98,6 +105,83 @@ async function portfolioSection(log: (line: string) => void, report: string[], j
   json.portfolio = { start: u.days[start], split: u.days[split], studies, benchmarks };
 }
 
+/**
+ * Robustness of the cross-sectional funding strategy (it passed on today's 30 liquid coins):
+ * a point-in-time universe of every USDT perpetual ever listed, legs apart, harsher slippage, by year.
+ * Declared in advance: the verdict is on the top-50-by-volume universe with a 7-day window.
+ */
+async function fundingRobustness(log: (line: string) => void, report: string[], json: Record<string, unknown>) {
+  const { to } = datasetPeriod(1);
+  const from = Date.UTC(2019, 8, 1);
+  const opts = { cacheDir, concurrency: 16, log };
+  const all = arg("symbols") ? symbols : await listArchiveUsdtPerps();
+  log(`  монет в архиве: ${all.length}`);
+  const series = [];
+  let done = 0;
+  for (const symbol of all) {
+    try {
+      const candles = await archiveKlines(symbol, "1d", from, to, opts);
+      if (candles.length >= 60) series.push({ symbol, candles, funding: await archiveFunding(symbol, from, to, opts) });
+    } catch (e) {
+      log(`  ${symbol}: ${(e as Error).message}`);
+    }
+    if (++done % 50 === 0) log(`  загружено ${done}/${all.length}`);
+  }
+  const u = buildUniverse(series);
+  const split = u.days.findIndex((t) => t >= Date.UTC(2024, 0, 13));
+  const day = (i: number) => new Date(u.days[i]).toISOString().slice(0, 10);
+  const today30 = new Set(POOLED_UNIVERSE);
+
+  const variants: Array<{ label: string; strategy: Strategy; cost?: number; main?: boolean }> = [
+    { label: "сегодняшние 30 монет (как в прошлой проверке)", strategy: fundingStrategy(7, { eligible: (x, s) => today30.has(x.symbols[s]) }) },
+    { label: "топ-30 по обороту на каждую дату", strategy: fundingStrategy(7, { eligible: liquidTop(30) }) },
+    { label: "топ-50 по обороту на каждую дату — ГЛАВНЫЙ", strategy: fundingStrategy(7, { eligible: liquidTop(50) }), main: true },
+    { label: "топ-100 по обороту на каждую дату", strategy: fundingStrategy(7, { eligible: liquidTop(100) }) },
+    { label: "топ-50, только лонговая нога", strategy: fundingStrategy(7, { eligible: liquidTop(50), leg: "long" }) },
+    { label: "топ-50, только шортовая нога", strategy: fundingStrategy(7, { eligible: liquidTop(50), leg: "short" }) },
+    { label: "топ-50, проскальзывание 0,1% вместо 0,03%", strategy: fundingStrategy(7, { eligible: liquidTop(50) }), cost: 0.0015 },
+    { label: "ориентир: держать BTC", strategy: holdStrategy("BTCUSDT") },
+  ];
+  const f = (s: PeriodStats) =>
+    `${s.annualReturnPct >= 0 ? "+" : ""}${s.annualReturnPct.toFixed(1)}%/год, Sharpe ${s.sharpe.toFixed(2)}, t=${s.tStat.toFixed(1)}, просадка ${s.maxDrawdownPct.toFixed(0)}%`;
+
+  report.push(
+    `## Устойчивость стратегии «фандинг в поперечнике» (окно 7 дней, пересборка по понедельникам)`,
+    ``,
+    `${u.symbols.length} USDT-фьючерсов за всю историю, включая снятые с торгов; ${day(0)} → ${day(u.days.length - 1)}. ` +
+      `Подбор до ${day(split)}, проверка после (как в прошлом прогоне). Стоимость ${(REBALANCE_COST * 100).toFixed(2)}% за сторону, если не сказано иное.`,
+    "```"
+  );
+  const rows = [];
+  let mainPassed = false;
+  for (const v of variants) {
+    const run = runStrategy(u, v.strategy, v.cost);
+    const sel = periodStats(run.returns.slice(run.start, split));
+    const hold = periodStats(run.returns.slice(split));
+    const full = periodStats(run.returns.slice(run.start));
+    if (v.main) mainPassed = sel.annualReturnPct > 0 && hold.annualReturnPct > 0 && hold.tStat >= 2;
+    const years = yearlyStats(u, run.returns, run.start);
+    const perYear = (x: number) => ((x / ((u.days.length - run.start) / 365)) * 100).toFixed(1);
+    const text = [
+      `${v.main ? "▶" : " "} ${v.label} (с ${day(run.start)})`,
+      `    подбор:   ${f(sel)}`,
+      `    проверка: ${f(hold)}`,
+      `    всё время: ${f(full)}`,
+      `    по годам: ${years.map((y) => `${y.year} ${y.stats.totalPct >= 0 ? "+" : ""}${y.stats.totalPct.toFixed(0)}%`).join(" · ")}`,
+      `    фандинг ${perYear(run.funding)}%/год, комиссии и проскальзывание ${perYear(run.costs)}%/год`,
+    ].join("\n");
+    log(text);
+    report.push(text);
+    rows.push({ label: v.label, main: Boolean(v.main), selection: sel, holdout: hold, full, years, funding: run.funding, costs: run.costs });
+  }
+  const verdict = mainPassed
+    ? "✅ Главный вариант (топ-50 на каждую дату) прибылен на обоих периодах и проходит проверку (t ≥ 2)."
+    : "❌ Главный вариант (топ-50 на каждую дату) не проходит: прибыль на обоих периодах и t ≥ 2 не подтвердились без ошибки выжившего.";
+  report.push("```", "", verdict, "");
+  log(verdict);
+  json.funding = { symbols: u.symbols.length, split: u.days[split], rows, mainPassed };
+}
+
 async function main() {
   const log = (line: string) => console.log(line);
   const report: string[] = [
@@ -108,6 +192,12 @@ async function main() {
     ``,
   ];
   const json: Record<string, unknown> = {};
+
+  if (only === "funding") {
+    log("\n== Устойчивость фандинг-стратегии");
+    await fundingRobustness(log, report, json);
+    return finish(report, json, log);
+  }
 
   if (only === "portfolio") {
     log("\n== Медленные стратегии");
