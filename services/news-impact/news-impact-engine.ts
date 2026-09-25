@@ -29,6 +29,7 @@ import {
   startOutcomeTrackingJob,
   stopOutcomeTrackingJob,
 } from "@/services/news-impact/history";
+import { logNews, startNewsOutcomeJob } from "@/services/news-study/log";
 import type { NewsImpactEngineState, NewsImpactPrediction } from "@/services/news-impact/types";
 
 const CACHE_DIR = path.join(process.cwd(), ".cache", "news-impact");
@@ -174,6 +175,7 @@ export class NewsImpactEngine {
     this.state.running = true;
     this.state.intervalMs = getIntervalMs();
     startOutcomeTrackingJob();
+    startNewsOutcomeJob();
     await this.tick();
     this.timer = setInterval(() => {
       void this.tick();
@@ -209,6 +211,8 @@ export class NewsImpactEngine {
     try {
       await this.dedup.load();
       const signals = await fetchImpactNews();
+      // Every headline goes to the news study, alert-worthy or not, so its statistics aren't biased.
+      void logNews(signals).catch((e) => console.warn("[news-study] log failed:", (e as Error).message));
       this.state.lastFetchedCount = signals.length;
 
       for (const signal of signals.slice(0, 12)) {

@@ -6,6 +6,7 @@
  *   npx tsx scripts/research.ts --out out/research --days 730
  *   npx tsx scripts/research.ts --only events --symbols BTC,ETH --days 180
  *   npx tsx scripts/research.ts --only portfolio          # daily strategies on the full history since 2019
+ *   npx tsx scripts/research.ts --only news               # how each type of news moved BTC (GDELT, ~3 months)
  */
 
 import fs from "fs";
@@ -17,6 +18,8 @@ import { studyEvents } from "@/services/research/events";
 import { BIGMOVE_CONFIGS, studyBigMove } from "@/services/research/bigmove";
 import { describeVerdict } from "@/services/research/common";
 import { archiveFunding, archiveKlines } from "@/services/pooled/archive";
+import { fetchGdeltHeadlines, gdeltDeps } from "@/services/news-study/gdelt";
+import { baselineOf, describeTopics, movesAfter, newsTopic, studyTopics, type NewsEvent } from "@/services/news-study/study";
 import { datasetPeriod } from "@/services/pooled/dataset";
 import {
   basketStrategy,
@@ -29,6 +32,53 @@ import {
   studyPortfolio,
   trendStrategy,
 } from "@/services/research/portfolio";
+
+/**
+ * News event study: crypto headlines from GDELT (its API only covers about the last three months), classified
+ * by the live news monitor's rules, and BTC's move after each from the 5-minute futures archive.
+ */
+async function newsSection(log: (line: string) => void, report: string[], json: Record<string, unknown>) {
+  const DAY_MS = 86_400_000;
+  const to = Date.now() - 2 * DAY_MS;
+  const from = to - Math.min(days, 85) * DAY_MS;
+  log(`  заголовки GDELT ${new Date(from).toISOString().slice(0, 10)} → ${new Date(to).toISOString().slice(0, 10)} (1 запрос в 5 с)`);
+  let gdeltError = "";
+  const articles = await fetchGdeltHeadlines(from, to, { ...gdeltDeps, log }).catch((e) => {
+    gdeltError = (e as Error).message;
+    log(`  GDELT недоступен: ${gdeltError}`);
+    return [];
+  });
+  const btc = await archiveKlines("BTCUSDT", "5m", from - DAY_MS, to + DAY_MS + 60 * 60_000, { cacheDir, concurrency: 12, log });
+  const events: NewsEvent[] = [];
+  let untyped = 0;
+  for (const a of articles) {
+    const topic = newsTopic(a.title);
+    if (!topic) {
+      untyped++;
+      continue;
+    }
+    events.push({ topic, time: a.seen, moves: movesAfter(btc, a.seen) });
+  }
+  const stats = studyTopics(events, baselineOf(btc));
+  const lines = [
+    ...(gdeltError ? [`⚠️ Загрузка заголовков прервана: ${gdeltError}. Результаты ниже — только по тому, что успело загрузиться.`] : []),
+    `Заголовков после склейки перепечаток: ${articles.length}; с распознанным типом: ${events.length}, без типа или пересказ движения цены: ${untyped}.`,
+    ...describeTopics(stats),
+  ];
+  for (const l of lines) log(l);
+  report.push(
+    `## Новости и цена BTC`,
+    ``,
+    `Заголовки из GDELT за ${new Date(from).toISOString().slice(0, 10)} → ${new Date(to).toISOString().slice(0, 10)}, время — когда GDELT впервые увидел статью. ` +
+      `Ход BTC — от открытия первой 5-минутной свечи после этого момента, в сравнении со средним ходом за тот же срок в любой час. ` +
+      `Одна история в пределах 6 часов считается один раз. Направление подтверждено только при 20+ событиях, |t| ≥ 2 и одном знаке в обеих половинах периода.`,
+    "```",
+    ...lines,
+    "```",
+    ""
+  );
+  json.news = { from, to, articles: articles.length, events: events.length, stats };
+}
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -108,6 +158,12 @@ async function main() {
     ``,
   ];
   const json: Record<string, unknown> = {};
+
+  if (only === "news") {
+    log("\n== Новости и цена BTC");
+    await newsSection(log, report, json);
+    return finish(report, json, log);
+  }
 
   if (only === "portfolio") {
     log("\n== Медленные стратегии");

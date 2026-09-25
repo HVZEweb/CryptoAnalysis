@@ -162,13 +162,13 @@ export const IMPACT_RULES: ImpactRule[] = [
   },
   {
     id: "fed_rate_cut",
-    pattern: /\b(fed\s+(cuts?|lowers?)\s+rate|rate\s+cut|dovish\s+fed)\b/i,
+    pattern: /\b(fed\s+(cuts?|lowers?)\s+(interest\s+)?rates?|rate\s+cuts?|dovish\s+fed)\b/i,
     bias: "Bullish", strength: "High", score: 70, duration: "1h",
     category: "macro", coins: ["BTC", "ETH"], context: "macro",
   },
   {
     id: "fed_rate_hike",
-    pattern: /\b(fed\s+(hikes?|raises?)\s+rate|rate\s+hike|hawkish\s+fed)\b/i,
+    pattern: /\b(fed\s+(hikes?|raises?)\s+(interest\s+)?rates?|rate\s+hikes?|hawkish\s+fed)\b/i,
     bias: "Bearish", strength: "High", score: 68, duration: "1h",
     category: "macro", coins: ["BTC", "ETH"], context: "macro",
   },
