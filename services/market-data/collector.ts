@@ -190,12 +190,13 @@ export interface CollectSummary {
   errors: string[];
 }
 
-async function latestSeriesBar(symbol: string, column: MetricColumn): Promise<number | null> {
-  const rows = await query<Array<{ t: number | null }>>(
-    `SELECT MAX(ts) AS t FROM market_metrics_5m WHERE symbol = ? AND ${column} IS NOT NULL`,
+async function seriesBounds(symbol: string, column: MetricColumn): Promise<{ first: number; last: number } | null> {
+  const rows = await query<Array<{ a: number | null; b: number | null }>>(
+    `SELECT MIN(ts) AS a, MAX(ts) AS b FROM market_metrics_5m WHERE symbol = ? AND ${column} IS NOT NULL`,
     [symbol]
   );
-  return rows[0]?.t == null ? null : Number(rows[0].t);
+  const r = rows[0];
+  return r?.a == null || r.b == null ? null : { first: Number(r.a), last: Number(r.b) };
 }
 
 async function latestFunding(symbol: string): Promise<number | null> {
@@ -223,19 +224,32 @@ export async function collectMarketData(options: CollectOptions = {}, deps: Coll
   for (const symbol of symbols) {
     for (const spec of SERIES) {
       try {
-        // Resume from this series' last stored bar (with an overlap, so late revisions land),
-        // or backfill what Binance still has.
-        const last = await latestSeriesBar(symbol, spec.column);
-        const from = Math.max(now - SERIES_RETENTION_MS + FIVE_MIN, (last ?? 0) - 6 * FIVE_MIN);
-        for (let start = from; start < now; ) {
-          await deps.sleep(REQUEST_GAP_MS);
-          const { data } = await deps.futuresData.get<Array<Record<string, unknown>>>(spec.path, {
-            params: { symbol, period: "5m", limit: SERIES_PAGE, startTime: start },
-          });
-          const rows = seriesRows(symbol, spec, data);
-          metricRows += await upsertMetrics(rows);
-          if (data.length < SERIES_PAGE || !rows.length) break;
-          start = rows[rows.length - 1].ts + FIVE_MIN;
+        // Resume from this series' last stored bar (with an overlap, so late revisions land), and
+        // backfill whatever of Binance's 30 days is still missing before the first stored bar.
+        const retentionStart = now - SERIES_RETENTION_MS + FIVE_MIN;
+        const bounds = await seriesBounds(symbol, spec.column);
+        const ranges: Array<[number, number]> = [];
+        if (!bounds) {
+          ranges.push([retentionStart, now]);
+        } else {
+          if (bounds.first > retentionStart + 12 * FIVE_MIN) ranges.push([retentionStart, bounds.first]);
+          ranges.push([Math.max(retentionStart, bounds.last - 6 * FIVE_MIN), now]);
+        }
+        for (const [from, to] of ranges) {
+          // Explicit windows: with startTime alone Binance ignores it and returns the latest page.
+          for (let start = from; start < to; start += SERIES_PAGE * FIVE_MIN) {
+            await deps.sleep(REQUEST_GAP_MS);
+            const { data } = await deps.futuresData.get<Array<Record<string, unknown>>>(spec.path, {
+              params: {
+                symbol,
+                period: "5m",
+                limit: SERIES_PAGE,
+                startTime: start,
+                endTime: Math.min(start + SERIES_PAGE * FIVE_MIN - 1, to),
+              },
+            });
+            metricRows += await upsertMetrics(seriesRows(symbol, spec, data));
+          }
         }
       } catch (e) {
         errors.push(`${symbol} ${spec.path}: ${(e as Error).message}`);
