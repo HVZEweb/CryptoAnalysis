@@ -131,6 +131,9 @@ export async function handleCommand(chatId: string, text: string, deps: BotDeps 
       const scan = scannerState();
       return [
         formatTrackRecord("Всего", trackRecord(rows)),
+        ...(rows.some((r) => r.demo_status === "closed")
+          ? [formatTrackRecord("Демо OKX (реальное исполнение)", trackRecord(rows.filter((r) => r.demo_status === "closed").map((r) => ({ net_bp: r.demo_net_bp ?? 0 }))))]
+          : []),
         ...[...byModel].map(([k, v]) => formatTrackRecord(`  ${k}`, trackRecord(v))),
         `Открыто сейчас: ${open.length}${open.length ? ` (${open.map((s) => `${s.side} ${s.symbol} ${s.timeframe}`).join(", ")})` : ""}`,
         scan.lastScanAt ? `Последняя проверка: ${new Date(scan.lastScanAt).toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })} МСК` : "",

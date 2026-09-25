@@ -18,6 +18,7 @@ import type { DerivData } from "@/services/pooled/derivs";
 import { strategySignal } from "@/services/strategy-lab/signal";
 import { fetchCandles } from "@/services/binance";
 import { getTelegramConfig, sendTelegram } from "@/lib/telegram";
+import { demoConfig, OkxDemo } from "@/lib/okx-demo";
 import * as realStore from "@/services/signals/store";
 import { coinVerdict, disableReason, evaluateOutcome, type Outcome } from "@/services/signals/logic";
 
@@ -42,8 +43,11 @@ export interface ModelEntry {
 
 export type SignalStore = Pick<
   typeof realStore,
-  "getChat" | "getWatchlist" | "logSignal" | "openSignals" | "closeSignal" | "closedSignals" | "disabledModels" | "disableModel"
+  "getChat" | "getWatchlist" | "logSignal" | "openSignals" | "closeSignal" | "closedSignals" | "disabledModels" | "disableModel" | "setDemo" | "pendingDemo"
 >;
+
+/** The OKX demo account (lib/okx-demo), when keys for it are configured. */
+export type DemoTrader = Pick<OkxDemo, "open" | "close" | "settlement">;
 
 export interface ScanDeps {
   chatId: () => string | null;
@@ -52,6 +56,7 @@ export interface ScanDeps {
   derivs: (symbol: string, since: number) => Promise<DerivData>;
   models: () => ModelEntry[];
   store: SignalStore;
+  demo: () => DemoTrader | null;
   now: () => number;
   stateFile: string;
 }
@@ -76,6 +81,10 @@ const defaultDeps: ScanDeps = {
   derivs: (symbol, since) => loadDerivsFromDb(symbol, since),
   models: loadModelEntries,
   store: realStore,
+  demo: () => {
+    const cfg = demoConfig();
+    return cfg ? new OkxDemo(cfg) : null;
+  },
   now: () => Date.now(),
   stateFile: STATE_FILE,
 };
@@ -151,7 +160,7 @@ export interface ScanResult {
   errors: string[];
 }
 
-async function closeFinished(deps: ScanDeps, entries: ModelEntry[], result: ScanResult): Promise<void> {
+async function closeFinished(deps: ScanDeps, entries: ModelEntry[], result: ScanResult, demo: DemoTrader | null): Promise<void> {
   const open = await deps.store.openSignals();
   for (const s of open) {
     try {
@@ -163,6 +172,11 @@ async function closeFinished(deps: ScanDeps, entries: ModelEntry[], result: Scan
       await deps.store.closeSignal(s.id, { status: outcome.status, exitPrice: outcome.exitPrice, grossBp: outcome.grossBp, netBp: outcome.netBp, closedAt: outcome.exitTime });
       await deps.send(outcomeMessage(s, outcome));
       result.closed++;
+      if (s.demo_status === "open" && s.demo_inst_id && demo) {
+        // TP/SL are closed by OKX itself; on a time exit what is left is closed here.
+        await demo.close(s.demo_inst_id, s.side).catch((e) => result.errors.push(`demo close ${s.symbol}: ${(e as Error).message}`));
+        await deps.store.setDemo(s.id, { demo_status: "closing" });
+      }
 
       // Live results of this model version: switch it off if they lose money after fees.
       const rows = await deps.store.closedSignals({ modelKey: s.model_key, trainedAt: s.model_trained_at });
@@ -181,6 +195,26 @@ async function closeFinished(deps: ScanDeps, entries: ModelEntry[], result: Scan
   }
 }
 
+/** Reports what the OKX demo account really got for signals whose calculated trade has ended. */
+async function settleDemo(deps: ScanDeps, demo: DemoTrader, result: ScanResult): Promise<void> {
+  for (const s of await deps.store.pendingDemo()) {
+    if (s.demo_status !== "closing" || !s.demo_inst_id) continue;
+    try {
+      const r = await demo.settlement(s.demo_inst_id, s.sent_at);
+      if (!r) continue;
+      await deps.store.setDemo(s.id, { demo_status: "closed", demo_entry: r.entry, demo_exit: r.exit, demo_net_bp: r.netBp });
+      const sign = r.netBp >= 0 ? "+" : "";
+      await deps.send(
+        `🧪 Демо OKX · ${s.side} ${s.symbol} ${s.timeframe}: вход ${fmt(r.entry)} → выход ${fmt(r.exit)}, ` +
+          `${sign}${r.netBp.toFixed(1)} п. с реальными комиссиями и исполнением` +
+          (s.net_bp != null ? ` (расчёт: ${s.net_bp >= 0 ? "+" : ""}${s.net_bp.toFixed(1)} п.)` : "")
+      );
+    } catch (e) {
+      result.errors.push(`demo settle ${s.symbol}: ${(e as Error).message}`);
+    }
+  }
+}
+
 export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanResult> {
   const result: ScanResult = { profitableModels: [], checked: 0, sent: 0, closed: 0, errors: [] };
   const chatId = deps.chatId();
@@ -189,7 +223,9 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
   const now = deps.now();
   const state = readState(deps.stateFile);
   const entries = deps.models();
-  await closeFinished(deps, entries, result);
+  const demo = deps.demo();
+  await closeFinished(deps, entries, result, demo);
+  if (demo) await settleDemo(deps, demo, result);
 
   const disabled = await deps.store.disabledModels();
   const active = entries.filter((e) => e.model.strategy?.profitable && disabled.get(e.key)?.trainedAt !== e.model.trainedAt);
@@ -250,8 +286,7 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
           if (isActive && verdict.ok && signal.status === "trade") {
             const entryTime = last.closeTime + 1;
             const closeBy = entryTime + signal.setup!.horizonBars * HORIZONS[entry.timeframe].intervalMinutes * 60_000;
-            await deps.send(signalMessage(symbol, modelTitle(entry), signal, last.close, run.probabilityUp, closeBy, verdict.text));
-            await deps.store.logSignal({
+            const signalId = await deps.store.logSignal({
               chat_id: chatId,
               model_key: entry.key,
               model_trained_at: model.trainedAt,
@@ -266,6 +301,20 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
               close_by: closeBy,
               sent_at: now,
             });
+            let demoLine = "";
+            if (demo) {
+              try {
+                const o = await demo.open(symbol, signal.side!, last.close, signal.levels!.tp, signal.levels!.sl);
+                await deps.store.setDemo(signalId, { demo_status: "open", demo_inst_id: o.instId, demo_entry: o.entry, demo_note: `ордер ${o.ordId}, ${o.contracts} контр.` });
+                const slip = ((signal.side === "LONG" ? 1 : -1) * (o.entry - last.close)) / last.close * 1e4;
+                demoLine = `🧪 Демо OKX: открыто по ${fmt(o.entry)} (${slip >= 0 ? "хуже" : "лучше"} расчёта на ${Math.abs(slip).toFixed(1)} п.), позиция ~${Math.round(o.notionalUsd)}$`;
+              } catch (e) {
+                await deps.store.setDemo(signalId, { demo_status: "failed", demo_note: (e as Error).message });
+                demoLine = `🧪 Демо OKX: не открыто — ${(e as Error).message}`;
+              }
+            }
+            const message = signalMessage(symbol, modelTitle(entry), signal, last.close, run.probabilityUp, closeBy, verdict.text);
+            await deps.send(demoLine ? `${message}\n\n${demoLine}` : message);
             openKeys.add(key);
             state.lastSignalAt = new Date(now).toISOString();
             result.sent++;

@@ -49,6 +49,17 @@ export async function ensureSignalTables(): Promise<void> {
       INDEX idx_signal_model (model_key, status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  // OKX demo execution of the signal (lib/okx-demo): what really filled next to the calculated result.
+  for (const col of [
+    "demo_status ENUM('open','closing','closed','failed') NULL",
+    "demo_inst_id VARCHAR(40) NULL",
+    "demo_entry DOUBLE NULL",
+    "demo_exit DOUBLE NULL",
+    "demo_net_bp DOUBLE NULL",
+    "demo_note VARCHAR(255) NULL",
+  ]) {
+    await execute(`ALTER TABLE signal_log ADD COLUMN IF NOT EXISTS ${col}`);
+  }
   await execute(`
     CREATE TABLE IF NOT EXISTS signal_model_state (
       model_key VARCHAR(40) NOT NULL PRIMARY KEY,
@@ -125,9 +136,38 @@ export interface SignalRow {
   gross_bp: number | null;
   net_bp: number | null;
   closed_at: number | null;
+  demo_status?: "open" | "closing" | "closed" | "failed" | null;
+  demo_inst_id?: string | null;
+  demo_entry?: number | null;
+  demo_exit?: number | null;
+  demo_net_bp?: number | null;
+  demo_note?: string | null;
 }
 
-export type NewSignal = Omit<SignalRow, "id" | "status" | "exit_price" | "gross_bp" | "net_bp" | "closed_at">;
+export type NewSignal = Omit<
+  SignalRow,
+  "id" | "status" | "exit_price" | "gross_bp" | "net_bp" | "closed_at" | "demo_status" | "demo_inst_id" | "demo_entry" | "demo_exit" | "demo_net_bp" | "demo_note"
+>;
+
+export type DemoPatch = Partial<Pick<SignalRow, "demo_status" | "demo_inst_id" | "demo_entry" | "demo_exit" | "demo_net_bp" | "demo_note">>;
+
+export async function setDemo(id: number, patch: DemoPatch): Promise<void> {
+  const keys = Object.keys(patch) as Array<keyof DemoPatch>;
+  if (!keys.length) return;
+  await execute(`UPDATE signal_log SET ${keys.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`, [
+    ...keys.map((k) => {
+      const v = patch[k];
+      return typeof v === "string" ? v.slice(0, 255) : (v ?? null);
+    }),
+    id,
+  ]);
+}
+
+/** Signals whose demo position is still open or waiting for OKX to report its result. */
+export async function pendingDemo(): Promise<SignalRow[]> {
+  await ensureSignalTables();
+  return (await query<SignalRow[]>("SELECT * FROM signal_log WHERE demo_status IN ('open','closing') ORDER BY sent_at")).map(numeric);
+}
 
 export async function logSignal(s: NewSignal): Promise<number> {
   await ensureSignalTables();
@@ -152,6 +192,9 @@ const numeric = (r: SignalRow): SignalRow => ({
   gross_bp: r.gross_bp == null ? null : Number(r.gross_bp),
   net_bp: r.net_bp == null ? null : Number(r.net_bp),
   closed_at: r.closed_at == null ? null : Number(r.closed_at),
+  demo_entry: r.demo_entry == null ? null : Number(r.demo_entry),
+  demo_exit: r.demo_exit == null ? null : Number(r.demo_exit),
+  demo_net_bp: r.demo_net_bp == null ? null : Number(r.demo_net_bp),
 });
 
 export async function openSignals(): Promise<SignalRow[]> {
