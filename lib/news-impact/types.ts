@@ -118,4 +118,4 @@ export interface NewsImpactState {
   recentHistory: NewsImpactHistoryRow[];
 }
 
-export interface NewsImpactApiResponse extends NewsImpactState {}
+export type NewsImpactApiResponse = NewsImpactState;

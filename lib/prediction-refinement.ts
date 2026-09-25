@@ -174,6 +174,7 @@ function buildForecastFromLevels(
       high: Math.max(exit + bandHalf, exit),
     },
     expectedMovePct,
+    source: "levels",
   };
 }
 
@@ -376,7 +377,8 @@ export function refinePrediction(
     probabilityUp,
     probabilityDown,
     priceRange,
-    priceForecast,
+    // A trained-model forecast is a real distribution estimate; the ATR one is only a trade target.
+    priceForecast: prediction.priceForecast?.source === "predictor" ? prediction.priceForecast : priceForecast,
     tradeLevels,
     risks,
     recommendation,

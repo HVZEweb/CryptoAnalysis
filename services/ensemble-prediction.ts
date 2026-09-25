@@ -4,7 +4,7 @@
 
 import { getHigherTimeframeBias } from "@/lib/prediction-refinement";
 import { extractMlFeatures } from "@/services/ml-features";
-import { runMlModel } from "@/services/ml-backend";
+import { runPricePredictor } from "@/services/predictor";
 import {
   DEFAULT_ENSEMBLE_WEIGHTS,
   evaluateMetaLearner,
@@ -307,9 +307,9 @@ export class EnsemblePredictor {
       await setCachedMlFeatures(cacheKey, features).catch(() => undefined);
     }
 
-    const mlRun = await runMlModel(features);
-    const mlAvailable = mlRun.ok && mlRun.prediction !== null;
-    const ml = mlAvailable ? mlRun.prediction! : UNAVAILABLE_ML;
+    const predictorRun = runPricePredictor(ctx);
+    const mlAvailable = predictorRun.result?.ml != null;
+    const ml = predictorRun.result?.ml ?? UNAVAILABLE_ML;
 
     const rules = this.buildRuleSignals(ctx, snapshot);
     const ruleAgg = this.aggregateRuleSignals(rules);
@@ -357,7 +357,7 @@ export class EnsemblePredictor {
       effectiveWeights,
       dynamicWeightsUsed: options.useDynamicWeights !== false,
       mlAvailable,
-      mlError: mlRun.error,
+      mlError: predictorRun.error,
       llm: {
         direction: llmPrediction.direction,
         probability: llmPrediction.probability,
@@ -424,8 +424,8 @@ export class EnsemblePredictor {
       ...(llmPrediction.refinementNotes ?? []),
       overrideNote,
       mlAvailable
-        ? `ML model: ${ml.model} → ${ml.direction} ${ml.probability}%${ml.fallbackReason ? ` (fallback: ${ml.fallbackReason})` : ""}`
-        : `ML недоступен — ensemble: LLM + rules (${(effectiveWeights.llm * 100).toFixed(0)}% / ${(effectiveWeights.rules * 100).toFixed(0)}%)`,
+        ? `ML model: ${ml.model} → ${ml.direction} ${ml.probability}% (точность на истории ${ml.validationAccuracy}%)`
+        : `ML недоступен (${predictorRun.error}) — ensemble: LLM + rules (${(effectiveWeights.llm * 100).toFixed(0)}% / ${(effectiveWeights.rules * 100).toFixed(0)}%)`,
       options.useDynamicWeights !== false ? "Dynamic weights applied from regime profile" : undefined,
     ].filter(Boolean) as string[];
 
@@ -443,6 +443,7 @@ export class EnsemblePredictor {
       refinementNotes,
       lowConfidence: meta.lowConfidence,
       metaTrustScore: meta.trustScore,
+      ...(predictorRun.result ? { priceForecast: predictorRun.result.priceForecast } : {}),
     };
 
     return { prediction: merged, breakdown };

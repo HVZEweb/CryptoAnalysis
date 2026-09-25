@@ -252,8 +252,9 @@ export interface MlPrediction {
   confidence: number;
   keyFeatures: string[];
   /** Where the score was computed */
-  source?: "python" | "typescript";
-  /** Set when Python failed and TS fallback was used */
+  source?: "predictor";
+  /** Out-of-sample accuracy of the model in walk-forward validation, % */
+  validationAccuracy?: number;
   fallbackReason?: string;
 }
 
@@ -292,6 +293,8 @@ export interface PriceForecast {
   confidenceBand: { low: number; high: number };
   /** Ожидаемое изменение от цены прогноза, % */
   expectedMovePct: number;
+  /** predictor = обученная модель; levels = цели сделки по ATR */
+  source?: "predictor" | "levels";
 }
 
 export interface AnalysisSnapshot {

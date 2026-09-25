@@ -15,12 +15,15 @@ export default function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [secret, setSecret] = useState("");
+
+  const adminHeaders = (): Record<string, string> => (secret ? { "x-admin-secret": secret } : {});
 
   const load = async () => {
     setError("");
-    const res = await fetch("/api/admin/users");
+    const res = await fetch("/api/admin/users", { headers: adminHeaders() });
     if (!res.ok) {
-      setError("Не удалось загрузить пользователей");
+      setError(res.status === 401 ? "Введите ADMIN_SECRET из .env" : "Не удалось загрузить пользователей");
       return;
     }
     const data = (await res.json()) as { users: AdminUser[] };
@@ -35,7 +38,7 @@ export default function AdminPage() {
   const upgrade = async (email: string) => {
     await fetch("/api/admin/users", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...adminHeaders() },
       body: JSON.stringify({ email, tier: "paid" }),
     });
     await load();
@@ -44,10 +47,17 @@ export default function AdminPage() {
   return (
     <main className="mx-auto max-w-4xl p-6">
       <h1 className="font-display text-2xl font-bold">Admin</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Локальный проект — управление пользователями</p>
-      <Button className="mt-4" onClick={load}>
-        Обновить
-      </Button>
+      <p className="mt-2 text-sm text-muted-foreground">Управление пользователями</p>
+      <div className="mt-4 flex gap-2">
+        <input
+          type="password"
+          value={secret}
+          onChange={(e) => setSecret(e.target.value)}
+          placeholder="ADMIN_SECRET"
+          className="rounded-xl bg-white/5 px-3 py-2 text-sm"
+        />
+        <Button onClick={load}>Обновить</Button>
+      </div>
       {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
       {loaded && (
         <div className="mt-6 space-y-2">

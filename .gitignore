@@ -47,3 +47,8 @@ bot/__pycache__/
 
 
 /docs
+# python
+__pycache__/
+*.pyc
+.venv/
+*.log

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { registerUser } from "@/lib/auth";
-import { DEVICE_COOKIE, SESSION_COOKIE } from "@/lib/request-context";
+import { DEVICE_COOKIE, SESSION_COOKIE, secureCookies } from "@/lib/request-context";
 
 const authSchema = z.object({
   email: z.string().email("Некорректный email"),
@@ -12,7 +12,7 @@ const authSchema = z.object({
 function setSessionCookie(response: NextResponse, token: string) {
   response.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: secureCookies(),
     sameSite: "lax",
     maxAge: 30 * 24 * 60 * 60,
     path: "/",
