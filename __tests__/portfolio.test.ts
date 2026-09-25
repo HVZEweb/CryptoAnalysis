@@ -89,3 +89,32 @@ describe("periodStats", () => {
     expect(s.tStat).toBeGreaterThan(0);
   });
 });
+
+describe("point-in-time universe", () => {
+  it("admits only coins that were liquid and listed long enough on that day", async () => {
+    const { liquidTop } = await import("@/services/research/portfolio");
+    const mk = (symbol: string, vol: number, startDay = 0, len = 100) => ({
+      symbol,
+      candles: daily(Array.from({ length: len }, () => 100), startDay).map((c) => ({ ...c, quoteVolume: vol })),
+      funding: [],
+    });
+    const u = buildUniverse([mk("BIG", 1e9), mk("MID", 1e8), mk("SMALL", 1e6), mk("NEW", 1e10, 80, 20)]);
+    const top2 = liquidTop(2);
+    const d = 95;
+    expect(top2(u, 0, d)).toBe(true);
+    expect(top2(u, 1, d)).toBe(true);
+    expect(top2(u, 2, d)).toBe(false);
+    expect(top2(u, 3, d)).toBe(false); // listed 15 days ago: not eligible yet despite its volume
+  });
+
+  it("trades one leg with full gross when asked", async () => {
+    const { rankStrategy } = await import("@/services/research/portfolio");
+    const coins = Array.from({ length: 6 }, (_, k) => ({ symbol: `C${k}`, candles: daily([100, 100]), funding: [] }));
+    const u = buildUniverse(coins);
+    const score = (_: unknown, s: number) => s;
+    const long = rankStrategy(score, () => true, { leg: "long" })(u, 0, new Array(6).fill(0));
+    const short = rankStrategy(score, () => true, { leg: "short" })(u, 0, new Array(6).fill(0));
+    expect(long).toEqual([0.5, 0.5, 0, 0, 0, 0]);
+    expect(short).toEqual([0, 0, 0, 0, -0.5, -0.5]);
+  });
+});

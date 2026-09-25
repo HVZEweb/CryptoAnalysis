@@ -92,8 +92,9 @@ export async function fillOutcomes(deps: FillDeps = defaultDeps, limit = 200): P
   await ensureNewsLogTable();
   const due = deps.now() - DAY - 15 * 60_000;
   const rows = await query<Array<{ id: string; published_at: number; coin: string | null }>>(
-    "SELECT id, published_at, coin FROM news_log WHERE outcome_done = 0 AND published_at < ? ORDER BY published_at LIMIT ?",
-    [due, limit]
+    // LIMIT as a literal: MySQL 8 rejects it as a prepared-statement parameter.
+    `SELECT id, published_at, coin FROM news_log WHERE outcome_done = 0 AND published_at < ? ORDER BY published_at LIMIT ${Math.max(1, Math.floor(limit))}`,
+    [due]
   );
   if (!rows.length) return 0;
   const first = Number(rows[0].published_at);
