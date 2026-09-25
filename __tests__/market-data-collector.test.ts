@@ -69,7 +69,7 @@ describe.runIf(onCiDb)("market data storage", () => {
     const fake = (handler: (path: string, params: Record<string, number | string>) => unknown) =>
       ({
         get: async (path: string, cfg?: { params?: Record<string, number | string> }) => {
-          calls.push(`${path}:${cfg?.params?.startTime ?? ""}`);
+          calls.push(`${path}:${cfg?.params?.startTime ?? ""}:${cfg?.params?.endTime ?? ""}`);
           return { data: handler(path, cfg?.params ?? {}) };
         },
       }) as unknown as AxiosInstance;
@@ -98,11 +98,19 @@ describe.runIf(onCiDb)("market data storage", () => {
     );
     expect(row).toEqual({ open_interest: 7, global_ls_ratio: 1.5, taker_buy_sell_ratio: 0.9 });
 
+    // Binance ignores a bare startTime and returns the latest page, so every request is an explicit window.
+    const firstWindows = calls
+      .filter((c) => c.startsWith("/openInterestHist"))
+      .map((c) => c.split(":").slice(1).map(Number));
+    expect(firstWindows[0][0]).toBe(now - 30 * 86_400_000 + 300_000);
+    expect(firstWindows.every(([s, e]) => e > s && e - s < 500 * 300_000)).toBe(true);
+    expect(firstWindows.length).toBeGreaterThan(10); // 30 days in ~42-hour pages
+
     calls.length = 0;
     const second = await collectMarketData({ symbols: ["ETHUSDT"] }, deps);
     expect(second.fundingRows).toBe(0);
     // Resumes half an hour before the last stored bar instead of re-reading 30 days.
     const starts = calls.filter((c) => c.startsWith("/openInterestHist")).map((c) => Number(c.split(":")[1]));
-    expect(starts[0]).toBe(now - 600_000 - 30 * 60_000);
+    expect(starts).toContain(now - 600_000 - 30 * 60_000);
   });
 });
