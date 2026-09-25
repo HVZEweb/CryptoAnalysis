@@ -14,7 +14,8 @@ curl -fsSL https://raw.githubusercontent.com/HVZEweb/CryptoAnalysis/main/deploy/
 |---|---|
 | Настройки | `/opt/cryptoanalysis/.env` → после правки `systemctl restart cryptoanalysis` |
 | Логи | `journalctl -u cryptoanalysis -f` |
-| Переобучение модели | `cryptoanalysis-train.timer` (вс 04:00), `journalctl -u cryptoanalysis-train -f` |
+| Переобучение модели | `cryptoanalysis-train.timer` (вс 04:00), `journalctl -u cryptoanalysis-train -f`; при выкладке — только если изменился код обучения |
+| Сбор рыночных данных | `cryptoanalysis-market-data.timer` (каждые 5 минут), `journalctl -u cryptoanalysis-market-data -f` |
 
 ## Доступ к Binance/OpenRouter из РФ
 

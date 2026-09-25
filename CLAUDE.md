@@ -43,7 +43,8 @@ VPS `83.222.16.56`: Ubuntu 24.04, 2 CPU, **1,9 ГБ RAM** + 2 ГБ swap. Обл�
 | Код | `/opt/cryptoanalysis` (git checkout `main`, владелец root) |
 | Настройки | `/opt/cryptoanalysis/.env` (root:cryptoanalysis 640) |
 | Сервис | `cryptoanalysis.service`, слушает `127.0.0.1:3101`, `MemoryMax=700M` |
-| Модели с сервера | `/opt/cryptoanalysis-data/models` (`PREDICTOR_MODELS_DIR`), переобучение `cryptoanalysis-train.timer` по воскресеньям в 04:00 |
+| Модели с сервера | `/opt/cryptoanalysis-data/models` (`PREDICTOR_MODELS_DIR`), переобучение `cryptoanalysis-train.timer` по воскресеньям в 04:00 и при выкладке, если изменились `services/predictor`, `services/strategy-lab` или `scripts/train-predictor.ts`. Лимит обучения: 1100M памяти, куча Node 900 МБ |
+| Сбор данных | `cryptoanalysis-market-data.timer` каждые 5 минут, `MemoryMax=250M` |
 | База | MariaDB, база и пользователь `cryptoanalysis`, только 127.0.0.1 |
 
 **Соседи, которых нельзя задеть:** `ase.service` (127.0.0.1:3000, `https://83.222.16.56` через

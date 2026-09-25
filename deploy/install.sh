@@ -278,13 +278,17 @@ mkdir -p "$MODELS_DIR"
 [ -n "$(ls -A "$MODELS_DIR" 2>/dev/null)" ] || cp "$APP_DIR"/models/predictor/*.json "$MODELS_DIR"/
 # Код принадлежит root: root запускает из этой папки скрипты обновления, поэтому сервис
 # (если его взломают) не должен иметь права их менять. Писать сайт может только в кэши и данные.
-chown -R root:root "$APP_DIR"
+# .next/.cache/data не трогаем: работающий сайт пишет туда, и короткий root-владелец ломал ему кэш.
 mkdir -p "$APP_DIR/.cache" "$APP_DIR/data"
+chown root:root "$APP_DIR"
+find "$APP_DIR" -mindepth 1 -maxdepth 1 ! -name .next ! -name .cache ! -name data -exec chown -R root:root {} +
 chown -R "$APP:$APP" "$APP_DIR/.next" "$APP_DIR/.cache" "$APP_DIR/data" "$DATA_DIR"
 chown root:"$APP" "$ENV_FILE"
 
 # ---------------------------------------------------------------------------
 say "Сервис systemd"
+# Отпечаток кода, от которого зависят модели: по нему решаем, нужно ли переобучение при выкладке.
+TRAIN_FP_CMD="git -C $APP_DIR ls-tree -r HEAD services/predictor services/strategy-lab scripts/train-predictor.ts | sha256sum | cut -c1-16"
 cat > /etc/systemd/system/$APP.service <<UNIT
 [Unit]
 Description=CryptoAnalysis (Next.js) on port $PORT
@@ -299,7 +303,8 @@ Environment=PATH=$NODE_DIR/bin:/usr/bin:/bin
 ExecStart=$NODE_DIR/bin/node $APP_DIR/node_modules/next/dist/bin/next start -p $PORT -H $BIND
 Restart=always
 RestartSec=5
-TimeoutStopSec=20
+# открытые потоки цен (SSE) не дают Next.js завершиться сам — не ждём их долго
+TimeoutStopSec=8
 MemoryMax=700M
 
 [Install]
@@ -312,8 +317,12 @@ Description=CryptoAnalysis: переобучение модели прогноз
 
 [Service]
 Nice=10
-MemoryMax=700M
-# после переобучения сайт перечитывает модели
+# Node берёт лимит кучи из MemoryMax (~половину): при 700M обучению доставалось ~350 МБ, и оно
+# падало с «heap out of memory». Раз в неделю ночью можно дать больше, остальное — swap.
+MemoryMax=1100M
+Environment=NODE_OPTIONS=--max-old-space-size=900
+# после переобучения: запомнить, на каком коде обучено, и перезапустить сайт (он перечитает модели)
+ExecStartPost=+/bin/sh -c '$TRAIN_FP_CMD > $DATA_DIR/.trained-code'
 ExecStartPost=+/bin/systemctl try-restart $APP.service
 Type=oneshot
 User=$APP
@@ -335,8 +344,39 @@ Persistent=true
 WantedBy=timers.target
 UNIT
 
+# Сбор 5-минутных рядов Binance (OI, лонг/шорт, тейкеры, фандинг) в MySQL: Binance хранит их
+# только 30 дней, поэтому копим сами. Oneshot: пока идёт прошлый запуск (первый ~20 мин), новый не стартует.
+cat > /etc/systemd/system/$APP-market-data.service <<UNIT
+[Unit]
+Description=CryptoAnalysis: сбор рыночных данных фьючерсов
+After=network-online.target mariadb.service
+
+[Service]
+Type=oneshot
+User=$APP
+WorkingDirectory=$APP_DIR
+EnvironmentFile=$ENV_FILE
+Environment=PATH=$NODE_DIR/bin:/usr/bin:/bin
+Nice=10
+MemoryMax=250M
+ExecStart=$NODE_DIR/bin/node $APP_DIR/node_modules/tsx/dist/cli.mjs scripts/collect-market-data.ts
+UNIT
+
+cat > /etc/systemd/system/$APP-market-data.timer <<UNIT
+[Unit]
+Description=CryptoAnalysis: сбор рыночных данных каждые 5 минут
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
 systemctl daemon-reload
 systemctl enable --now $APP-train.timer >/dev/null 2>&1
+systemctl enable --now $APP-market-data.timer >/dev/null 2>&1
 systemctl enable $APP >/dev/null 2>&1
 systemctl restart $APP
 ok "сервис $APP запущен"
@@ -440,8 +480,16 @@ for _ in $(seq 1 30); do
 done
 [ "$c" = 200 ] && ok "сайт отвечает на порту $PORT" || { journalctl -u $APP -n 30 --no-pager; die "сайт не отвечает — лог выше"; }
 
-# Модель переобучается на свежих данных Binance в фоне (5–15 минут), сайт тем временем работает
-systemctl start --no-block $APP-train.service
+# Переобучение тяжёлое (5–15 минут CPU, до ~1 ГБ памяти), а выкладок бывает несколько в час.
+# При выкладке оно запускается, только если изменился код обучения с прошлого успешного раза;
+# иначе модели обновит воскресный таймер.
+TRAINED_CODE=$(cat "$DATA_DIR/.trained-code" 2>/dev/null || true)
+if [ "$(sh -c "$TRAIN_FP_CMD")" != "$TRAINED_CODE" ]; then
+  systemctl start --no-block $APP-train.service
+  TRAIN_NOTE="идёт сейчас (изменился код обучения), дальше — по воскресеньям"
+else
+  TRAIN_NOTE="по воскресеньям; код обучения не менялся"
+fi
 
 if [ "$USE_CADDY" = 1 ]; then
   URL="https://$(env_get PUBLIC_HOST):$(env_get PUBLIC_PORT)"
@@ -463,6 +511,7 @@ $LOGIN
   Админка:         $URL/admin  (для администраторов)
   Логи:            journalctl -u $APP -f
   Перезапуск:      systemctl restart $APP
-  Переобучение:    journalctl -u $APP-train -f   (идёт сейчас, дальше — по воскресеньям)
+  Переобучение:    journalctl -u $APP-train -f   ($TRAIN_NOTE)
+  Сбор данных:     journalctl -u $APP-market-data -f   (каждые 5 минут)
   Обновление:      bash $APP_DIR/deploy/update.sh   (или автоматически после каждого изменения в main)
 DONE
