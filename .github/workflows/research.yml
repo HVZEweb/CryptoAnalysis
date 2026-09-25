@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       only:
-        description: "events, bigmove, portfolio or empty for all"
+        description: "events, bigmove, portfolio, funding (robustness) or empty for all"
         default: ""
       days:
         description: "Days of history"

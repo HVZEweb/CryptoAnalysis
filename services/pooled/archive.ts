@@ -216,3 +216,26 @@ export async function archiveFunding(symbol: string, from: number, to: number, o
   }
   return funding.sort((a, b) => a.time - b.time);
 }
+
+/**
+ * Every USDT perpetual the archive has ever had, delisted ones included — the point-in-time universe
+ * that keeps survivorship bias out of cross-sectional tests. Dated quarterly contracts are skipped.
+ */
+export async function listArchiveUsdtPerps(): Promise<string[]> {
+  const bucket = "https://s3-ap-northeast-1.amazonaws.com/data.binance.vision";
+  const prefix = "data/futures/um/monthly/klines/";
+  const symbols: string[] = [];
+  let marker = "";
+  for (let page = 0; page < 20; page++) {
+    const { data } = await axios.get<string>(bucket, {
+      params: { delimiter: "/", prefix, marker },
+      responseType: "text",
+      timeout: 60_000,
+    });
+    for (const m of data.matchAll(/<Prefix>data\/futures\/um\/monthly\/klines\/([A-Z0-9]+)\/<\/Prefix>/g)) symbols.push(m[1]);
+    const next = /<NextMarker>([^<]+)<\/NextMarker>/.exec(data)?.[1];
+    if (!/<IsTruncated>true<\/IsTruncated>/.test(data) || !next) break;
+    marker = next;
+  }
+  return [...new Set(symbols)].filter((s) => s.endsWith("USDT"));
+}
