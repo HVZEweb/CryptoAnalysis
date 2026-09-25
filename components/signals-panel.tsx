@@ -18,10 +18,14 @@ interface SignalRow {
   exitPrice: number | null;
   netBp: number | null;
   closedAt: number | null;
+  demoStatus: "open" | "closing" | "closed" | "failed" | null;
+  demoNetBp: number | null;
 }
 
 interface SignalsData {
   record: { closed: number; wins: number; avgNetBp: number; sumNetPct: number };
+  /** Same signals as really executed on the OKX demo account */
+  demo: { closed: number; wins: number; avgNetBp: number; sumNetPct: number } | null;
   curve: Array<{ t: number; pct: number }>;
   open: SignalRow[];
   recent: SignalRow[];
@@ -109,7 +113,8 @@ function SignalTable({ rows }: { rows: SignalRow[] }) {
             <th className="pr-2 text-right font-medium">Вход</th>
             <th className="pr-2 text-right font-medium">Выход</th>
             <th className="pr-2 font-medium">Итог</th>
-            <th className="text-right font-medium">После комиссий</th>
+            <th className="pr-2 text-right font-medium">После комиссий</th>
+            <th className="text-right font-medium">Демо OKX</th>
           </tr>
         </thead>
         <tbody>
@@ -127,6 +132,9 @@ function SignalTable({ rows }: { rows: SignalRow[] }) {
               <td className="pr-2">{STATUS[s.status]}</td>
               <td className={cn("text-right tabular-nums", (s.netBp ?? 0) > 0 && "text-emerald-400", (s.netBp ?? 0) < 0 && "text-red-400")}>
                 {s.netBp != null ? `${signed(s.netBp / 100)}%` : "—"}
+              </td>
+              <td className="text-right tabular-nums text-muted-foreground">
+                {s.demoNetBp != null ? `${signed(s.demoNetBp / 100)}%` : s.demoStatus === "failed" ? "не открыт" : s.demoStatus ? "идёт" : "—"}
               </td>
             </tr>
           ))}
@@ -166,6 +174,13 @@ export function SignalsPanel() {
         <Tile label="В среднем" value={r.closed ? `${signed(r.avgNetBp / 100)}%` : "—"} tone={r.avgNetBp > 0 ? "up" : r.avgNetBp < 0 ? "down" : undefined} />
         <Tile label="Всего" value={r.closed ? `${signed(r.sumNetPct)}%` : "—"} tone={r.sumNetPct > 0 ? "up" : r.sumNetPct < 0 ? "down" : undefined} />
       </div>
+      {data.demo && (
+        <p className="text-sm text-muted-foreground">
+          На демо-счёте OKX с реальным исполнением: {data.demo.closed} сделок, в среднем{" "}
+          <span className={data.demo.avgNetBp >= 0 ? "text-emerald-400" : "text-red-400"}>{signed(data.demo.avgNetBp / 100)}%</span>, всего{" "}
+          {signed(data.demo.sumNetPct)}%.
+        </p>
+      )}
 
       {data.curve.length > 1 ? (
         <section className="space-y-1">

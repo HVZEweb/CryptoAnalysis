@@ -4,7 +4,7 @@ import path from "path";
 import { describe, expect, it, vi } from "vitest";
 import type { Candle } from "@/types";
 import type { PredictorModel } from "@/services/predictor";
-import { scanSignals, type ModelEntry, type ScanDeps, type SignalStore } from "@/services/signal-scanner";
+import { scanSignals, type DemoTrader, type ModelEntry, type ScanDeps, type SignalStore } from "@/services/signal-scanner";
 import type { SignalRow } from "@/services/signals/store";
 import * as predictor from "@/services/predictor";
 
@@ -56,11 +56,13 @@ function memoryStore(watch: string[]) {
       rows.filter((r) => r.status !== "open" && (!f.modelKey || r.model_key === f.modelKey) && (!f.trainedAt || r.model_trained_at === f.trainedAt)),
     disabledModels: async () => disabled,
     disableModel: async (key, trainedAt, reason) => void disabled.set(key, { trainedAt, reason }),
+    setDemo: async (id, patch) => void Object.assign(rows.find((r) => r.id === id)!, patch),
+    pendingDemo: async () => rows.filter((r) => r.demo_status === "open" || r.demo_status === "closing"),
   };
   return { store, rows, disabled, settings };
 }
 
-function setup(opts: { profitable?: boolean; pUp?: number; watch?: string[]; bySymbol?: Record<string, ReturnType<typeof metrics>> } = {}) {
+function setup(opts: { profitable?: boolean; pUp?: number; watch?: string[]; bySymbol?: Record<string, ReturnType<typeof metrics>>; demo?: DemoTrader } = {}) {
   const stateFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "scan-")), "state.json");
   const sent: string[] = [];
   let now = NOW;
@@ -80,6 +82,7 @@ function setup(opts: { profitable?: boolean; pUp?: number; watch?: string[]; byS
     derivs: async () => ({ points: [], funding: [] }),
     models: () => [entry],
     store: mem.store,
+    demo: () => opts.demo ?? null,
     now: () => now,
     stateFile,
   };
@@ -151,6 +154,30 @@ describe("scanSignals", () => {
     expect(t.sent.some((m) => m.includes("остановлены"))).toBe(true);
     t.setPrice(100);
     expect((await scanSignals(t.deps)).sent).toBe(0);
+  });
+
+  it("opens each signal on the OKX demo account and reports the real result after it ends", async () => {
+    const calls: string[] = [];
+    const demo: DemoTrader = {
+      open: async (symbol, side) => {
+        calls.push(`open ${side} ${symbol}`);
+        return { ordId: "1", instId: "BTC-USDT-SWAP", entry: 100.05, contracts: 1, notionalUsd: 100 };
+      },
+      close: async (instId) => void calls.push(`close ${instId}`),
+      settlement: async () => ({ entry: 100.05, exit: 104, netBp: 385 }),
+    };
+    const t = setup({ watch: ["BTCUSDT"], demo });
+    await scanSignals(t.deps);
+    expect(calls).toEqual(["open LONG BTCUSDT"]);
+    expect(t.sent[0]).toContain("Демо OKX: открыто по 100.05");
+    expect(t.mem.rows[0].demo_status).toBe("open");
+
+    t.advance(3 * HOUR);
+    t.setPrice(105);
+    await scanSignals(t.deps);
+    expect(calls).toContain("close BTC-USDT-SWAP");
+    expect(t.mem.rows[0].demo_status).toBe("closed");
+    expect(t.sent.some((m) => m.includes("+385.0 п. с реальными комиссиями") && m.includes("расчёт: +390.0 п."))).toBe(true);
   });
 
   it("does nothing until Telegram is connected", async () => {

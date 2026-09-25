@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
   }
   const [closed, open] = await Promise.all([closedSignals(), openSignals()]);
   const record = trackRecord(closed);
+  const demoClosed = closed.filter((s) => s.demo_status === "closed");
+  const demo = demoClosed.length ? trackRecord(demoClosed.map((s) => ({ net_bp: s.demo_net_bp ?? 0 }))) : null;
 
   let equity = 0;
   const curve = closed
@@ -38,10 +40,13 @@ export async function GET(request: NextRequest) {
     exitPrice: s.exit_price,
     netBp: s.net_bp,
     closedAt: s.closed_at,
+    demoStatus: s.demo_status ?? null,
+    demoNetBp: s.demo_net_bp ?? null,
   });
 
   return NextResponse.json({
     record,
+    demo,
     curve,
     open: open.map(row),
     recent: closed.slice(-100).reverse().map(row),
