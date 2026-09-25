@@ -51,6 +51,9 @@ export function aggregateCandles(candles: Candle[], count: number): Candle[] {
       closeTime: last.closeTime,
       quoteVolume: chunk.reduce((sum, c) => sum + c.quoteVolume, 0),
       trades: chunk.reduce((sum, c) => sum + c.trades, 0),
+      takerBuyVolume: chunk.every((c) => c.takerBuyVolume !== undefined)
+        ? chunk.reduce((sum, c) => sum + (c.takerBuyVolume ?? 0), 0)
+        : undefined,
     });
   }
 

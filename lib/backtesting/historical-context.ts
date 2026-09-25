@@ -160,7 +160,7 @@ export function buildHistoricalContext(
   const marketData = buildMarketDataFromCandles(coin.symbol, primaryCandles, market);
   const marketStructure = analyzeMarketStructure(primaryCandles);
   const volumeAnalysis = analyzeVolume(primaryCandles);
-  const volatility = calculateVolatility(primaryCandles, primaryInterval);
+  const volatility = calculateVolatility(primaryCandles);
   const srLevels = calculateLevels(primaryCandles, marketData.price);
   const onChainFlow = market === "Futures" ? proxyOrderFlow(primaryCandles) : undefined;
 

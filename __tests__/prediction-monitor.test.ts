@@ -64,36 +64,47 @@ describe("detectConceptDrift", () => {
 });
 
 describe("buildModelConfidence", () => {
-  it("lowers score on drift alert", () => {
-    const windows = [
-      {
-        windowDays: 30,
-        total: 20,
-        completed: 20,
-        inProgress: 0,
-        accuracyRate: 0.75,
-        winRate: 0.7,
-        avgScore: 78,
-        avgPriceErrorPct: 1,
-      },
-    ];
-    const noDrift = buildModelConfidence(windows, []);
-    const withDrift = buildModelConfidence(windows, [
-      {
-        dimension: "overall",
-        key: "all",
-        label: "Overall",
-        baselineAccuracy: 0.8,
-        recentAccuracy: 0.65,
-        dropPct: 0.15,
-        baselineSamples: 20,
-        recentSamples: 10,
-        severity: "critical",
-      },
-    ]);
+  const window = (directionalCount: number, directionHitRate: number) => [
+    {
+      windowDays: 30,
+      total: directionalCount,
+      completed: directionalCount,
+      inProgress: 0,
+      accuracyRate: 0.75,
+      winRate: 0.7,
+      avgScore: 78,
+      avgPriceErrorPct: 1,
+      directionalCount,
+      directionHitRate,
+      tpFirstRate: 0.4,
+      avgTradeReturnPct: 0,
+    },
+  ];
+  const drift = {
+    dimension: "overall" as const,
+    key: "all",
+    label: "Overall",
+    baselineAccuracy: 0.8,
+    recentAccuracy: 0.65,
+    dropPct: 0.15,
+    baselineSamples: 20,
+    recentSamples: 10,
+    severity: "critical" as const,
+  };
 
-    expect(noDrift.score).toBe(75);
-    expect(withDrift.score).toBeLessThan(noDrift.score);
-    expect(withDrift.driftAlert).toBe(true);
+  it("scores the real directional hit rate, not the old accuracy score", () => {
+    const c = buildModelConfidence(window(80, 0.56), []);
+    expect(c.score).toBe(56);
+    expect(c.label).toBe("High");
+  });
+
+  it("stays Low while there are too few evaluated calls", () => {
+    expect(buildModelConfidence(window(12, 0.75), []).label).toBe("Low");
+  });
+
+  it("drops High on a drift alert", () => {
+    const c = buildModelConfidence(window(80, 0.56), [drift]);
+    expect(c.driftAlert).toBe(true);
+    expect(c.label).not.toBe("High");
   });
 });

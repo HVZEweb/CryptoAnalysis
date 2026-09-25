@@ -24,6 +24,7 @@ const pct = (v: number) => `${(v * 100).toFixed(1)}%`;
 export function describeModel(m: PredictorModel): string {
   const v = m.validation;
   return [
+    `  выбрана модель: ${m.chosen}`,
     `  данные: ${m.symbols.join(", ")} · ${m.dataFrom.slice(0, 10)} → ${m.dataTo.slice(0, 10)} · ${m.samples} примеров`,
     `  точность направления: ${pct(v.accuracy)} (наивный прогноз: ${pct(v.baselineAccuracy)}, z=${v.zScore.toFixed(1)})`,
     `  уверенные сигналы (≥55%): ${pct(v.confident.share)} случаев, точность ${pct(v.confident.accuracy)}`,
@@ -70,7 +71,12 @@ export async function trainAll(options: TrainingOptions = {}): Promise<Predictor
     opts.log(`\n[${timeframe}] бары ${spec.interval}, горизонт ${spec.horizon}`);
     try {
       const series = (await loadSeries(timeframe, opts)).filter((s) => s.candles.length > 0);
-      const model = trainPredictor(timeframe, series, opts.source);
+      let btc = series.find((s) => s.symbol === "BTCUSDT")?.candles;
+      if (!btc && opts.source === "binance") {
+        btc = await fetchHistory("BTCUSDT", spec.interval, opts.days).catch(() => undefined);
+      }
+      if (!btc) opts.log("  нет свечей BTC — признаки BTC будут нулевыми");
+      const model = trainPredictor(timeframe, series, opts.source, { btc, log: opts.log });
       const file = saveModel(model);
       opts.log(describeModel(model));
       opts.log(`  сохранено: ${file}`);

@@ -60,7 +60,7 @@ export async function buildAnalysisContext(
 
   const marketStructure = analyzeMarketStructure(primaryCandles);
   const volumeAnalysis = analyzeVolume(primaryCandles);
-  const volatility = calculateVolatility(primaryCandles, primaryInterval);
+  const volatility = calculateVolatility(primaryCandles);
   const srLevels = calculateLevels(primaryCandles, marketData.price);
 
   const onChainFlow = await fetchOnChainFlow(coin.symbol, market, marketData.price, primaryCandles);

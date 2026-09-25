@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { EnsemblePredictor, scoreToDirectionCalibrated } from "@/services/ensemble-prediction";
+import { EnsemblePredictor, directionEdge, probabilityToCall } from "@/services/ensemble-prediction";
 import { extractMlFeatures } from "@/services/ml-features";
 import * as predictorModule from "@/services/predictor";
 import type { PricePrediction } from "@/services/predictor";
@@ -110,168 +110,127 @@ describe("extractMlFeatures", () => {
   });
 });
 
-describe("scoreToDirectionCalibrated", () => {
-  it("does not inflate weak scores to 90%+", () => {
-    const { direction, probability } = scoreToDirectionCalibrated(0.41, "partial");
-    expect(direction).toBe("LONG");
-    expect(probability).toBeLessThanOrEqual(72);
-    expect(probability).toBeLessThan(75);
+function snapshotOf(ctx: AnalysisContext) {
+  return {
+    indicators: ctx.indicators,
+    marketData: ctx.marketData,
+    marketStructure: ctx.marketStructure,
+    volumeAnalysis: ctx.volumeAnalysis,
+    volatility: ctx.volatility,
+    levels: ctx.levels,
+    news: ctx.news,
+    fearGreed: ctx.fearGreed,
+    btcDominance: ctx.btcDominance,
+    globalMarket: ctx.globalMarket,
+    primaryTimeframe: "1h",
+  };
+}
+
+function llm(direction: "LONG" | "SHORT" | "SIDEWAYS", probability: number) {
+  return {
+    coin: "Bitcoin",
+    symbol: "BTC",
+    market: "Futures" as const,
+    timeframe: "15m" as const,
+    direction,
+    probability,
+    probabilityUp: direction === "SHORT" ? 100 - probability : probability,
+    probabilityDown: direction === "SHORT" ? probability : 100 - probability,
+    confidence: "Medium" as const,
+    priceRange: { low: 100, high: 108 },
+    reasons: ["AI"],
+    risks: [],
+    keyFactors: [],
+    recommendation: "LLM says so",
+    disclaimer: "Not financial advice",
+  };
+}
+
+function modelResult(probabilityUp: number, hasEdge: boolean, confidentAccuracy = 0.555): PricePrediction {
+  return {
+    ml: null,
+    probabilityUp,
+    topFeatures: [{ feature: "rsi_14", label: "RSI 14", contribution: 0.1 }],
+    priceForecast: {
+      predictedPrice: 101,
+      predictedHigh: 104,
+      predictedLow: 97,
+      confidenceBand: { low: 98, high: 103 },
+      expectedMovePct: 1,
+      source: "predictor",
+    },
+    model: {
+      timeframe: "15m",
+      validation: { hasEdge, accuracy: 0.525, confident: { share: 0.2, accuracy: confidentAccuracy } },
+    },
+  } as unknown as PricePrediction;
+}
+
+describe("directionEdge / probabilityToCall", () => {
+  it("scores a vote by its distance from a coin flip", () => {
+    expect(directionEdge("LONG", 58)).toBeCloseTo(0.16);
+    expect(directionEdge("SHORT", 58)).toBeCloseTo(-0.16);
+    expect(directionEdge("SIDEWAYS", 70)).toBe(0);
   });
 
-  it("caps probability lower on divergent agreement", () => {
-    const { probability } = scoreToDirectionCalibrated(0.41, "divergent");
-    expect(probability).toBeLessThanOrEqual(58);
+  it("caps the probability at the validated accuracy", () => {
+    expect(probabilityToCall(0.7, 0.055)).toEqual({ direction: "LONG", probability: 55.5, probabilityUp: 55.5 });
+    expect(probabilityToCall(0.3, 0.055).direction).toBe("SHORT");
+  });
+
+  it("gives no direction without a validated edge", () => {
+    expect(probabilityToCall(0.9, 0)).toEqual({ direction: "SIDEWAYS", probability: 50, probabilityUp: 50 });
   });
 });
 
 describe("EnsemblePredictor", () => {
-  it("combines LLM and ML without throwing", async () => {
-    vi.spyOn(predictorModule, "runPricePredictor").mockReturnValueOnce({
-      result: {
-        ml: {
-          direction: "LONG",
-          probability: 54,
-          probabilityUp: 54,
-          probabilityDown: 46,
-          model: "predictor_4h",
-          confidence: 8,
-          keyFeatures: ["RSI 14 ↑"],
-          source: "predictor",
-          validationAccuracy: 52.1,
-        },
-        priceForecast: {
-          predictedPrice: 101,
-          predictedHigh: 104,
-          predictedLow: 97,
-          confidenceBand: { low: 98, high: 103 },
-          expectedMovePct: 1,
-          source: "predictor",
-        },
-      } as PricePrediction,
-    });
+  it("does not turn weak 58%/56% votes into 64% (the reported BTC 15m case)", async () => {
+    vi.spyOn(predictorModule, "runPricePredictor").mockResolvedValueOnce({ result: modelResult(0.48, true) });
     const ctx = mockContext();
-    const snapshot = {
-      indicators: ctx.indicators,
-      marketData: ctx.marketData,
-      marketStructure: ctx.marketStructure,
-      volumeAnalysis: ctx.volumeAnalysis,
-      volatility: ctx.volatility,
-      levels: ctx.levels,
-      news: ctx.news,
-      fearGreed: ctx.fearGreed,
-      btcDominance: ctx.btcDominance,
-      globalMarket: ctx.globalMarket,
-      primaryTimeframe: "1h",
-    };
-    const predictor = new EnsemblePredictor();
-    const { prediction, breakdown } = await predictor.combine(ctx, snapshot, {
-      coin: "Bitcoin",
-      symbol: "BTC",
-      market: "Futures",
-      timeframe: "4h",
-      direction: "LONG",
-      probability: 65,
-      probabilityUp: 65,
-      probabilityDown: 35,
-      confidence: "Medium",
-      priceRange: { low: 100, high: 108 },
-      reasons: ["AI bullish"],
-      risks: ["Volatility"],
-      keyFactors: ["EMA stack"],
-      recommendation: "Consider long",
-      disclaimer: "Not financial advice",
-    });
-    expect(["LONG", "SHORT", "SIDEWAYS"]).toContain(prediction.direction);
-    expect(breakdown.ml.model).toBeTruthy();
-    expect(breakdown.effectiveWeights).toBeDefined();
-    expect(breakdown.mlAvailable).toBe(true);
-    expect(prediction.ensembleScore).toBeDefined();
+    const { prediction, breakdown } = await new EnsemblePredictor().combine(ctx, snapshotOf(ctx), llm("LONG", 58));
+
+    expect(prediction.probability).toBeLessThanOrEqual(55.5);
+    expect(breakdown.ml.probabilityUp).toBe(48);
+    expect(breakdown.ml.direction).toBe("SIDEWAYS");
+    // The model's 48% still counts as a (small) vote for down.
+    expect(breakdown.ensembleScore).toBeLessThan(0.1);
+    expect(prediction.confidence).not.toBe("High");
+    expect(breakdown.metaTrustScore).toBe(56);
     expect(prediction.priceForecast?.predictedPrice).toBe(101);
   });
 
-  it("continues with LLM + rules when ML subsystem fails", async () => {
-    vi.spyOn(predictorModule, "runPricePredictor").mockReturnValueOnce({
-      result: null,
-      error: "model_not_trained",
-    });
-
+  it("follows the validated model when it has an edge", async () => {
+    vi.spyOn(predictorModule, "runPricePredictor").mockResolvedValueOnce({ result: modelResult(0.56, true) });
     const ctx = mockContext();
-    const snapshot = {
-      indicators: ctx.indicators,
-      marketData: ctx.marketData,
-      marketStructure: ctx.marketStructure,
-      volumeAnalysis: ctx.volumeAnalysis,
-      volatility: ctx.volatility,
-      levels: ctx.levels,
-      news: ctx.news,
-      fearGreed: ctx.fearGreed,
-      btcDominance: ctx.btcDominance,
-      globalMarket: ctx.globalMarket,
-      primaryTimeframe: "1h",
-    };
-    const predictor = new EnsemblePredictor();
-    const { prediction, breakdown } = await predictor.combine(ctx, snapshot, {
-      coin: "Bitcoin",
-      symbol: "BTC",
-      market: "Futures",
-      timeframe: "4h",
-      direction: "LONG",
-      probability: 70,
-      probabilityUp: 70,
-      probabilityDown: 30,
-      confidence: "High",
-      priceRange: { low: 100, high: 108 },
-      reasons: ["AI bullish"],
-      risks: [],
-      keyFactors: [],
-      recommendation: "Long bias",
-      disclaimer: "Not financial advice",
-    });
+    const { prediction, breakdown } = await new EnsemblePredictor().combine(ctx, snapshotOf(ctx), llm("SHORT", 60));
 
-    expect(breakdown.mlAvailable).toBe(false);
-    expect(breakdown.effectiveWeights.ml).toBe(0);
-    expect(breakdown.effectiveWeights.llm).toBeCloseTo(0.5 / 0.65, 2);
-    expect(prediction.direction).toBeDefined();
+    expect(breakdown.mlAvailable).toBe(true);
+    expect(breakdown.effectiveWeights.ml).toBeCloseTo(0.7);
+    expect(prediction.direction).toBe("LONG");
+    expect(prediction.probability).toBeLessThanOrEqual(55.5);
   });
 
-  it("does not mark High confidence when LLM disagrees with final direction", async () => {
-    const ctx = mockContext();
-    const snapshot = {
-      indicators: ctx.indicators,
-      marketData: ctx.marketData,
-      marketStructure: ctx.marketStructure,
-      volumeAnalysis: ctx.volumeAnalysis,
-      volatility: ctx.volatility,
-      levels: ctx.levels,
-      news: ctx.news,
-      fearGreed: ctx.fearGreed,
-      btcDominance: ctx.btcDominance,
-      globalMarket: ctx.globalMarket,
-      primaryTimeframe: "1h",
-    };
-    const predictor = new EnsemblePredictor();
-    const { prediction } = await predictor.combine(ctx, snapshot, {
-      coin: "Ethereum",
-      symbol: "ETH",
-      market: "Futures",
-      timeframe: "4h",
-      direction: "SIDEWAYS",
-      probability: 52,
-      probabilityUp: 52,
-      probabilityDown: 48,
-      confidence: "Medium",
-      priceRange: { low: 100, high: 108 },
-      reasons: ["Mixed signals"],
-      risks: ["Low ADX"],
-      keyFactors: ["Range-bound"],
-      recommendation: "Wait for clearer setup",
-      disclaimer: "Not financial advice",
+  it("hides the direction when the model has no validated edge", async () => {
+    vi.spyOn(predictorModule, "runPricePredictor").mockResolvedValueOnce({
+      result: modelResult(0.6, false),
+      error: "model_has_no_edge",
     });
+    const ctx = mockContext();
+    const { prediction, breakdown } = await new EnsemblePredictor().combine(ctx, snapshotOf(ctx), llm("LONG", 80));
 
-    if (prediction.direction !== "SIDEWAYS") {
-      expect(prediction.confidence).not.toBe("High");
-      expect(prediction.probability).toBeLessThanOrEqual(72);
-      expect(prediction.recommendation).toContain("Ensemble:");
-    }
+    expect(prediction.direction).toBe("SIDEWAYS");
+    expect(prediction.probability).toBe(50);
+    expect(breakdown.mlAvailable).toBe(false);
+    expect(prediction.recommendation).toContain("не прогнозируется");
+    expect(prediction.priceForecast).toBeDefined();
+  });
+
+  it("gives no direction when the model is not trained", async () => {
+    vi.spyOn(predictorModule, "runPricePredictor").mockResolvedValueOnce({ result: null, error: "model_not_trained" });
+    const ctx = mockContext();
+    const { prediction, breakdown } = await new EnsemblePredictor().combine(ctx, snapshotOf(ctx), llm("LONG", 70));
+
+    expect(breakdown.effectiveWeights.ml).toBe(0);
+    expect(prediction.direction).toBe("SIDEWAYS");
   });
 });

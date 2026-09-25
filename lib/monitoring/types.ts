@@ -1,3 +1,4 @@
+import type { CalibrationBucket } from "@/lib/monitoring/trade-outcome";
 import type {
   ConfidenceLevel,
   MarketRegimeType,
@@ -15,6 +16,12 @@ export interface PredictionOutcome {
   percentChange: number;
   timeframePhase: "in_progress" | "completed";
   priceErrorPct: number;
+  /** Close at the horizon was on the predicted side (null for SIDEWAYS or unknown) */
+  directionHit?: boolean | null;
+  /** TP or SL touched first */
+  firstHit?: "tp" | "sl" | null;
+  /** Result of trading the TP/SL levels after fees, % */
+  tradeReturnPct?: number | null;
 }
 
 export interface MonitoredPrediction {
@@ -33,6 +40,9 @@ export interface MonitoredPrediction {
   outcome?: PredictionOutcome;
   /** ML feature vector captured at prediction time */
   features?: Record<string, number>;
+  tradeLevels?: { entry: number; tp: number; sl: number; exit: number };
+  /** Round-trip taker fee as a fraction of entry */
+  feeRoundTrip?: number;
 }
 
 export interface RollingWindowMetrics {
@@ -46,6 +56,14 @@ export interface RollingWindowMetrics {
   winRate: number;
   avgScore: number;
   avgPriceErrorPct: number;
+  /** Directional calls evaluated with the honest outcome check */
+  directionalCount: number;
+  /** Share of directional calls whose close landed on the predicted side */
+  directionHitRate: number;
+  /** Share of directional calls where TP was touched before SL */
+  tpFirstRate: number;
+  /** Average result of trading the levels after fees, % */
+  avgTradeReturnPct: number;
 }
 
 export interface SegmentMetrics {
@@ -89,6 +107,8 @@ export interface PerformanceSnapshot {
   accuracyOverTime: AccuracyTimePoint[];
   equityCurve: EquityPoint[];
   modelConfidence: ModelConfidenceSummary;
+  /** Stated probability vs how often those calls came true (last 180 days) */
+  calibration: CalibrationBucket[];
 }
 
 export interface ModelConfidenceSummary {

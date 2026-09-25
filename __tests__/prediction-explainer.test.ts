@@ -126,7 +126,7 @@ describe("buildPredictionExplanation", () => {
     const exp = buildPredictionExplanation(mockPrediction());
     expect(exp.summary).toMatch(/лонг/i);
     expect(exp.topDrivers.length).toBeGreaterThan(0);
-    expect(exp.ensembleRationale).toMatch(/Ensemble/i);
+    expect(exp.ensembleRationale).toMatch(/отклонение от 50%/i);
     expect(exp.ensembleVotes.length).toBe(3);
     expect(exp.strengths.length).toBeGreaterThan(0);
     expect(exp.technicalDepth).toMatch(/RSI/i);

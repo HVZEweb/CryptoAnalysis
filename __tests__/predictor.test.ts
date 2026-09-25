@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeFeatureSeries } from "@/services/predictor/features";
+import { computeFeatureSeries, FEATURE_NAMES } from "@/services/predictor/features";
 import { resampleCandles } from "@/services/predictor/data";
 import { predictWithModel } from "@/services/predictor";
 import { buildSamples, trainPredictor, walkForward } from "@/services/predictor/train";
@@ -98,5 +98,38 @@ describe("predictWithModel", () => {
 
     const noEdge = { ...model, validation: { ...model.validation, hasEdge: false } };
     expect(predictWithModel(noEdge, candles, price)!.ml).toBeNull();
+  });
+});
+
+describe("gradient boosting", () => {
+  it("learns an interaction a linear model cannot", async () => {
+    const { fitGbm, predictGbm, fitLogistic, predictProbability } = await import("@/services/predictor/model");
+    const rand = rng(11);
+    const X: number[][] = [];
+    const y: number[] = [];
+    for (let i = 0; i < 4000; i++) {
+      const a = rand() * 2 - 1;
+      const b = rand() * 2 - 1;
+      X.push([a, b]);
+      y.push(a > 0 !== b > 0 ? 1 : 0);
+    }
+    const gbm = fitGbm(X, y, { trees: 60, learningRate: 0.2, minLeaf: 50 });
+    const lin = fitLogistic(X, y);
+    const acc = (p: (x: number[]) => number) => X.filter((x, i) => (p(x) >= 0.5 ? 1 : 0) === y[i]).length / X.length;
+    expect(acc((x) => predictGbm(gbm, x))).toBeGreaterThan(0.9);
+    expect(acc((x) => predictProbability(lin, x))).toBeLessThan(0.6);
+  });
+});
+
+describe("BTC context features", () => {
+  it("are zero without BTC candles and self-consistent for BTC itself", () => {
+    const candles = makeCandles(300, 3);
+    const idx = FEATURE_NAMES.indexOf("btc_div_12");
+    const without = computeFeatureSeries(candles).rows[299]!;
+    const self = computeFeatureSeries(candles, { btc: candles }).rows[299]!;
+    expect(without[idx]).toBe(0);
+    expect(without[FEATURE_NAMES.indexOf("btc_ret_4")]).toBe(0);
+    expect(self[idx]).toBeCloseTo(0);
+    expect(self[FEATURE_NAMES.indexOf("btc_ret_4")]).toBeCloseTo(self[FEATURE_NAMES.indexOf("ret_4")]);
   });
 });

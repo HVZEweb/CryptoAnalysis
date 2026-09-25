@@ -112,94 +112,82 @@ describe("getHigherTimeframeBias", () => {
   });
 });
 
+function rawPrediction(overrides: Partial<PredictionResult> = {}): PredictionResult {
+  const entry = 64029.6;
+  return {
+    coin: "Bitcoin",
+    symbol: "BTC",
+    market: "Futures",
+    timeframe: "15m",
+    direction: "SHORT",
+    probability: 55,
+    probabilityUp: 45,
+    probabilityDown: 55,
+    confidence: "Low",
+    priceRange: { low: 63750, high: 64150 },
+    reasons: ["test"],
+    risks: ["test"],
+    keyFactors: ["test"],
+    recommendation: "short",
+    disclaimer: "disc",
+    createdAt: new Date().toISOString(),
+    priceAtPrediction: entry,
+    coinId: "bitcoin",
+    ...overrides,
+  };
+}
+
 describe("refinePrediction", () => {
-  it("fixes counter-trend SHORT with overbought: wider SL, capped prob, non-zero move", () => {
+  it("never flips or strengthens the ensemble's call", () => {
+    const refined = refinePrediction(rawPrediction(), mockBtcAnalysis(), "15m");
+    expect(refined.direction).toBe("SHORT");
+    expect(refined.probability).toBe(55);
+    expect(refined.confidence).toBe("Low");
+    expect(refined.risks.some((r) => r.includes("старших таймфреймов"))).toBe(true);
+  });
+
+  it("ignores support/resistance that sits right at the price", () => {
     const analysis = mockBtcAnalysis();
     const entry = 64029.6;
     const atr = 265.92;
-
-    const raw: PredictionResult = {
-      coin: "Bitcoin",
-      symbol: "BTC",
-      market: "Futures",
-      timeframe: "15m",
-      direction: "SHORT",
-      probability: 65,
-      probabilityUp: 35,
-      probabilityDown: 65,
-      confidence: "Medium",
-      priceRange: { low: 63750, high: 64150 },
-      priceForecast: {
-        predictedPrice: 63885,
-        predictedHigh: 64050,
-        predictedLow: 63800,
-        confidenceBand: { low: 63850, high: 63920 },
-        expectedMovePct: 0,
-      },
-      reasons: ["test"],
-      risks: ["test"],
-      keyFactors: ["test"],
-      recommendation: "short",
-      disclaimer: "disc",
-      createdAt: new Date().toISOString(),
-      priceAtPrediction: entry,
-      coinId: "bitcoin",
-      tradeLevels: { entry, tp: 63800, sl: 64150, exit: 63885 },
-    };
-
-    const refined = refinePrediction(raw, analysis, "15m");
-
-    expect(refined.direction).toBe("SHORT");
-    expect(refined.probability).toBeLessThanOrEqual(58);
-    expect(refined.confidence).toBe("Low");
-    expect(refined.priceForecast!.expectedMovePct).not.toBe(0);
-    expect(Math.abs(refined.priceForecast!.expectedMovePct)).toBeGreaterThan(0.08);
-
-    const slDist = refined.tradeLevels!.sl - entry;
-    expect(slDist).toBeGreaterThanOrEqual(atr * 0.7);
-
-    const tpDist = entry - refined.tradeLevels!.tp;
-    expect(tpDist).toBeGreaterThanOrEqual(atr * 0.9);
-
-    expect(refined.refinementNotes!.length).toBeGreaterThan(0);
-    expect(refined.risks.some((r) => r.includes("Контртренд"))).toBe(true);
+    const refined = refinePrediction(rawPrediction(), analysis, "15m");
+    // nearestResistance is 0.2 away from entry — the stop must come from ATR instead.
+    expect(refined.tradeLevels!.sl - entry).toBeGreaterThanOrEqual(atr * 0.7);
+    expect(entry - refined.tradeLevels!.tp).toBeGreaterThanOrEqual(atr * 0.9);
   });
 
-  it("converts counter-trend SHORT without overbought to SIDEWAYS", () => {
-    const analysis = mockBtcAnalysis();
-    analysis.indicators["15m"]!.stochasticRsi.k = 55;
-    analysis.indicators["15m"]!.rsi = 52;
+  it("prices in fees and advises against a trade that loses after them", () => {
+    const refined = refinePrediction(rawPrediction(), mockBtcAnalysis(), "15m");
+    const e = refined.tradeEconomics!;
+    expect(e.market.netProfit).toBeLessThan(e.grossProfit);
+    expect(e.market.netLoss).toBeGreaterThan(e.grossLoss);
+    expect(e.market.breakevenWinRate).toBeGreaterThan(e.limit.breakevenWinRate);
+    // 55% direction edge on a 1.5 R:R bracket ≈ 45% TP-first: below breakeven even with limit orders.
+    expect(e.worthTrading).toBe(false);
+    expect(refined.recommendation).toContain("Входить не стоит");
+  });
 
-    const raw: PredictionResult = {
-      coin: "Bitcoin",
-      symbol: "BTC",
-      market: "Futures",
-      timeframe: "15m",
-      direction: "SHORT",
-      probability: 65,
-      probabilityUp: 35,
-      probabilityDown: 65,
-      confidence: "Medium",
-      priceRange: { low: 63750, high: 64150 },
-      priceForecast: {
-        predictedPrice: 63885,
-        predictedHigh: 64050,
-        predictedLow: 63800,
-        confidenceBand: { low: 63850, high: 63920 },
-        expectedMovePct: -0.23,
-      },
-      reasons: ["test"],
-      risks: ["test"],
-      keyFactors: ["test"],
-      recommendation: "short",
-      disclaimer: "disc",
-      createdAt: new Date().toISOString(),
-      priceAtPrediction: 64029.6,
-      coinId: "bitcoin",
+  it("keeps the model's price forecast and range", () => {
+    const forecast = {
+      predictedPrice: 63990,
+      predictedHigh: 64300,
+      predictedLow: 63700,
+      confidenceBand: { low: 63800, high: 64200 },
+      expectedMovePct: -0.06,
+      source: "predictor" as const,
     };
+    const refined = refinePrediction(rawPrediction({ priceForecast: forecast }), mockBtcAnalysis(), "15m");
+    expect(refined.priceForecast).toEqual(forecast);
+    expect(refined.priceRange).toEqual({ low: 63700, high: 64300 });
+  });
 
-    const refined = refinePrediction(raw, analysis, "15m");
+  it("has no trade economics for SIDEWAYS", () => {
+    const refined = refinePrediction(
+      rawPrediction({ direction: "SIDEWAYS", probability: 50, probabilityUp: 50, probabilityDown: 50 }),
+      mockBtcAnalysis(),
+      "15m"
+    );
+    expect(refined.tradeEconomics).toBeUndefined();
     expect(refined.direction).toBe("SIDEWAYS");
-    expect(refined.probability).toBe(50);
   });
 });

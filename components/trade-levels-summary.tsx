@@ -26,6 +26,41 @@ export function TradeLevelsSummary({ prediction, className }: TradeLevelsSummary
         Быстрая сводка
       </p>
       <TradeLevelsGrid levels={levels} tpPositive={tpPositive} />
+      {prediction.tradeEconomics && <TradeEconomicsNote economics={prediction.tradeEconomics} />}
+    </div>
+  );
+}
+
+function TradeEconomicsNote({ economics }: { economics: NonNullable<PredictionResult["tradeEconomics"]> }) {
+  const pct = (n: number) => `${(n * 100).toFixed(0)}%`;
+  const rows = [
+    { label: "Рыночный ордер", e: economics.market },
+    { label: "Лимитный ордер", e: economics.limit },
+  ];
+  return (
+    <div className="mt-3 border-t border-white/8 pt-2 text-[11px]">
+      <p className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+        С комиссиями · шанс TP раньше SL ≈ {pct(economics.winProbability)}
+      </p>
+      {rows.map(({ label, e }) => (
+        <div key={label} className="flex justify-between gap-2 tabular-nums">
+          <span className="text-muted-foreground">{label}</span>
+          <span>
+            <span className="text-emerald-400">+{formatPrice(e.netProfit)}</span>
+            {" / "}
+            <span className="text-red-400">−{formatPrice(e.netLoss)}</span>
+            {" · безубыток "}
+            {pct(e.breakevenWinRate)}
+          </span>
+        </div>
+      ))}
+      <p className={cn("mt-1 font-medium", economics.worthTrading ? "text-emerald-400" : "text-amber-300")}>
+        {economics.worthTrading
+          ? economics.preferredOrder === "market"
+            ? "Ожидаемый результат положительный"
+            : "Имеет смысл только лимитным ордером"
+          : "После комиссий в среднем убыточно — лучше не входить"}
+      </p>
     </div>
   );
 }

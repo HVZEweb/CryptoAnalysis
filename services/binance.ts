@@ -106,6 +106,7 @@ export async function fetchCandles(
       closeTime: k[6],
       quoteVolume: parseFloat(k[7]),
       trades: k[8],
+      takerBuyVolume: parseFloat(k[9]),
     }));
   } catch (error) {
     throw mapAxiosError(error);
@@ -150,6 +151,7 @@ export async function fetchCandlesInRange(
         closeTime: k[6],
         quoteVolume: parseFloat(k[7]),
         trades: k[8],
+        takerBuyVolume: parseFloat(k[9]),
       }));
 
       all.push(...batch);

@@ -134,3 +134,207 @@ export function fitExpectedMove(p: number[], z: number[]): { intercept: number; 
   const slope = varX > 0 ? cov / varX : 0;
   return { intercept: mz - slope * mx, slope };
 }
+
+/**
+ * Histogram gradient-boosted trees for P(up), logloss objective.
+ * Node: feature < 0 marks a leaf. `value` is the node's (learning-rate-scaled) logit contribution;
+ * internal nodes keep theirs too so a prediction can be attributed to features along its path.
+ */
+export interface GbmNode {
+  feature: number;
+  threshold: number;
+  left: number;
+  right: number;
+  value: number;
+}
+
+export interface GbmModel {
+  base: number;
+  trees: GbmNode[][];
+}
+
+export interface GbmOptions {
+  trees?: number;
+  depth?: number;
+  learningRate?: number;
+  minLeaf?: number;
+  lambda?: number;
+  bins?: number;
+  subsample?: number;
+  seed?: number;
+}
+
+function quantileCuts(values: number[], bins: number): number[] {
+  const sorted = [...values].sort((a, b) => a - b);
+  const cuts: number[] = [];
+  for (let b = 1; b < bins; b++) {
+    const v = sorted[Math.floor((sorted.length * b) / bins)];
+    if (!cuts.length || v > cuts[cuts.length - 1]) cuts.push(v);
+  }
+  return cuts;
+}
+
+/** Number of cuts strictly below v — so v <= cuts[b] exactly when bin <= b. */
+function binOf(cuts: number[], v: number): number {
+  let lo = 0;
+  let hi = cuts.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (cuts[mid] < v) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+export function fitGbm(X: number[][], y: number[], options: GbmOptions = {}): GbmModel {
+  const {
+    trees = 150,
+    depth = 3,
+    learningRate = 0.05,
+    lambda = 10,
+    bins = 32,
+    subsample = 0.5,
+    seed = 42,
+  } = options;
+  const n = X.length;
+  const d = X[0]?.length ?? 0;
+  if (n === 0 || d === 0) throw new Error("fitGbm: empty dataset");
+  const minLeaf = options.minLeaf ?? Math.max(200, Math.floor(n / 200));
+
+  // Quantile bins from (at most) 50k evenly spaced rows.
+  const stride = Math.max(1, Math.floor(n / 50_000));
+  const cuts: number[][] = [];
+  for (let f = 0; f < d; f++) {
+    const sample: number[] = [];
+    for (let i = 0; i < n; i += stride) sample.push(X[i][f]);
+    cuts.push(quantileCuts(sample, bins));
+  }
+  const binned = new Uint8Array(n * d);
+  for (let i = 0; i < n; i++) for (let f = 0; f < d; f++) binned[i * d + f] = binOf(cuts[f], X[i][f]);
+
+  const positives = y.reduce((s, v) => s + v, 0);
+  const base = Math.log((positives + 1) / (n - positives + 1));
+  const F = new Float64Array(n).fill(base);
+  const g = new Float64Array(n);
+  const h = new Float64Array(n);
+  let rngState = seed >>> 0;
+  const rand = () => {
+    rngState = (rngState * 1664525 + 1013904223) >>> 0;
+    return rngState / 2 ** 32;
+  };
+
+  const model: GbmModel = { base, trees: [] };
+  const histG = new Float64Array(bins);
+  const histH = new Float64Array(bins);
+  const histN = new Int32Array(bins);
+
+  for (let t = 0; t < trees; t++) {
+    for (let i = 0; i < n; i++) {
+      const p = sigmoid(F[i]);
+      g[i] = p - y[i];
+      h[i] = Math.max(p * (1 - p), 1e-6);
+    }
+    const rows: number[] = [];
+    for (let i = 0; i < n; i++) if (rand() < subsample) rows.push(i);
+
+    const nodes: GbmNode[] = [];
+    const nodeBin: number[] = [];
+    const build = (idx: number[], level: number): number => {
+      let G = 0;
+      let H = 0;
+      for (const i of idx) {
+        G += g[i];
+        H += h[i];
+      }
+      const id = nodes.length;
+      nodes.push({ feature: -1, threshold: 0, left: -1, right: -1, value: (-G / (H + lambda)) * learningRate });
+      nodeBin.push(-1);
+      if (level >= depth || idx.length < 2 * minLeaf) return id;
+
+      const parentScore = (G * G) / (H + lambda);
+      let bestGain = 0;
+      let bestF = -1;
+      let bestBin = -1;
+      for (let f = 0; f < d; f++) {
+        histG.fill(0);
+        histH.fill(0);
+        histN.fill(0);
+        for (const i of idx) {
+          const b = binned[i * d + f];
+          histG[b] += g[i];
+          histH[b] += h[i];
+          histN[b]++;
+        }
+        let gl = 0;
+        let hl = 0;
+        let nl = 0;
+        for (let b = 0; b < cuts[f].length; b++) {
+          gl += histG[b];
+          hl += histH[b];
+          nl += histN[b];
+          const nr = idx.length - nl;
+          if (nl < minLeaf) continue;
+          if (nr < minLeaf) break;
+          const gain = (gl * gl) / (hl + lambda) + ((G - gl) * (G - gl)) / (H - hl + lambda) - parentScore;
+          if (gain > bestGain) {
+            bestGain = gain;
+            bestF = f;
+            bestBin = b;
+          }
+        }
+      }
+      if (bestF < 0) return id;
+
+      const leftIdx: number[] = [];
+      const rightIdx: number[] = [];
+      for (const i of idx) (binned[i * d + bestF] <= bestBin ? leftIdx : rightIdx).push(i);
+      nodes[id].feature = bestF;
+      nodes[id].threshold = cuts[bestF][bestBin];
+      nodeBin[id] = bestBin;
+      nodes[id].left = build(leftIdx, level + 1);
+      nodes[id].right = build(rightIdx, level + 1);
+      return id;
+    };
+    build(rows, 0);
+    model.trees.push(nodes);
+
+    for (let i = 0; i < n; i++) {
+      let k = 0;
+      while (nodes[k].feature >= 0) k = binned[i * d + nodes[k].feature] <= nodeBin[k] ? nodes[k].left : nodes[k].right;
+      F[i] += nodes[k].value;
+    }
+  }
+  return model;
+}
+
+function gbmLeaf(tree: GbmNode[], x: number[]): GbmNode {
+  let node = tree[0];
+  while (node.feature >= 0) node = tree[x[node.feature] <= node.threshold ? node.left : node.right];
+  return node;
+}
+
+export function predictGbm(model: GbmModel, x: number[]): number {
+  let z = model.base;
+  for (const tree of model.trees) z += gbmLeaf(tree, x).value;
+  return sigmoid(z);
+}
+
+/** Path attribution: each split credits its feature with the change in node value it caused. */
+export function gbmContributions(
+  model: GbmModel,
+  x: number[],
+  names: readonly string[]
+): Array<{ feature: string; contribution: number }> {
+  const totals = new Array<number>(names.length).fill(0);
+  for (const tree of model.trees) {
+    let node = tree[0];
+    while (node.feature >= 0) {
+      const next = tree[x[node.feature] <= node.threshold ? node.left : node.right];
+      totals[node.feature] += next.value - node.value;
+      node = next;
+    }
+  }
+  return totals
+    .map((contribution, j) => ({ feature: names[j], contribution }))
+    .sort((a, b) => Math.abs(b.contribution) - Math.abs(a.contribution));
+}

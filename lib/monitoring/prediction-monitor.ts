@@ -30,6 +30,8 @@ import type {
   SegmentMetrics,
 } from "@/lib/monitoring/types";
 import { fetchCandlesInRange, fetchCurrentPrice } from "@/services/binance";
+import { FEES } from "@/lib/trade-economics";
+import { buildCalibration, evaluateTradeOutcome, outcomeCandleInterval } from "@/lib/monitoring/trade-outcome";
 import type { MarketRegimeType, PredictionResult } from "@/types";
 
 const MONITOR_DIR = path.join(process.cwd(), ".cache", "prediction-monitor");
@@ -67,6 +69,8 @@ export async function recordLivePrediction(
     ensembleScore: prediction.ensembleScore,
     metaTrustScore: prediction.metaTrustScore,
     features: prediction.mlFeatures,
+    tradeLevels: prediction.tradeLevels,
+    feeRoundTrip: (FEES[prediction.market] ?? FEES.Futures).taker * 2,
   };
 
   store.records = store.records.filter((r) => r.id !== id);
@@ -144,9 +148,38 @@ async function resolveOutcome(record: MonitoredPrediction): Promise<PredictionOu
     candles
   );
 
+  let trade: ReturnType<typeof evaluateTradeOutcome> = null;
+  if (completed) {
+    try {
+      const fine = await fetchCandlesInRange(
+        record.symbol,
+        outcomeCandleInterval(durationMs),
+        record.market,
+        start,
+        start + durationMs
+      );
+      trade = evaluateTradeOutcome(
+        {
+          direction: record.direction,
+          entry: record.priceAtPrediction,
+          tp: record.tradeLevels?.tp,
+          sl: record.tradeLevels?.sl,
+          feeRoundTrip: record.feeRoundTrip ?? FEES.Futures.taker * 2,
+        },
+        fine
+      );
+      if (trade) actualPrice = trade.closePrice;
+    } catch {
+      // leave the honest fields empty; retried on the next refresh
+    }
+  }
+
   return {
     evaluatedAt: new Date().toISOString(),
     actualPrice,
+    directionHit: trade?.directionHit ?? null,
+    firstHit: trade?.firstHit ?? null,
+    tradeReturnPct: trade?.tradeReturnPct ?? null,
     score: accuracy.score,
     isCorrect: accuracy.isCorrect,
     label: accuracy.label,
@@ -190,6 +223,9 @@ export async function refreshOutcomes(maxUpdates = 40): Promise<number> {
 
 function isOutcomeStale(record: MonitoredPrediction): boolean {
   if (!record.outcome) return true;
+  if (record.outcome.timeframePhase === "completed" && record.direction !== "SIDEWAYS" && record.outcome.directionHit == null) {
+    return true;
+  }
   const elapsed = Date.now() - new Date(record.outcome.evaluatedAt).getTime();
   if (record.outcome.timeframePhase === "in_progress") return elapsed > 15 * 60_000;
   return elapsed > 6 * 60 * 60_000;
@@ -211,8 +247,19 @@ function computeWindowMetrics(records: MonitoredPrediction[], windowDays: number
   const accurate = completed.filter((r) => r.outcome && isAccurate(r.outcome));
   const wins = completed.filter((r) => r.outcome?.isCorrect === true);
 
+  const directional = completed.filter((r) => r.direction !== "SIDEWAYS" && r.outcome?.directionHit != null);
+  const withLevels = directional.filter((r) => r.outcome?.tradeReturnPct != null);
+
   return {
     windowDays,
+    directionalCount: directional.length,
+    directionHitRate: directional.length
+      ? directional.filter((r) => r.outcome?.directionHit).length / directional.length
+      : 0,
+    tpFirstRate: withLevels.length ? withLevels.filter((r) => r.outcome?.firstHit === "tp").length / withLevels.length : 0,
+    avgTradeReturnPct: withLevels.length
+      ? withLevels.reduce((s, r) => s + (r.outcome?.tradeReturnPct ?? 0), 0) / withLevels.length
+      : 0,
     total: windowed.length,
     completed: completed.length,
     inProgress: inProgress.length,
@@ -398,27 +445,25 @@ export function detectConceptDrift(records: MonitoredPrediction[]): DriftAlert[]
   return alerts.sort((a, b) => b.dropPct - a.dropPct);
 }
 
+/** Live confidence = how often directional calls actually came true, discounted while samples are few. */
 export function buildModelConfidence(
   windows: RollingWindowMetrics[],
   driftAlerts: DriftAlert[]
 ): ModelConfidenceSummary {
   const w30 = windows.find((w) => w.windowDays === 30) ?? windows[0];
-  const accuracy = w30?.accuracyRate ?? 0;
-  const samples = w30?.completed ?? 0;
+  const hitRate = w30?.directionHitRate ?? 0;
+  const samples = w30?.directionalCount ?? 0;
   const driftAlert = driftAlerts.some((a) => a.severity === "critical" || a.dropPct >= DRIFT_DROP_THRESHOLD);
 
-  let score = Math.round(accuracy * 100);
-  if (driftAlert) score = Math.max(0, score - 15);
-  if (samples < 10) score = Math.min(score, 55);
-  if (samples < 5) score = Math.min(score, 45);
-
-  const label: ModelConfidenceSummary["label"] =
-    score >= 70 ? "High" : score >= 50 ? "Medium" : "Low";
+  const score = Math.round(hitRate * 100);
+  let label: ModelConfidenceSummary["label"] = "Low";
+  if (samples >= 50 && score >= 55 && !driftAlert) label = "High";
+  else if (samples >= 30 && score >= 52) label = "Medium";
 
   return {
     score,
     label,
-    rollingAccuracy30d: Math.round(accuracy * 1000) / 1000,
+    rollingAccuracy30d: Math.round(hitRate * 1000) / 1000,
     sampleCount: samples,
     driftAlert,
     driftCount: driftAlerts.length,
@@ -517,6 +562,11 @@ export async function getPerformanceSnapshot(options?: {
     accuracyOverTime: computeAccuracyOverTime(completed180),
     equityCurve: computeEquityCurve(completed180),
     modelConfidence: buildModelConfidence(windows, driftAlerts),
+    calibration: buildCalibration(
+      completed180
+        .filter((r) => r.direction !== "SIDEWAYS" && r.outcome?.directionHit != null)
+        .map((r) => ({ probability: r.probability, directionHit: r.outcome!.directionHit === true }))
+    ),
   };
 
   await setCached(SNAPSHOT_CACHE_KEY, snapshot, SNAPSHOT_TTL_MS);

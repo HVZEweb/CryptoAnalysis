@@ -195,45 +195,48 @@ function buildEnsembleRationale(
   }
 
   const w = breakdown.effectiveWeights;
+  const pp = (edge: number) => `${edge >= 0 ? "+" : ""}${(edge * 50).toFixed(1)} п.п.`;
+  const mlEdge = (breakdown.ml.probabilityUp - 50) / 50;
   const votes: PredictionExplanation["ensembleVotes"] = [
     {
-      component: "LLM (AI)",
+      component: "ИИ (LLM)",
       direction: breakdown.llm.direction,
       weight: `${(w.llm * 100).toFixed(0)}%`,
-      note: `Вероятность ${breakdown.llm.probability}%, score ${(breakdown.llm.score * 100).toFixed(0)}%`,
+      note: `${breakdown.llm.direction} ${breakdown.llm.probability}% → ${pp(breakdown.llm.score)} к 50%; точность не измерена`,
     },
     {
-      component: breakdown.mlAvailable ? `ML (${breakdown.ml.model})` : "ML (недоступен)",
+      component: `Модель (${breakdown.ml.model})`,
       direction: breakdown.ml.direction,
       weight: `${(w.ml * 100).toFixed(0)}%`,
       note: breakdown.mlAvailable
-        ? `Confidence ${breakdown.ml.confidence}%${breakdown.ml.keyFeatures?.length ? ` · ${breakdown.ml.keyFeatures.slice(0, 2).join(", ")}` : ""}`
-        : breakdown.mlError ?? "Использованы LLM + rules",
+        ? `Вероятность роста ${breakdown.ml.probabilityUp}% → ${pp(mlEdge)}; точность на истории ${breakdown.ml.validationAccuracy ?? "—"}%`
+        : breakdown.ml.model === "unavailable"
+          ? breakdown.mlError ?? "Модель не обучена"
+          : `Вероятность роста ${breakdown.ml.probabilityUp}%, но на этом таймфрейме нет подтверждённого преимущества — голос не учитывается`,
     },
     {
-      component: "Rules",
+      component: "Правила",
       direction:
-        breakdown.rulesAggregateScore > 0.08
+        breakdown.rulesAggregateScore >= 0.04
           ? "LONG"
-          : breakdown.rulesAggregateScore < -0.08
+          : breakdown.rulesAggregateScore <= -0.04
             ? "SHORT"
             : "SIDEWAYS",
       weight: `${(w.rules * 100).toFixed(0)}%`,
-      note: `Агрегированный score ${(breakdown.rulesAggregateScore * 100).toFixed(1)}%`,
+      note: `Сумма сигналов ${pp(breakdown.rulesAggregateScore)} к 50%; точность не измерена`,
     },
   ];
 
-  const scorePct = (breakdown.ensembleScore * 100).toFixed(1);
   const trust =
-    breakdown.metaTrustScore != null ? ` Доверие meta-learner: ${breakdown.metaTrustScore}/100.` : "";
+    breakdown.mlAvailable && breakdown.metaTrustScore != null
+      ? ` Вероятность ограничена подтверждённой точностью модели (${breakdown.metaTrustScore}%).`
+      : " Без подтверждённого преимущества модели направление не выдаётся.";
 
   const rationale =
-    `Ensemble выбрал ${directionLabel(breakdown.finalDirection)} (${breakdown.finalProbability}%) ` +
-    `при ${agreementRu(breakdown.agreement)}. ` +
-    `Взвешенный score ${scorePct}%: LLM ${(w.llm * 100).toFixed(0)}%, ` +
-    `ML ${(w.ml * 100).toFixed(0)}%, rules ${(w.rules * 100).toFixed(0)}%.` +
-    trust +
-    (breakdown.lowConfidence ? " Сигнал слабый — confidence понижен." : "");
+    `Итог: ${directionLabel(breakdown.finalDirection)} (${breakdown.finalProbability}%) при ${agreementRu(breakdown.agreement)}. ` +
+    `Каждый голос считается как отклонение от 50%; взвешенный перевес ${pp(breakdown.ensembleScore)}. ` +
+    `Вес: модель ${(w.ml * 100).toFixed(0)}%, ИИ ${(w.llm * 100).toFixed(0)}%, правила ${(w.rules * 100).toFixed(0)}%.` +
+    trust;
 
   return { rationale, votes };
 }
@@ -247,17 +250,17 @@ function buildStrengthsWeaknesses(
   const weaknesses: string[] = [];
 
   if (breakdown) {
-    if (breakdown.agreement === "full") strengths.push("Полное согласие LLM, ML и rule-сигналов");
-    if (breakdown.agreement === "divergent") weaknesses.push("Компоненты ensemble расходятся — повышенная неопределённость");
-    if (Math.abs(breakdown.ensembleScore) >= 0.2) strengths.push(`Сильный ensemble score (${(breakdown.ensembleScore * 100).toFixed(0)}%)`);
-    if (Math.abs(breakdown.ensembleScore) < 0.1) weaknesses.push("Слабый ensemble score — сигнал на грани нейтрали");
-    if (!breakdown.mlAvailable) weaknesses.push("ML-модель недоступна, вес перераспределён на LLM + rules");
-    if (breakdown.metaTrustScore != null && breakdown.metaTrustScore >= 65) {
-      strengths.push(`Meta-learner подтверждает сигнал (${breakdown.metaTrustScore}/100)`);
+    if (breakdown.agreement === "full") strengths.push("Модель, ИИ и правила смотрят в одну сторону");
+    if (breakdown.agreement === "divergent") weaknesses.push("Источники сигнала расходятся — повышенная неопределённость");
+    if (Math.abs(breakdown.ensembleScore) >= 0.08) strengths.push(`Заметный перевес (${(breakdown.ensembleScore * 50).toFixed(1)} п.п. к 50%)`);
+    if (Math.abs(breakdown.ensembleScore) < 0.03) weaknesses.push("Перевес меньше 1,5 п.п. — фактически сигнала нет");
+    if (!breakdown.mlAvailable) weaknesses.push("На этом таймфрейме у модели нет подтверждённого преимущества");
+    if (breakdown.mlAvailable && breakdown.metaTrustScore != null) {
+      strengths.push(`Модель проверена на истории: ${breakdown.metaTrustScore}% верных уверенных сигналов`);
     }
-    if (breakdown.metaTrustScore != null && breakdown.metaTrustScore < 45) {
-      weaknesses.push(`Низкое доверие meta-learner (${breakdown.metaTrustScore}/100)`);
-    }
+  }
+  if (prediction.tradeEconomics && !prediction.tradeEconomics.worthTrading) {
+    weaknesses.push("После комиссий сделка с такими уровнями в среднем убыточна");
   }
 
   if (prediction.confidence === "High") strengths.push("Высокая итоговая уверенность модели");

@@ -1,3 +1,5 @@
+import type { TradeEconomics } from "@/lib/trade-economics";
+
 export type MarketType = "Spot" | "Futures";
 
 export type Timeframe =
@@ -27,6 +29,8 @@ export interface Candle {
   closeTime: number;
   quoteVolume: number;
   trades: number;
+  /** Base volume bought by market (taker) orders; Binance klines only */
+  takerBuyVolume?: number;
 }
 
 export interface MarketData {
@@ -334,6 +338,8 @@ export interface PredictionResult {
   priceAtPrediction: number;
   coinId: string;
   tradeLevels?: { entry: number; tp: number; sl: number; exit: number };
+  /** Fees and expected value of trading the TP/SL levels */
+  tradeEconomics?: TradeEconomics;
   analysis?: AnalysisSnapshot;
   /** Серверные коррекции после ответа AI */
   refinementNotes?: string[];

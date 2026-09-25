@@ -110,14 +110,14 @@ function applySupportResistance(
 export function resolveTradeLevels(prediction: PredictionResult): TradeLevels {
   const entry = prediction.priceAtPrediction;
 
-  if (prediction.refinementNotes?.length && prediction.tradeLevels) {
+  if (prediction.tradeLevels && (prediction.tradeEconomics || prediction.refinementNotes?.length)) {
     const t = prediction.tradeLevels;
     return {
       entry,
       tp: t.tp,
       sl: t.sl,
       exit: t.exit,
-      hint: "ATR + старшие ТФ + R:R ≥ 1.5",
+      hint: "ATR, R:R ≥ 1.5, с учётом комиссий",
     };
   }
 

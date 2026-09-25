@@ -69,6 +69,11 @@ export function resampleCandles(candles: Candle[], sourceMinutes: number, target
     current.volume += c.volume;
     current.quoteVolume += c.quoteVolume;
     current.trades += c.trades;
+    if (current.takerBuyVolume !== undefined && c.takerBuyVolume !== undefined) {
+      current.takerBuyVolume += c.takerBuyVolume;
+    } else {
+      current.takerBuyVolume = undefined;
+    }
     count++;
   }
   flush();

@@ -9,7 +9,6 @@ import {
   RSI,
   SMA,
   StochasticRSI,
-  VWAP,
 } from "technicalindicators";
 import type {
   Candle,
@@ -20,6 +19,36 @@ import type {
   VolatilityData,
   VolumeAnalysis,
 } from "@/types";
+
+const DAY_MS = 86_400_000;
+
+/** Typical bar length in ms, from the spacing of the last candles. */
+function barMs(candles: Candle[]): number {
+  const n = candles.length;
+  if (n < 2) return DAY_MS;
+  return Math.max(60_000, candles[n - 1].openTime - candles[n - 2].openTime);
+}
+
+/**
+ * VWAP anchored to the current UTC day for intraday bars, and to the last 20 bars for daily and
+ * longer bars — a VWAP accumulated over the whole fetched history says nothing about today.
+ */
+export function anchoredVwap(candles: Candle[]): number {
+  if (!candles.length) return 0;
+  const step = barMs(candles);
+  const lastOpen = candles[candles.length - 1].openTime;
+  const from =
+    step < DAY_MS ? Math.floor(lastOpen / DAY_MS) * DAY_MS : candles[Math.max(0, candles.length - 20)].openTime;
+  let pv = 0;
+  let vol = 0;
+  for (const c of candles) {
+    if (c.openTime < from) continue;
+    const typical = (c.high + c.low + c.close) / 3;
+    pv += typical * c.volume;
+    vol += c.volume;
+  }
+  return vol > 0 ? pv / vol : candles[candles.length - 1].close;
+}
 
 function last<T>(arr: T[], fallback: T): T {
   return arr.length > 0 ? arr[arr.length - 1] : fallback;
@@ -111,7 +140,6 @@ export function calculateIndicators(candles: Candle[]): TechnicalIndicators {
   const bbValues = BollingerBands.calculate({ period: 20, values: closes, stdDev: 2 });
   const atrValues = ATR.calculate({ high: highs, low: lows, close: closes, period: 14 });
   const adxValues = ADX.calculate({ high: highs, low: lows, close: closes, period: 14 });
-  const vwapValues = VWAP.calculate({ high: highs, low: lows, close: closes, volume: volumes });
   const obvValues = OBV.calculate({ close: closes, volume: volumes });
   const stochRsi = StochasticRSI.calculate({
     values: closes,
@@ -145,7 +173,7 @@ export function calculateIndicators(candles: Candle[]): TechnicalIndicators {
     },
     atr: last(atrValues, 0),
     adx: adxValues.length > 0 ? adxValues[adxValues.length - 1].adx : 25,
-    vwap: last(vwapValues, price),
+    vwap: anchoredVwap(candles),
     obv: last(obvValues, 0),
     stochasticRsi: { k: lastStoch.k, d: lastStoch.d },
     cci: last(cciValues, 0),
@@ -191,7 +219,9 @@ export function analyzeVolume(candles: Candle[]): VolumeAnalysis {
     };
   }
 
-  const volumes = candles.map((c) => c.volume);
+  // The newest candle is still forming, so its volume is partial — compare closed candles only.
+  const closed = candles.length > 1 ? candles.slice(0, -1) : candles;
+  const volumes = closed.map((c) => c.volume);
   const recent10 = volumes.slice(-10);
   const prev10 = volumes.slice(-20, -10);
   const avgRecent = recent10.reduce((a, b) => a + b, 0) / recent10.length;
@@ -199,7 +229,9 @@ export function analyzeVolume(candles: Candle[]): VolumeAnalysis {
   let volumeTrend: VolumeAnalysis["volumeTrend"] = "stable";
   if (avgRecent > avgPrev * 1.1) volumeTrend = "increasing";
   else if (avgRecent < avgPrev * 0.9) volumeTrend = "decreasing";
-  const averageVolume30d = volumes.slice(-30).reduce((a, b) => a + b, 0) / Math.min(30, volumes.length);
+  // Average volume per candle over the last 30 closed candles (base-asset units, same as candle volume).
+  const window = volumes.slice(-31, -1);
+  const averageVolume30d = window.length ? window.reduce((a, b) => a + b, 0) / window.length : volumes[volumes.length - 1];
   return {
     volumeTrend,
     averageVolume30d,
@@ -208,39 +240,71 @@ export function analyzeVolume(candles: Candle[]): VolumeAnalysis {
   };
 }
 
-export function calculateVolatility(candles: Candle[], interval: string): VolatilityData {
+export function calculateVolatility(candles: Candle[]): VolatilityData {
   const closes = candles.map((c) => c.close);
   const highs = candles.map((c) => c.high);
   const lows = candles.map((c) => c.low);
   const atrVal = last(ATR.calculate({ high: highs, low: lows, close: closes, period: 14 }), 0);
 
-  const step = interval.includes("d") ? 1 : interval === "4h" ? 6 : interval === "1h" ? 24 : 96;
-  const dailyReturns: number[] = [];
-  for (let i = step; i < closes.length; i += step) {
-    dailyReturns.push(Math.abs((closes[i] - closes[i - step]) / closes[i - step]));
+  const returns: number[] = [];
+  for (let i = 1; i < closes.length; i++) {
+    if (closes[i - 1] > 0) returns.push(Math.log(closes[i] / closes[i - 1]));
   }
-  const weeklyReturns: number[] = [];
-  const weekStep = step * 7;
-  for (let i = weekStep; i < closes.length; i += weekStep) {
-    weeklyReturns.push(Math.abs((closes[i] - closes[i - weekStep]) / closes[i - weekStep]));
-  }
-  const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+  if (returns.length < 2) return { atr: atrVal, dailyVolatility: 0, weeklyVolatility: 0 };
+  const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
+  const std = Math.sqrt(returns.reduce((a, r) => a + (r - mean) ** 2, 0) / (returns.length - 1));
+  const barsPerDay = DAY_MS / barMs(candles);
+  const daily = std * Math.sqrt(barsPerDay);
 
-  return { atr: atrVal, dailyVolatility: avg(dailyReturns) * 100, weeklyVolatility: avg(weeklyReturns) * 100 };
+  return { atr: atrVal, dailyVolatility: daily * 100, weeklyVolatility: daily * Math.sqrt(7) * 100 };
+}
+
+/** Swing lows/highs: a bar whose low/high is the extreme of the `span` bars on each side. */
+function swingPoints(candles: Candle[], span = 3): { highs: number[]; lows: number[] } {
+  const highs: number[] = [];
+  const lows: number[] = [];
+  for (let i = span; i < candles.length - span; i++) {
+    let isHigh = true;
+    let isLow = true;
+    for (let j = i - span; j <= i + span; j++) {
+      if (j === i) continue;
+      if (candles[j].high >= candles[i].high) isHigh = false;
+      if (candles[j].low <= candles[i].low) isLow = false;
+    }
+    if (isHigh) highs.push(candles[i].high);
+    if (isLow) lows.push(candles[i].low);
+  }
+  return { highs, lows };
 }
 
 export function calculateLevels(candles: Candle[], currentPrice: number): SupportResistance {
-  const recent = candles.slice(-100);
-  const highs = recent.map((c) => c.high);
-  const lows = recent.map((c) => c.low);
-  const resistanceLevels = highs.filter((h) => h > currentPrice).sort((a, b) => a - b);
-  const supportLevels = lows.filter((l) => l < currentPrice).sort((a, b) => b - a);
-  const allLevels = [...new Set([...highs, ...lows])].sort((a, b) => a - b);
-  const strongLevels = allLevels.filter((level, _, arr) => {
-    return arr.filter((l) => Math.abs(l - level) / level < 0.005).length >= 3;
-  });
-  const nearestSupport = supportLevels[0] ?? currentPrice * 0.95;
-  const nearestResistance = resistanceLevels[0] ?? currentPrice * 1.05;
+  const recent = candles.slice(-150);
+  const atr = last(
+    ATR.calculate({
+      high: recent.map((c) => c.high),
+      low: recent.map((c) => c.low),
+      close: recent.map((c) => c.close),
+      period: 14,
+    }),
+    currentPrice * 0.01
+  );
+  // A level a fraction of an ATR away is just the last candle's wick, not support.
+  const minDistance = Math.max(atr * 0.5, currentPrice * 0.001);
+  const swings = swingPoints(recent);
+  const resistanceLevels = swings.highs.filter((h) => h - currentPrice >= minDistance).sort((a, b) => a - b);
+  const supportLevels = swings.lows.filter((l) => currentPrice - l >= minDistance).sort((a, b) => b - a);
+
+  const allLevels = [...swings.highs, ...swings.lows].sort((a, b) => a - b);
+  const strongLevels = [...new Set(allLevels)].filter(
+    (level) => allLevels.filter((l) => Math.abs(l - level) / level < 0.005).length >= 3
+  );
+
+  const recentLow = Math.min(...recent.map((c) => c.low));
+  const recentHigh = Math.max(...recent.map((c) => c.high));
+  const nearestSupport =
+    supportLevels[0] ?? (currentPrice - recentLow >= minDistance ? recentLow : currentPrice - minDistance * 2);
+  const nearestResistance =
+    resistanceLevels[0] ?? (recentHigh - currentPrice >= minDistance ? recentHigh : currentPrice + minDistance * 2);
   return {
     nearestSupport,
     nearestResistance,

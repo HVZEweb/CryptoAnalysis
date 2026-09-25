@@ -330,25 +330,28 @@ export function LivePerformancePanel() {
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {snapshot.windows.map((w) => (
                 <div key={w.windowDays} className="rounded-xl bg-white/[0.04] p-3 ring-1 ring-white/5">
-                  <p className="text-xs text-muted-foreground">{w.windowDays}d window</p>
+                  <p className="text-xs text-muted-foreground">{w.windowDays} дн. · направление угадано</p>
                   <p className="mt-1 font-display text-xl font-semibold">
-                    {(w.accuracyRate * 100).toFixed(1)}%
+                    {w.directionalCount ? `${(w.directionHitRate * 100).toFixed(1)}%` : "—"}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
-                    {w.completed} completed · avg score {w.avgScore.toFixed(0)}
+                    {w.directionalCount} сигналов · TP первым {(w.tpFirstRate * 100).toFixed(0)}% · сделка{" "}
+                    {w.avgTradeReturnPct >= 0 ? "+" : ""}
+                    {w.avgTradeReturnPct.toFixed(2)}% после комиссий
                   </p>
                 </div>
               ))}
               <div className="rounded-xl bg-indigo-500/10 p-3 ring-1 ring-indigo-500/20">
                 <p className="flex items-center gap-1 text-xs text-indigo-200">
                   <Shield className="h-3.5 w-3.5" />
-                  Model Confidence
+                  Реальная точность (30 дн.)
                 </p>
                 <p className="mt-1 font-display text-xl font-semibold text-indigo-100">
-                  {snapshot.modelConfidence.score}/100
+                  {snapshot.modelConfidence.sampleCount ? `${snapshot.modelConfidence.score}%` : "—"}
                 </p>
                 <p className="text-[10px] text-indigo-200/70">
-                  {snapshot.modelConfidence.label} · {snapshot.modelConfidence.sampleCount} samples
+                  {snapshot.modelConfidence.sampleCount} сигналов
+                  {snapshot.modelConfidence.sampleCount < 30 ? " · мало данных для выводов" : ""}
                 </p>
               </div>
             </div>
@@ -363,6 +366,23 @@ export function LivePerformancePanel() {
                 <MiniChart data={equityChartData} color="#34d399" valueKey="cumulativeReturnPct" />
               </div>
             </div>
+
+            {snapshot.calibration && (
+              <div className="mt-4 rounded-xl bg-white/[0.03] p-3 ring-1 ring-white/5">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">
+                  Калибровка: сбываются ли заявленные проценты (180 дн.)
+                </p>
+                <div className="grid grid-cols-4 gap-2 text-xs tabular-nums">
+                  {snapshot.calibration.map((b) => (
+                    <div key={b.label} className="rounded-lg bg-white/[0.04] p-2">
+                      <p className="text-[10px] text-muted-foreground">Заявлено {b.label}</p>
+                      <p className="font-semibold">{b.count ? `${b.actual.toFixed(0)}%` : "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">{b.count} сигналов</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {snapshot.byRegime.length > 0 && (
               <div className="mt-4">

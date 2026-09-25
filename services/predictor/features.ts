@@ -20,6 +20,9 @@ export const FEATURE_NAMES = [
   "range_pos_20",
   "volume_z",
   "candle_body",
+  "taker_buy_4",
+  "btc_ret_4",
+  "btc_div_12",
 ] as const;
 
 export const FEATURE_LABELS: Record<(typeof FEATURE_NAMES)[number], string> = {
@@ -35,6 +38,9 @@ export const FEATURE_LABELS: Record<(typeof FEATURE_NAMES)[number], string> = {
   range_pos_20: "Позиция в диапазоне 20 свечей",
   volume_z: "Аномалия объёма",
   candle_body: "Тело последней свечи",
+  taker_buy_4: "Доля рыночных покупок (4 свечи)",
+  btc_ret_4: "Импульс BTC (4 свечи)",
+  btc_div_12: "Отставание от BTC (12 свечей)",
 };
 
 const CLIP = 6;
@@ -104,7 +110,24 @@ export interface FeatureSeries {
   vol: number[];
 }
 
-export function computeFeatureSeries(candles: Candle[]): FeatureSeries {
+export interface FeatureContext {
+  /** BTC candles of the same interval — the market leader's move as a signal for every coin */
+  btc?: Candle[];
+}
+
+/** Normalised k-bar return for each index (NaN until enough history). */
+function normalisedReturns(candles: Candle[], bars: number): number[] {
+  const closes = candles.map((c) => c.close);
+  const logRet = closes.map((c, i) => (i === 0 ? 0 : Math.log(c / closes[i - 1])));
+  const vol = rollingStd(logRet, 24);
+  const out = new Array<number>(candles.length).fill(NaN);
+  for (let i = bars; i < candles.length; i++) {
+    if (vol[i] > 0) out[i] = Math.log(closes[i] / closes[i - bars]) / (vol[i] * Math.sqrt(bars));
+  }
+  return out;
+}
+
+export function computeFeatureSeries(candles: Candle[], context: FeatureContext = {}): FeatureSeries {
   const n = candles.length;
   const closes = candles.map((c) => c.close);
   const logRet = closes.map((c, i) => (i === 0 ? 0 : Math.log(c / closes[i - 1])));
@@ -119,6 +142,18 @@ export function computeFeatureSeries(candles: Candle[]): FeatureSeries {
   const cumRet: number[] = new Array(n).fill(0);
   for (let i = 1; i < n; i++) cumRet[i] = cumRet[i - 1] + logRet[i];
   const retOver = (i: number, bars: number) => cumRet[i] - cumRet[i - bars];
+
+  // BTC features are looked up by bar open time, so a BTC bar is only ever paired with the same bar.
+  const btcRet4 = new Map<number, number>();
+  const btcRet12 = new Map<number, number>();
+  if (context.btc?.length) {
+    const r4 = normalisedReturns(context.btc, 4);
+    const r12 = normalisedReturns(context.btc, 12);
+    context.btc.forEach((c, i) => {
+      if (Number.isFinite(r4[i])) btcRet4.set(c.openTime, r4[i]);
+      if (Number.isFinite(r12[i])) btcRet12.set(c.openTime, r12[i]);
+    });
+  }
 
   const rows: Array<number[] | null> = new Array(n).fill(null);
   for (let i = FEATURE_LOOKBACK; i < n; i++) {
@@ -137,10 +172,26 @@ export function computeFeatureSeries(candles: Candle[]): FeatureSeries {
     const c = candles[i];
     const barRange = c.high - c.low;
 
+    let takerBuy = 0;
+    let takerVolume = 0;
+    let takerKnown = true;
+    for (let j = i - 3; j <= i; j++) {
+      const t = candles[j].takerBuyVolume;
+      if (t === undefined || !(candles[j].volume > 0)) {
+        takerKnown = false;
+        break;
+      }
+      takerBuy += t;
+      takerVolume += candles[j].volume;
+    }
+
+    const ret12 = retOver(i, 12) / (v * Math.sqrt(12));
+    const btc12 = btcRet12.get(c.openTime);
+
     rows[i] = [
       logRet[i] / v,
       retOver(i, 4) / (v * 2),
-      retOver(i, 12) / (v * Math.sqrt(12)),
+      ret12,
       retOver(i, 48) / (v * Math.sqrt(48)),
       Math.log(v / vol96[i]),
       (rsi14[i] - 50) / 25,
@@ -150,6 +201,9 @@ export function computeFeatureSeries(candles: Candle[]): FeatureSeries {
       hi > lo ? ((c.close - lo) / (hi - lo) - 0.5) * 2 : 0,
       volumeStd[i] > 0 ? (logVolume[i] - volumeMean) / volumeStd[i] : 0,
       barRange > 0 ? (c.close - c.open) / barRange : 0,
+      takerKnown && takerVolume > 0 ? (takerBuy / takerVolume - 0.5) * 10 : 0,
+      btcRet4.get(c.openTime) ?? 0,
+      btc12 !== undefined ? btc12 - ret12 : 0,
     ].map(clip);
   }
 
