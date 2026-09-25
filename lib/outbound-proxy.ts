@@ -5,7 +5,8 @@
  * - OUTBOUND_PROXY — everything goes through a local VPN client:
  *   http://127.0.0.1:10809 or socks5://127.0.0.1:10808.
  * - OUTBOUND_SOURCE_IP — a policy-based IPsec VPN that only tunnels packets from this address
- *   (e.g. 10.77.77.1). Only hosts in OUTBOUND_VPN_HOSTS (default: openrouter.ai) are bound to it;
+ *   (e.g. 10.77.77.1). Only hosts in OUTBOUND_VPN_HOSTS (default: openrouter.ai and api.telegram.org,
+ *   which is throttled from Russia) are bound to it;
  *   Binance and the rest stay direct, because the tunnel makes every request several times slower.
  */
 
@@ -44,7 +45,7 @@ class SourceBoundAgent extends https.Agent {
 }
 
 export function vpnHosts(): string[] {
-  return (process.env.OUTBOUND_VPN_HOSTS?.trim() || "openrouter.ai")
+  return (process.env.OUTBOUND_VPN_HOSTS?.trim() || "openrouter.ai,api.telegram.org")
     .split(",")
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean);

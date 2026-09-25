@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { TelegramSettings } from "@/components/TelegramSettings";
 
 interface AdminUser {
   id: string;
@@ -97,6 +98,8 @@ export default function AdminPage() {
           </Link>
         </div>
       </div>
+
+      <TelegramSettings />
 
       <form onSubmit={addUser} className="flex flex-wrap items-center gap-2 rounded-xl bg-white/[0.03] p-3 ring-1 ring-white/8">
         <input
