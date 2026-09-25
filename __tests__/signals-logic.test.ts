@@ -98,7 +98,7 @@ describe("coinVerdict", () => {
 describe("bot commands", () => {
   function deps(): BotDeps & { watch: string[] } {
     const watch: string[] = [];
-    let settings = { paused: false, observe: false };
+    let settings = { paused: false, observe: false, news: true };
     return {
       watch,
       store: {
@@ -134,5 +134,14 @@ describe("bot commands", () => {
     expect((await d.store.getChat("42")).paused).toBe(true);
     expect(await handleCommand("42", "/observe on", d)).toContain("не торговые сигналы");
     expect((await d.store.getChat("42")).observe).toBe(true);
+  });
+
+  it("mutes and unmutes news alerts", async () => {
+    const d = deps();
+    expect(await handleCommand("42", "/news off", d)).toContain("выключены");
+    expect((await d.store.getChat("42")).news).toBe(false);
+    await handleCommand("42", "/news on", d);
+    expect((await d.store.getChat("42")).news).toBe(true);
+    expect(await handleCommand("42", "/news", d)).toContain("/news on");
   });
 });

@@ -3,6 +3,9 @@ import fs from "fs/promises";
 import path from "path";
 import { createHash } from "crypto";
 import type { NewsImpactPrediction } from "@/services/news-impact/types";
+import { getTelegramConfig, sendTelegram as sendToConnectedBot } from "@/lib/telegram";
+import { getStrongNewsRecord, type NewsTrackRecord } from "@/services/news-impact/history";
+import { getChat } from "@/services/signals/store";
 
 const CACHE_DIR = path.join(process.cwd(), ".cache", "news-impact");
 const ALERTS_LOG_PATH = path.join(CACHE_DIR, "alerts.jsonl");
@@ -33,6 +36,7 @@ let userAlertsOverride: boolean | null = null;
 
 export function shouldSendAlert(prediction: NewsImpactPrediction): boolean {
   if (prediction.isSecondary) return false;
+  if (prediction.direction !== "LONG" && prediction.direction !== "SHORT") return false;
   const scoreOk = prediction.impactScore >= 75;
   const extreme = prediction.strength === "Extreme";
   const hotImmediate =
@@ -40,8 +44,9 @@ export function shouldSendAlert(prediction: NewsImpactPrediction): boolean {
   return scoreOk && (extreme || hotImmediate);
 }
 
+/** On by default; NEWS_IMPACT_ALERTS_ENABLED=false or the switch on the news page turns them off. */
 export function envAlertsEnabled(): boolean {
-  return process.env.NEWS_IMPACT_ALERTS_ENABLED === "true";
+  return process.env.NEWS_IMPACT_ALERTS_ENABLED !== "false";
 }
 
 export async function loadAlertsSettings(): Promise<{ enabled: boolean }> {
@@ -127,6 +132,39 @@ export function formatAlertPayload(
     affectedCoins: prediction.affectedCoins,
     newsId: prediction.newsId,
   };
+}
+
+const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/** Alert for the bot connected in /admin (HTML), with how such alerts really did before. */
+export function formatBotAlert(prediction: NewsImpactPrediction, record: NewsTrackRecord, newsTitle?: string): string {
+  const long = prediction.direction === "LONG";
+  const history =
+    record.count >= 10
+      ? `Прошлые сильные новости (${record.count}): через час цена шла в указанную сторону в ${Math.round(record.hitRate * 100)}% случаев, ` +
+        `в среднем ${record.avgMovePct >= 0 ? "+" : ""}${record.avgMovePct.toFixed(2)}% в сторону прогноза.`
+      : `Точность новостных алертов пока не набрана (проверено ${record.count} из нужных 10) — относитесь как к наводке, не к сигналу.`;
+  return [
+    `${strengthEmoji(prediction.strength)} <b>Новость → ${long ? "🟢 LONG" : "🔴 SHORT"} ${escapeHtml(prediction.coin)}</b>`,
+    newsTitle ? `📰 ${escapeHtml(newsTitle)}` : null,
+    `Сила ${prediction.impactScore}/100 · ожидаемое движение ~${prediction.expectedMovePct}% · держать ${escapeHtml(prediction.suggestedHoldTime)}`,
+    `📝 ${escapeHtml(prediction.reason)}`,
+    prediction.sourceUrl ? `🔗 ${escapeHtml(prediction.sourceUrl)}` : null,
+    ``,
+    history,
+    `⚠️ Это оценка новости, а не проверенная стратегия: уровни и прибыль после комиссий для неё не проверялись. /news off — выключить.`,
+  ]
+    .filter((l) => l !== null)
+    .join("\n");
+}
+
+/** Sends to the bot connected in /admin unless its chat turned news off. */
+async function sendToAdminBot(prediction: NewsImpactPrediction, newsTitle?: string): Promise<void> {
+  const config = getTelegramConfig();
+  if (!config) return;
+  if (!(await getChat(config.chatId)).news) return;
+  const record = await getStrongNewsRecord().catch(() => ({ count: 0, hitRate: 0, avgMovePct: 0 }));
+  await sendToConnectedBot(formatBotAlert(prediction, record, newsTitle), config);
 }
 
 async function sendTelegram(text: string): Promise<void> {
@@ -228,6 +266,10 @@ export async function dispatchNewsImpactAlert(
 
   try {
     const tasks: Promise<void>[] = [];
+    if (getTelegramConfig()) {
+      channels.push("bot");
+      tasks.push(sendToAdminBot(prediction, newsTitle));
+    }
     if (process.env.NEWS_IMPACT_TELEGRAM_BOT_TOKEN && process.env.NEWS_IMPACT_TELEGRAM_CHAT_ID) {
       channels.push("telegram");
       tasks.push(sendTelegram(text));

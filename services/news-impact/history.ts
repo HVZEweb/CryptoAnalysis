@@ -432,3 +432,32 @@ export function stopOutcomeTrackingJob(): void {
 }
 
 export { CHECKPOINTS_MIN };
+
+export interface NewsTrackRecord {
+  /** Strong predictions whose 60-minute outcome is known */
+  count: number;
+  /** Share where price moved the predicted way within 60 minutes */
+  hitRate: number;
+  /** Average 60-minute move in the predicted direction, % */
+  avgMovePct: number;
+}
+
+/** What strong (alert-grade) news predictions really did an hour later. */
+export function strongNewsRecord(rows: NewsImpactHistoryRow[], minImpact = 75): NewsTrackRecord {
+  const done = rows.filter(
+    (r) =>
+      r.impactScore >= minImpact &&
+      r.actualMove60m != null &&
+      (r.predictedDirection === "LONG" || r.predictedDirection === "SHORT")
+  );
+  const moves = done.map((r) => (r.predictedDirection === "LONG" ? 1 : -1) * (r.actualMove60m as number));
+  return {
+    count: done.length,
+    hitRate: done.length ? moves.filter((m) => m > 0).length / done.length : 0,
+    avgMovePct: done.length ? moves.reduce((a, b) => a + b, 0) / done.length : 0,
+  };
+}
+
+export async function getStrongNewsRecord(): Promise<NewsTrackRecord> {
+  return strongNewsRecord(await getRecentHistory(500));
+}
