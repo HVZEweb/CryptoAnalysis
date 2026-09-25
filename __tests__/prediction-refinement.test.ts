@@ -156,6 +156,29 @@ describe("refinePrediction", () => {
     expect(entry - refined.tradeLevels!.tp).toBeGreaterThanOrEqual(atr * 0.9);
   });
 
+  it("does not stretch a 15m plan to a far support/resistance (the reported ETH 15m case)", () => {
+    const analysis = mockBtcAnalysis();
+    const entry = 64029.6;
+    const atr = 265.92;
+    // Resistance 5 ATR above a SHORT: it belongs to a longer horizon, not to a 15m stop.
+    analysis.levels = { ...analysis.levels, nearestResistance: entry + atr * 5, nearestSupport: entry - atr * 6 };
+    const { tradeLevels } = refinePrediction(rawPrediction(), analysis, "15m");
+    const slDist = tradeLevels!.sl - entry;
+    const tpDist = entry - tradeLevels!.tp;
+    expect(slDist).toBeLessThanOrEqual(atr * 0.75 * 1.3 + 1e-6);
+    expect(tpDist).toBeLessThanOrEqual(slDist * 1.5 + 1e-6);
+  });
+
+  it("still uses a nearby level to place the stop", () => {
+    const analysis = mockBtcAnalysis();
+    const entry = 64029.6;
+    const atr = 265.92;
+    const resistance = entry + atr * 0.9;
+    analysis.levels = { ...analysis.levels, nearestResistance: resistance };
+    const { tradeLevels } = refinePrediction(rawPrediction(), analysis, "15m");
+    expect(tradeLevels!.sl).toBeCloseTo(resistance);
+  });
+
   it("prices in fees and advises against a trade that loses after them", () => {
     const refined = refinePrediction(rawPrediction(), mockBtcAnalysis(), "15m");
     const e = refined.tradeEconomics!;

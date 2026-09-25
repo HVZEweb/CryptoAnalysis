@@ -42,6 +42,30 @@ describe("evaluatePredictionAccuracy", () => {
     expect(result.timeframePhase).toBe("completed");
   });
 
+  it("marks a small move the wrong way as a miss, not 'Частично' (the reported ETH 15m case)", () => {
+    const old = new Date(Date.now() - 60 * 60_000).toISOString();
+    const result = evaluatePredictionAccuracyFromPrices(
+      {
+        direction: "LONG",
+        priceAtPrediction: 2723.71,
+        timeframe: "15m",
+        createdAt: old,
+        priceForecast: {
+          predictedPrice: 2724.5,
+          predictedHigh: 2739,
+          predictedLow: 2707,
+          confidenceBand: { low: 2716, high: 2733 },
+          expectedMovePct: 0.03,
+        },
+        priceRange: { low: 2707, high: 2739 },
+      },
+      2718.47
+    );
+    expect(result.timeframePhase).toBe("completed");
+    expect(result.label).toBe("Мимо");
+    expect(result.isCorrect).toBe(false);
+  });
+
   it("marks large price miss as wrong when completed", () => {
     const old = new Date(Date.now() - 25 * 60 * 60_000).toISOString();
     const result = evaluatePredictionAccuracyFromPrices(

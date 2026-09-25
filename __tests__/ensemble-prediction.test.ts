@@ -210,6 +210,16 @@ describe("EnsemblePredictor", () => {
     expect(prediction.probability).toBeLessThanOrEqual(55.5);
   });
 
+  it("lets the LLM and rules not set a direction the model does not share (the reported ETH 15m case)", async () => {
+    vi.spyOn(predictorModule, "runPricePredictor").mockResolvedValueOnce({ result: modelResult(0.497, true) });
+    const ctx = mockContext();
+    const { prediction } = await new EnsemblePredictor().combine(ctx, snapshotOf(ctx), llm("LONG", 90));
+
+    expect(prediction.direction).toBe("SIDEWAYS");
+    expect(prediction.probability).toBe(50);
+    expect(prediction.recommendation).toContain("модель не видит перевеса");
+  });
+
   it("hides the direction when the model has no validated edge", async () => {
     vi.spyOn(predictorModule, "runPricePredictor").mockResolvedValueOnce({
       result: modelResult(0.6, false),

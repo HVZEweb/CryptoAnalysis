@@ -271,7 +271,13 @@ export class EnsemblePredictor {
 
     // Cap = what the model proved on unseen data for its confident calls; no validated edge → no direction.
     const cap = hasEdge && validation ? validation.confident.accuracy - 0.5 : 0;
-    const call = probabilityToCall(0.5 + ensembleEdge / 2, cap);
+    let call = probabilityToCall(0.5 + ensembleEdge / 2, cap);
+    // The LLM and the rules may strengthen or weaken the model's call, but not create one: when the
+    // model itself leans nowhere (or the other way), their unmeasured votes alone set no direction.
+    const modelSide = sign(mlEdge);
+    const callSide = call.direction === "LONG" ? 1 : call.direction === "SHORT" ? -1 : 0;
+    const vetoedByModel = callSide !== 0 && modelSide !== callSide;
+    if (vetoedByModel) call = { direction: "SIDEWAYS", probability: 50, probabilityUp: 50 };
     const { direction, probability } = call;
     const probabilityUp = call.probabilityUp;
     const probabilityDown = Math.round((100 - probabilityUp) * 10) / 10;
@@ -338,6 +344,11 @@ export class EnsemblePredictor {
         `Направление не прогнозируется: на таймфрейме ${ctx.timeframe} модель не показала преимущества над случайным угадыванием на истории. ` +
         `Ориентируйтесь на ценовой коридор.`;
       refinementNotes.push(`Нет подтверждённого преимущества на ${ctx.timeframe} (${predictorRun.error ?? "validation"}) — направление скрыто`);
+    } else if (vetoedByModel) {
+      recommendation =
+        `Сигнала нет: модель не видит перевеса (${(model!.probabilityUp * 100).toFixed(1)}% за рост), ` +
+        `а направление ИИ и правил без неё не подтверждено историей.`;
+      refinementNotes.push("ИИ и правила указывали направление, но модель его не подтверждает — направление не даётся");
     } else if (direction === "SIDEWAYS") {
       recommendation = "Сигнала нет: перевес любой из сторон меньше порога, подтверждённого на истории.";
     } else if (llmPrediction.direction !== direction) {
