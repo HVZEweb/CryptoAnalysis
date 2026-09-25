@@ -214,3 +214,36 @@ describe("refinePrediction", () => {
     expect(refined.direction).toBe("SIDEWAYS");
   });
 });
+
+describe("refinePrediction with the strategy lab", () => {
+  it("offers no trade when the lab found no setup that pays after fees", () => {
+    const refined = refinePrediction(
+      rawPrediction({ strategy: { status: "no_setup", reason: "прибыль не подтвердилась на новых данных" } }),
+      mockBtcAnalysis(),
+      "15m"
+    );
+    expect(refined.recommendation).toMatch(/^Выгодной сделки сейчас нет: прибыль не подтвердилась/);
+  });
+
+  it("uses the validated setup's levels and holding time for a trade", () => {
+    const refined = refinePrediction(
+      rawPrediction({
+        strategy: {
+          status: "trade",
+          side: "SHORT",
+          reason: "ok",
+          setup: { slAtr: 1, rr: 2, horizonBars: 4, interval: "15m", minEdge: 0.04 },
+          holdout: { trades: 80, winRate: 0.4, avgNetBp: 6.2, avgNetBpTaker: 0.2, tStat: 2.1, tradesPerWeek: 3 },
+          levels: { sl: 64229.6, tp: 63629.6 },
+        },
+      }),
+      mockBtcAnalysis(),
+      "15m"
+    );
+    expect(refined.tradeLevels).toMatchObject({ sl: 64229.6, tp: 63629.6 });
+    expect(refined.recommendation).toContain("проверенная стратегия");
+    expect(refined.recommendation).toContain("4 × 15m");
+    expect(refined.recommendation).toContain("рыночным или лимитным");
+  });
+});
+

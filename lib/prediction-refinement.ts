@@ -170,7 +170,11 @@ export function refinePrediction(
   const minDistance = atr * MIN_LEVEL_DISTANCE_ATR;
   const support = entry - analysis.levels.nearestSupport >= minDistance ? analysis.levels.nearestSupport : 0;
   const resistance = analysis.levels.nearestResistance - entry >= minDistance ? analysis.levels.nearestResistance : 0;
-  const levels = buildLevelsFromAtr(direction, entry, atr, mult, support, resistance);
+  const strategy = prediction.strategy;
+  const strategyTrade = strategy?.status === "trade" && strategy.levels && strategy.side === direction;
+  const levels = strategyTrade
+    ? { sl: strategy.levels!.sl, tp: strategy.levels!.tp, exit: strategy.levels!.tp }
+    : buildLevelsFromAtr(direction, entry, atr, mult, support, resistance);
 
   const risks = [...prediction.risks];
   const htfBias = getHigherTimeframeBias(analysis);
@@ -195,6 +199,20 @@ export function refinePrediction(
         `${direction} ${prediction.probability}%: вход ${order} у ${entry.toFixed(2)}, TP ${levels.tp.toFixed(2)}, SL ${levels.sl.toFixed(2)} ` +
         `(с комиссиями безубыток при ${pct(economics[economics.preferredOrder === "market" ? "market" : "limit"].breakevenWinRate)} сделок в плюс, ожидается ~${win}).`;
     }
+  }
+
+  if (strategy && strategyTrade) {
+    const h = strategy.holdout!;
+    const setup = strategy.setup!;
+    const order = h.avgNetBpTaker > 0 ? "рыночным или лимитным ордером" : "только лимитным ордером";
+    recommendation =
+      `${direction}: проверенная стратегия — вход ${order} у ${entry.toFixed(2)}, TP ${levels.tp.toFixed(2)}, SL ${levels.sl.toFixed(2)}, ` +
+      `закрыть не позже чем через ${setup.horizonBars} × ${setup.interval}. На новых для неё данных: ${h.avgNetBp >= 0 ? "+" : ""}${h.avgNetBp.toFixed(1)} п. ` +
+      `на сделку после комиссий, ${(h.winRate * 100).toFixed(0)}% сделок в плюс, ${h.trades} сделок.`;
+    notes.push("Уровни и срок сделки взяты из настройки, проверенной на истории с комиссиями");
+  } else if (strategy) {
+    recommendation = `Выгодной сделки сейчас нет: ${strategy.reason}. Направление и коридор — только для ориентира.`;
+    notes.push("Сделка не предлагается: стратегия не подтвердила прибыль после комиссий");
   }
 
   const modelForecast = prediction.priceForecast?.source === "predictor" ? prediction.priceForecast : undefined;

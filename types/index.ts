@@ -365,6 +365,19 @@ export interface PredictionResult {
   mlFeatures?: Record<string, number>;
   /** Структурированное объяснение прогноза для трейдера */
   explanation?: PredictionExplanation;
+  /** Verdict of the strategy lab: a trade is shown only when its setup made money after fees on unseen history */
+  strategy?: StrategySignal;
+}
+
+export interface StrategySignal {
+  /** trade — validated setup and a strong enough signal; otherwise why there is no trade */
+  status: "trade" | "no_setup" | "weak_signal" | "untested";
+  reason: string;
+  side?: "LONG" | "SHORT";
+  setup?: { slAtr: number; rr: number; horizonBars: number; interval: string; minEdge: number };
+  /** Result of the setup on the holdout period the lab never used to pick it */
+  holdout?: { trades: number; winRate: number; avgNetBp: number; avgNetBpTaker: number; tStat: number; tradesPerWeek: number };
+  levels?: { sl: number; tp: number };
 }
 
 /** Понятное объяснение прогноза на русском */
