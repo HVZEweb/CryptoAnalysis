@@ -25,6 +25,7 @@ import type { PredictionFormValues } from "@/lib/schemas";
 import type { PredictionHistoryItem } from "@/types";
 import { TIMEFRAME_LABELS } from "@/lib/utils";
 import { SignalsPanel } from "@/components/signals-panel";
+import { ListingsPanel } from "@/components/listings-panel";
 
 export function HomePage() {
   const { loading, error, result, progress, step, stepMessage, predict } = usePrediction();
@@ -268,6 +269,12 @@ export function HomePage() {
               {tab === "signals" && (
                 <motion.div key="signals" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex flex-1 flex-col gap-4 min-h-[40vh]">
                   <SignalsPanel />
+                </motion.div>
+              )}
+
+              {tab === "listings" && (
+                <motion.div key="listings" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex flex-1 flex-col gap-4 min-h-[40vh]">
+                  <ListingsPanel />
                 </motion.div>
               )}
             </AnimatePresence>

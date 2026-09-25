@@ -29,6 +29,22 @@ export async function register() {
       startBot();
     }
 
+    // New coins on OKX: announcements, profiles, first-week history (Telegram part is idle until a bot is connected).
+    if (process.env.LISTINGS_MONITOR !== "false") {
+      const { runListingsCycle } = await import("@/services/listings/monitor");
+      let running = false;
+      const cycle = () => {
+        if (running) return; // a cycle with many first-week downloads can outlast the interval
+        running = true;
+        runListingsCycle()
+          .then((r) => r.errors.length && console.warn("[listings]", r.errors.slice(0, 3).join("; ")))
+          .catch((e) => console.warn("[listings] cycle failed:", (e as Error).message))
+          .finally(() => (running = false));
+      };
+      setTimeout(cycle, 60_000).unref();
+      setInterval(cycle, 5 * 60_000).unref();
+    }
+
     // News monitoring runs all the time; strong news goes to the connected bot (/news off in the chat mutes it).
     if (process.env.NEWS_IMPACT_AUTO_START !== "false") {
       const { getNewsImpactEngine } = await import("@/services/news-impact/news-impact-engine");

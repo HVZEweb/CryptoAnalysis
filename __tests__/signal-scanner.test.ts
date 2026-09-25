@@ -39,7 +39,7 @@ function model(profitable: boolean, bySymbol?: Record<string, ReturnType<typeof 
 function memoryStore(watch: string[]) {
   const rows: SignalRow[] = [];
   const disabled = new Map<string, { trainedAt: string; reason: string }>();
-  const settings = { paused: false, observe: false, news: true };
+  const settings = { paused: false, observe: false, news: true, listings: true };
   const store: SignalStore = {
     getChat: async () => ({ ...settings }),
     getWatchlist: async () => [...watch],
