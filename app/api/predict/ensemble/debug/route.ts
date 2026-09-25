@@ -1,3 +1,4 @@
+import { denyUnlessAdmin } from "@/lib/admin-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveCoinBySymbol } from "@/lib/coins";
@@ -60,6 +61,9 @@ function mockLlmVote(
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await denyUnlessAdmin(request);
+  if (denied) return denied;
+
   const ip = getClientIp(request);
   const burst = await checkRateLimit(`predict-debug:${ip}`, 10, 60_000);
   if (!burst.allowed) {

@@ -27,7 +27,7 @@ export async function resolveIdentity(
   const user = userId ? await findUserById(userId) : null;
 
   let tier: UserTier = "anon";
-  if (user?.tier === "paid") tier = "paid";
+  if (user?.tier === "paid" || user?.role === "admin") tier = "paid";
   else if (user) tier = "registered";
 
   return { deviceId: device, sessionToken, userId: userId ?? undefined, tier, user: user ?? undefined };

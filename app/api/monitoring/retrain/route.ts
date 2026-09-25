@@ -1,3 +1,4 @@
+import { denyUnlessAdmin } from "@/lib/admin-auth";
 import { NextRequest, NextResponse } from "next/server";
 import {
   getRetrainStatus,
@@ -18,6 +19,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const denied = await denyUnlessAdmin(request);
+  if (denied) return denied;
+
   const ip = getClientIp(request);
   const rate = await checkRateLimit(`monitoring-retrain:${ip}`, 5, 300_000);
   if (!rate.allowed) {

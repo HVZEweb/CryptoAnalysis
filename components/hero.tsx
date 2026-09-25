@@ -39,7 +39,7 @@ export function Hero({ user, quota, onLogin, onRegister, onLogout, onUpgrade }: 
           </div>
         </div>
                 <div className="flex items-center gap-2">
-          <DevMenu />
+          {user?.role === "admin" && <DevMenu />}
           <AccountBar
             user={user}
             quota={quota}

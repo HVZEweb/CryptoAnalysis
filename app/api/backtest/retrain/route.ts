@@ -1,7 +1,11 @@
+import { denyUnlessAdmin } from "@/lib/admin-auth";
 import { NextResponse } from "next/server";
 import { runMlRetrain } from "@/services/ml-retrain";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const denied = await denyUnlessAdmin(request);
+  if (denied) return denied;
+
   const result = await runMlRetrain();
   if (!result.ok) {
     return NextResponse.json(

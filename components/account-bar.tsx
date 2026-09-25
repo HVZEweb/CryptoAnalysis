@@ -41,6 +41,9 @@ export function AccountBar({ user, quota, onLogin, onRegister, onLogout, onUpgra
           <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
             <User className="h-3.5 w-3.5" />
             {user.email}
+            {user.role === "admin" && (
+              <span className="rounded-md bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300">админ</span>
+            )}
           </span>
           {quota?.requiresPayment && (
             <Button size="sm" variant="default" className="h-8 rounded-xl text-xs" onClick={onUpgrade}>

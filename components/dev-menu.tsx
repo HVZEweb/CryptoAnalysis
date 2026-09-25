@@ -2,13 +2,19 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wrench, X, FlaskConical, History, BarChart3, LineChart, Radar } from "lucide-react";
+import { Wrench, X, FlaskConical, History, BarChart3, LineChart, Radar, Users } from "lucide-react";
 import Link from "next/link";
 
 export function DevMenu() {
   const [isOpen, setIsOpen] = useState(false);
 
   const menuItems = [
+    {
+      href: "/admin",
+      icon: Users,
+      label: "Пользователи",
+      description: "Роли, доступ и лимиты прогнозов",
+    },
     {
       href: "/news-impact",
       icon: Radar,
@@ -49,7 +55,7 @@ export function DevMenu() {
         type="button"
         onClick={() => setIsOpen(true)}
         className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-muted-foreground transition-colors hover:border-indigo-500/30 hover:bg-indigo-500/10 hover:text-indigo-400"
-        title="Dev Tools"
+        title="Администрирование"
       >
         <Wrench className="h-4 w-4" />
       </button>
@@ -77,7 +83,7 @@ export function DevMenu() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/20">
                     <Wrench className="h-4 w-4 text-indigo-400" />
                   </div>
-                  <h2 className="font-display text-lg font-bold">Dev Tools</h2>
+                  <h2 className="font-display text-lg font-bold">Администрирование</h2>
                 </div>
                 <button
                   type="button"

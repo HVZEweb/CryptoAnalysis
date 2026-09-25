@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      user: { email: user.email, tier: user.tier, predictionsUsed: user.predictionsUsed },
+      user: { email: user.email, tier: user.tier, role: user.role, predictionsUsed: user.predictionsUsed },
       quota: status,
     });
   } catch (error) {
