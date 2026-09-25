@@ -1,0 +1,47 @@
+name: Research
+
+# On demand: rare positioning events and "big move" models on 2 years of the Binance archive, judged
+# after realistic costs on a holdout period (scripts/research.ts). The report is in the run summary
+# and the `research` artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "events, bigmove or empty for both"
+        default: ""
+      days:
+        description: "Days of history"
+        default: "730"
+
+concurrency:
+  group: research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+
+      # Same archive files the pooled model trains on.
+      - uses: actions/cache/restore@v4
+        with:
+          path: data/archive
+          key: binance-archive-pooled-${{ github.run_id }}
+          restore-keys: binance-archive-pooled-
+
+      - name: Research
+        env:
+          NODE_OPTIONS: --max-old-space-size=6000
+        run: npx tsx scripts/research.ts --out out/research --days "${{ inputs.days }}" ${{ inputs.only && format('--only {0}', inputs.only) || '' }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: research
+          path: out/research
