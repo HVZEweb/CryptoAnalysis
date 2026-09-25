@@ -23,6 +23,7 @@ jobs:
         env:
           KEY: ${{ secrets.VPS_SSH_KEY }}
           HOST: ${{ secrets.VPS_HOST }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           if [ -n "$KEY" ] && [ -n "$HOST" ]; then echo "ready=true" >> "$GITHUB_OUTPUT"
           else echo "::notice::VPS_HOST / VPS_SSH_KEY не заданы — публикация на сервер пропущена"; fi
@@ -35,9 +36,14 @@ jobs:
         env:
           KEY: ${{ secrets.VPS_SSH_KEY }}
           HOST: ${{ secrets.VPS_HOST }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
           ssh-keyscan -T 15 -H "$HOST" >> ~/.ssh/known_hosts 2>/dev/null
-          ssh -i ~/.ssh/id_deploy -o BatchMode=yes -o ServerAliveInterval=30 "root@$HOST" 'bash -s' < deploy/update.sh
+          # The key travels inside the script on stdin, never on a command line the server could log.
+          {
+            if [ -n "$OPENROUTER_API_KEY" ]; then printf 'export OPENROUTER_API_KEY=%q\n' "$OPENROUTER_API_KEY"; fi
+            cat deploy/update.sh
+          } | ssh -i ~/.ssh/id_deploy -o BatchMode=yes -o ServerAliveInterval=30 "root@$HOST" 'bash -s'

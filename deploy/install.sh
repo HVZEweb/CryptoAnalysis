@@ -33,6 +33,13 @@ env_set() { # добавляет ключ, только если его ещё �
   touch "$ENV_FILE"
   grep -qE "^$1=" "$ENV_FILE" || printf '%s=%s\n' "$1" "$2" >> "$ENV_FILE"
 }
+env_put() { # задаёт ключ, заменяя старое значение
+  touch "$ENV_FILE"
+  local tmp; tmp=$(mktemp)
+  grep -vE "^$1=" "$ENV_FILE" > "$tmp" || true
+  printf '%s=%s\n' "$1" "$2" >> "$tmp"
+  cat "$tmp" > "$ENV_FILE" && rm -f "$tmp"
+}
 rand() { openssl rand -hex "${1:-24}"; }
 
 # ---------------------------------------------------------------------------
@@ -182,12 +189,16 @@ env_set PAYMENT_WEBHOOK_SECRET "$(rand 24)"
 # Сайт открывается по http://IP:порт — без https браузер не сохранит secure-cookie
 env_set COOKIE_SECURE false
 env_set PREDICTOR_MODELS_DIR "$DATA_DIR/models"
-if [ -z "$(env_get OPENROUTER_API_KEY)" ]; then
+# Ключ из секрета GitHub (передаётся автопубликацией) всегда главнее того, что в .env.
+if [ -n "${OPENROUTER_API_KEY:-}" ]; then
+  env_put OPENROUTER_API_KEY "$OPENROUTER_API_KEY"
+  ok "OpenRouter-ключ взят из секрета GitHub"
+elif [ -z "$(env_get OPENROUTER_API_KEY)" ]; then
   if [ -t 0 ]; then
     read -rsp "   OpenRouter API-ключ (sk-or-..., Enter — пропустить): " key; echo
     [ -n "$key" ] && env_set OPENROUTER_API_KEY "$key"
   fi
-  [ -n "$(env_get OPENROUTER_API_KEY)" ] || warn "OPENROUTER_API_KEY не задан — впишите его в $ENV_FILE и перезапустите: systemctl restart $APP"
+  [ -n "$(env_get OPENROUTER_API_KEY)" ] || warn "OPENROUTER_API_KEY не задан — добавьте секрет OPENROUTER_API_KEY в GitHub или впишите его в $ENV_FILE"
 fi
 chmod 600 "$ENV_FILE"
 ok "порт $PORT, файл $ENV_FILE"
