@@ -23,6 +23,10 @@ export async function register() {
           .catch((e) => console.warn("[signals] scan failed:", (e as Error).message));
       const timer = setInterval(scan, 5 * 60_000);
       timer.unref();
+
+      // Commands from the connected chat (/watch, /list, /stats …); idle until a bot is connected.
+      const { startBot } = await import("@/services/signals/bot");
+      startBot();
     }
   }
 }

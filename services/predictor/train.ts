@@ -4,7 +4,7 @@
 
 import type { Candle, Timeframe } from "@/types";
 import { HORIZONS } from "@/services/predictor/config";
-import { computeFeatureSeries, FEATURE_NAMES, type FeatureContext } from "@/services/predictor/features";
+import { computeFeatureSeries, FEATURE_NAMES, type FeatureContext, type FeatureSeries } from "@/services/predictor/features";
 import {
   computeMoveQuantiles,
   featureContributions,
@@ -122,6 +122,16 @@ export interface PredictorModel {
   samples: number;
   /** Fee-aware trade simulation of this model's out-of-sample signals (absent in models trained before it existed) */
   strategy?: StrategyReport;
+  /** "pooled": candle + futures positioning features, one model for many coins (services/pooled) */
+  featureSet?: "candles" | "pooled";
+}
+
+export interface TrainOptions {
+  btc?: Candle[];
+  candidates?: CandidateSpec[];
+  log?: (line: string) => void;
+  /** Features other than the candle-only set (the pooled model); rows must line up with `candles` */
+  features?: { names: readonly string[]; set: "pooled"; compute: (symbol: string, candles: Candle[]) => FeatureSeries };
 }
 
 /** One walk-forward prediction made by a model that never saw that bar. */
@@ -135,9 +145,10 @@ export function buildSamples(
   symbol: string,
   candles: Candle[],
   horizon: number,
-  context: FeatureContext = {}
+  context: FeatureContext = {},
+  features: FeatureSeries = computeFeatureSeries(candles, context)
 ): Sample[] {
-  const { rows, vol } = computeFeatureSeries(candles, context);
+  const { rows, vol } = features;
   const samples: Sample[] = [];
   for (let i = 0; i + horizon < candles.length; i++) {
     const x = rows[i];
@@ -301,12 +312,14 @@ export function trainPredictor(
   timeframe: Timeframe,
   series: Array<{ symbol: string; candles: Candle[] }>,
   source: string,
-  options: { btc?: Candle[]; candidates?: CandidateSpec[]; log?: (line: string) => void } = {}
+  options: TrainOptions = {}
 ): PredictorModel {
   const spec = HORIZONS[timeframe];
-  const samples = series.flatMap((s) =>
-    buildSamples(s.symbol, s.candles, spec.horizon, { btc: options.btc ?? (s.symbol === "BTCUSDT" ? s.candles : undefined) })
-  );
+  const custom = options.features;
+  const samples = series.flatMap((s) => {
+    const context = { btc: options.btc ?? (s.symbol === "BTCUSDT" ? s.candles : undefined) };
+    return buildSamples(s.symbol, s.candles, spec.horizon, context, custom ? custom.compute(s.symbol, s.candles) : undefined);
+  });
   if (samples.length < 500) {
     throw new Error(`${timeframe}: only ${samples.length} samples — need at least 500`);
   }
@@ -339,7 +352,8 @@ export function trainPredictor(
     timeframe,
     interval: spec.interval,
     horizon: spec.horizon,
-    featureNames: [...FEATURE_NAMES],
+    featureNames: [...(custom?.names ?? FEATURE_NAMES)],
+    ...(custom ? { featureSet: custom.set } : {}),
     chosen: best.candidate.name,
     classifier,
     candidates: results.map(({ candidate, validation: v }) => ({

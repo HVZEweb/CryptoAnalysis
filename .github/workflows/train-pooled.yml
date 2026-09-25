@@ -1,0 +1,54 @@
+name: Train pooled model
+
+# Weekly: train the pooled model (candles + futures positioning, ~30 coins) from the Binance public
+# archive and publish it as the `pooled-models` release. The server downloads it daily
+# (cryptoanalysis-models-sync, see deploy/install.sh). Training runs here, not on the server:
+# 7 GB of memory instead of 1.9, and the site is never slowed down.
+on:
+  schedule:
+    - cron: "0 20 * * 6" # Saturday 20:00 UTC — ready before the server's morning sync
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Days of history"
+        default: "730"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: train-pooled
+  cancel-in-progress: false
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+
+      # Archive files never change once a day is over: keep them between weekly runs.
+      - uses: actions/cache@v4
+        with:
+          path: data/archive
+          key: binance-archive-${{ github.run_id }}
+          restore-keys: binance-archive-
+
+      - name: Train
+        env:
+          NODE_OPTIONS: --max-old-space-size=6000
+        run: npx tsx scripts/train-pooled.ts --out out/pooled --days "${{ inputs.days || '730' }}"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view pooled-models >/dev/null 2>&1 || \
+            gh release create pooled-models --title "Pooled model" --latest=false \
+              --notes "Обновляется автоматически раз в неделю (.github/workflows/train-pooled.yml); сервер забирает её сам."
+          gh release upload pooled-models out/pooled/*.json --clobber

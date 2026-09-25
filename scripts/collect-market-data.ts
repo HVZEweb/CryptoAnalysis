@@ -22,8 +22,17 @@ const symbols = arg("symbols")
   .map((s) => s.trim().toUpperCase().replace(/USDT$/, "") + "USDT");
 const top = Number(arg("top") ?? process.env.MARKET_DATA_TOP ?? 40);
 
+/** The pooled model needs positioning for its coins and for every watched coin, liquid or not. */
+async function extraSymbols(): Promise<string[]> {
+  if (symbols) return [];
+  const { POOLED_UNIVERSE } = await import("@/services/pooled/index");
+  const { allWatchedSymbols } = await import("@/services/signals/store");
+  return [...POOLED_UNIVERSE, ...(await allWatchedSymbols().catch(() => []))];
+}
+
 installOutboundProxy()
-  .then(() => collectMarketData({ symbols, topCount: top, log: console.log }))
+  .then(extraSymbols)
+  .then((extra) => collectMarketData({ symbols, topCount: top, extraSymbols: extra, log: console.log }))
   .then(async (summary) => {
     await getPool().end();
     process.exit(summary.metricRows > 0 || summary.fundingRows > 0 ? 0 : 1);
