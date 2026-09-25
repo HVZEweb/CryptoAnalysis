@@ -1,0 +1,81 @@
+name: Train models
+
+# Weekly: train every prediction model from the Binance public archive (data.binance.vision) and
+# publish them as the `models` release; the server downloads them daily (cryptoanalysis-models-sync,
+# see deploy/install.sh). Training runs here, never on the server: 7 GB of memory instead of 1.9,
+# and the site next to other services is never slowed down.
+#   candles — the per-timeframe candle models (15m … 7d), 5 coins, spot candles, 3 years
+#   pooled  — one model for ~30 coins with futures positioning, 1h and 4h, 2 years
+on:
+  schedule:
+    - cron: "0 20 * * 6" # Saturday 20:00 UTC — ready before the server's morning sync
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: train-models
+  cancel-in-progress: false
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        kind: [candles, pooled]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+
+      # Archive files never change once a day is over: keep them between weekly runs.
+      - uses: actions/cache@v4
+        with:
+          path: data/archive
+          key: binance-archive-${{ matrix.kind }}-${{ github.run_id }}
+          restore-keys: binance-archive-${{ matrix.kind }}-
+
+      - name: Train
+        env:
+          NODE_OPTIONS: --max-old-space-size=6000
+        run: |
+          if [ "${{ matrix.kind }}" = candles ]; then
+            npx tsx scripts/train-predictor.ts --source archive --out out/models --cache data/archive | tee train.log
+            ( echo '### Модели по свечам'; echo '```'; cat train.log; echo '```' ) >> "$GITHUB_STEP_SUMMARY"
+            for f in out/models/*.json; do mv "$f" "out/models/candles-$(basename "$f")"; done
+          else
+            npx tsx scripts/train-pooled.ts --out out/models --cache data/archive
+            for f in out/models/*.json; do mv "$f" "out/models/pooled-$(basename "$f")"; done
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: models-${{ matrix.kind }}
+          path: out/models/*.json
+
+  publish:
+    needs: train
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: models-*
+          path: out
+          merge-multiple: true
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls out/*.json || { echo "::error::нет ни одной обученной модели"; exit 1; }
+          gh release view models >/dev/null 2>&1 || \
+            gh release create models --title "Prediction models" --latest=false \
+              --notes "Обновляются автоматически раз в неделю (.github/workflows/train-models.yml); сервер забирает их сам."
+          gh release upload models out/*.json --clobber

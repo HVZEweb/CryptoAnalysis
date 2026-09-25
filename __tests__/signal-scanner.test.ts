@@ -113,7 +113,7 @@ describe("scanSignals", () => {
     const r = await scanSignals(t.deps);
     expect(r.closed).toBe(1);
     expect(t.mem.rows[0].status).toBe("tp");
-    expect(t.mem.rows[0].net_bp).toBeCloseTo(400 - 4);
+    expect(t.mem.rows[0].net_bp).toBeCloseTo(400 - 10); // market entry + slippage, limit take-profit
     expect(t.sent.some((m) => m.includes("цель достигнута"))).toBe(true);
   });
 

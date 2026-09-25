@@ -12,7 +12,9 @@ import axios from "axios";
 import type { Candle } from "@/types";
 import type { DerivData, DerivPoint } from "@/services/pooled/derivs";
 
-const BASE = "https://data.binance.vision/data/futures/um";
+const ROOT = "https://data.binance.vision/data";
+const BASE = `${ROOT}/futures/um`;
+const SPOT = `${ROOT}/spot`;
 const DAY = 86_400_000;
 
 /** Contents of the single file in a zip archive (as the Binance archive packs them). */
@@ -50,7 +52,7 @@ export interface ArchiveOptions {
 
 /** Downloads (or reads from cache) one archive file; null when Binance has no such file. */
 async function fetchCsv(url: string, opts: ArchiveOptions, cacheable: boolean): Promise<string | null> {
-  const file = path.join(opts.cacheDir, url.slice(BASE.length + 1).replace(/\.zip$/, ".csv"));
+  const file = path.join(opts.cacheDir, url.slice(ROOT.length + 1).replace(/\.zip$/, ".csv"));
   const missing = `${file}.missing`;
   if (cacheable && fs.existsSync(file)) return fs.readFileSync(file, "utf-8");
   if (cacheable && fs.existsSync(missing)) return null;
@@ -111,19 +113,25 @@ function periods(from: number, to: number): { months: string[]; days: string[] }
   return { months, days };
 }
 
-function parseKlines(csv: string): Candle[] {
+/** Spot archive times are in microseconds since 2025; futures and older spot files use milliseconds. */
+const ms = (v: string) => {
+  const n = Number(v);
+  return n > 1e14 ? Math.floor(n / 1000) : n;
+};
+
+export function parseKlines(csv: string): Candle[] {
   const out: Candle[] = [];
   for (const line of csv.split("\n")) {
     const f = line.split(",");
     if (f.length < 11 || !/^\d/.test(f[0])) continue;
     out.push({
-      openTime: Number(f[0]),
+      openTime: ms(f[0]),
       open: Number(f[1]),
       high: Number(f[2]),
       low: Number(f[3]),
       close: Number(f[4]),
       volume: Number(f[5]),
-      closeTime: Number(f[6]),
+      closeTime: ms(f[6]),
       quoteVolume: Number(f[7]),
       trades: Number(f[8]),
       takerBuyVolume: Number(f[9]),
@@ -132,13 +140,21 @@ function parseKlines(csv: string): Candle[] {
   return out;
 }
 
-/** Futures klines of `interval` between `from` and `to` (ms), oldest first, de-duplicated. */
-export async function archiveKlines(symbol: string, interval: string, from: number, to: number, opts: ArchiveOptions): Promise<Candle[]> {
+/** Futures (default) or spot klines of `interval` between `from` and `to` (ms), oldest first, de-duplicated. */
+export async function archiveKlines(
+  symbol: string,
+  interval: string,
+  from: number,
+  to: number,
+  opts: ArchiveOptions,
+  market: "futures" | "spot" = "futures"
+): Promise<Candle[]> {
+  const base = market === "spot" ? SPOT : BASE;
   const { months, days } = periods(from, to);
   const urls = [
-    ...months.map((m) => ({ url: `${BASE}/monthly/klines/${symbol}/${interval}/${symbol}-${interval}-${m}.zip`, cache: true })),
+    ...months.map((m) => ({ url: `${base}/monthly/klines/${symbol}/${interval}/${symbol}-${interval}-${m}.zip`, cache: true })),
     // The newest day may still be re-published; don't cache the last two days.
-    ...days.map((d) => ({ url: `${BASE}/daily/klines/${symbol}/${interval}/${symbol}-${interval}-${d}.zip`, cache: Date.parse(d) < to - 2 * DAY })),
+    ...days.map((d) => ({ url: `${base}/daily/klines/${symbol}/${interval}/${symbol}-${interval}-${d}.zip`, cache: Date.parse(d) < to - 2 * DAY })),
   ];
   const csvs = await mapLimit(urls, opts.concurrency ?? 8, (u) => fetchCsv(u.url, opts, u.cache));
   const byTime = new Map<number, Candle>();

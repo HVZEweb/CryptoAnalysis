@@ -116,7 +116,7 @@ export function signalMessage(
   const { tp, sl } = signal.levels!;
   const long = signal.side === "LONG";
   const losers = Math.round((1 - h.winRate) * 100);
-  const order = h.avgNetBpTaker > 0 ? "рыночным или лимитным ордером" : "только лимитным ордером";
+  const order = "вход рыночным ордером, TP заранее лимитным; стоп — рыночным";
   return [
     `${long ? "🟢" : "🔴"} <b>${signal.side} ${symbol}</b> · ${title}`,
     `Вход: ~${fmt(price)} (${order})`,
@@ -126,7 +126,7 @@ export function signalMessage(
     `Модель: ${(pUp * 100).toFixed(1)}% за рост`,
     ``,
     `На истории, которую стратегия не видела при подборе: ${h.trades} сделок, в плюс ${(h.winRate * 100).toFixed(0)}%, ` +
-      `в среднем ${h.avgNetBp >= 0 ? "+" : ""}${h.avgNetBp.toFixed(1)} п. (${(h.avgNetBp / 100).toFixed(2)}%) на сделку после комиссий.`,
+      `в среднем ${h.avgNetBp >= 0 ? "+" : ""}${h.avgNetBp.toFixed(1)} п. (${(h.avgNetBp / 100).toFixed(2)}%) на сделку после комиссий и проскальзывания.`,
     ...(coinLine ? [`По ${symbol}: ${coinLine}.`] : []),
     `⚠️ Не гарантия: примерно ${losers} из 100 таких сделок закрывались в минус. Прибыль — в среднем на серии сделок, рискуйте небольшой долей депозита.`,
   ].join("\n");
@@ -138,7 +138,7 @@ export function outcomeMessage(s: realStore.SignalRow, o: Outcome): string {
   const sign = o.netBp >= 0 ? "+" : "";
   return (
     `${icon} <b>${s.side} ${s.symbol}</b> · ${s.timeframe}: ${what}\n` +
-    `Вход ${fmt(s.entry)} → выход ${fmt(o.exitPrice)}: ${sign}${o.netBp.toFixed(1)} п. (${sign}${(o.netBp / 100).toFixed(2)}%) после комиссий лимитными ордерами.`
+    `Вход ${fmt(s.entry)} → выход ${fmt(o.exitPrice)}: ${sign}${o.netBp.toFixed(1)} п. (${sign}${(o.netBp / 100).toFixed(2)}%) после комиссий и проскальзывания (вход и стоп рыночными, цель лимитным).`
   );
 }
 

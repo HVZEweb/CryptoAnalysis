@@ -16,7 +16,7 @@ set -euo pipefail
 APP=cryptoanalysis
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$APP_DIR/.env"
-# Server-trained models live outside the checkout, so a code update never overwrites them.
+# Models (downloaded from the GitHub release) live outside the checkout, so a code update never overwrites them.
 DATA_DIR=/opt/$APP-data
 NODE_VERSION=v22.22.2
 NODE_DIR=/opt/$APP-node
@@ -227,8 +227,8 @@ env_set OPENROUTER_MODEL deepseek/deepseek-chat
 env_set OPENROUTER_FALLBACK_MODELS google/gemini-2.5-flash
 env_set PAYMENT_WEBHOOK_SECRET "$(rand 24)"
 env_set PREDICTOR_MODELS_DIR "$DATA_DIR/models"
-# Общая модель обучается в GitHub Actions (.github/workflows/train-pooled.yml) и публикуется релизом
-env_set POOLED_MODELS_URL https://github.com/HVZEweb/CryptoAnalysis/releases/download/pooled-models
+# Все модели обучаются в GitHub Actions (.github/workflows/train-models.yml) и публикуются релизом
+env_set MODELS_RELEASE_URL https://github.com/HVZEweb/CryptoAnalysis/releases/download/models
 # Ключ из секрета GitHub (передаётся автопубликацией) всегда главнее того, что в .env.
 if [ -n "${OPENROUTER_API_KEY:-}" ]; then
   env_put OPENROUTER_API_KEY "$OPENROUTER_API_KEY"
@@ -289,8 +289,6 @@ chown root:"$APP" "$ENV_FILE"
 
 # ---------------------------------------------------------------------------
 say "Сервис systemd"
-# Отпечаток кода, от которого зависят модели: по нему решаем, нужно ли переобучение при выкладке.
-TRAIN_FP_CMD="git -C $APP_DIR ls-tree -r HEAD services/predictor services/strategy-lab scripts/train-predictor.ts | sha256sum | cut -c1-16"
 cat > /etc/systemd/system/$APP.service <<UNIT
 [Unit]
 Description=CryptoAnalysis (Next.js) on port $PORT
@@ -313,38 +311,11 @@ MemoryMax=700M
 WantedBy=multi-user.target
 UNIT
 
-cat > /etc/systemd/system/$APP-train.service <<UNIT
-[Unit]
-Description=CryptoAnalysis: переобучение модели прогнозов
-
-[Service]
-Nice=10
-# Node берёт лимит кучи из MemoryMax (~половину): при 700M обучению доставалось ~350 МБ, и оно
-# падало с «heap out of memory». Раз в неделю ночью можно дать больше, остальное — swap.
-MemoryMax=1100M
-Environment=NODE_OPTIONS=--max-old-space-size=900
-# после переобучения: запомнить, на каком коде обучено, и перезапустить сайт (он перечитает модели)
-ExecStartPost=+/bin/sh -c '$TRAIN_FP_CMD > $DATA_DIR/.trained-code'
-ExecStartPost=+/bin/systemctl try-restart $APP.service
-Type=oneshot
-User=$APP
-WorkingDirectory=$APP_DIR
-EnvironmentFile=$ENV_FILE
-Environment=PATH=$NODE_DIR/bin:/usr/bin:/bin
-ExecStart=$NODE_DIR/bin/node $APP_DIR/node_modules/tsx/dist/cli.mjs scripts/train-predictor.ts
-UNIT
-
-cat > /etc/systemd/system/$APP-train.timer <<UNIT
-[Unit]
-Description=CryptoAnalysis: еженедельное переобучение модели
-
-[Timer]
-OnCalendar=Sun 04:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-UNIT
+# Обучение на сервере больше не идёт (оно в GitHub Actions): убираем службу и таймер прежней схемы.
+if [ -f /etc/systemd/system/$APP-train.timer ]; then
+  systemctl disable --now $APP-train.timer $APP-train.service >/dev/null 2>&1 || true
+  rm -f /etc/systemd/system/$APP-train.service /etc/systemd/system/$APP-train.timer "$DATA_DIR/.trained-code"
+fi
 
 # Сбор 5-минутных рядов Binance (OI, лонг/шорт, тейкеры, фандинг) в MySQL: Binance хранит их
 # только 30 дней, поэтому копим сами. Oneshot: пока идёт прошлый запуск (первый ~20 мин), новый не стартует.
@@ -376,29 +347,33 @@ Persistent=true
 WantedBy=timers.target
 UNIT
 
-# Загрузка общей модели из релиза GitHub. Сайт перечитывает файл модели сам (по времени изменения),
-# перезапуск не нужен. Кладётся только файл, который читается как модель нужного вида.
+# Загрузка моделей из релиза GitHub: candles-<tf>.json → models/<tf>.json, pooled-<tf>.json → models/pooled/<tf>.json.
+# Сайт перечитывает файл модели сам (по времени изменения), перезапуск не нужен. Кладётся только файл,
+# который читается как модель нужного вида; чего нет в релизе — остаётся как было.
 cat > /usr/local/sbin/$APP-models-sync <<'SCRIPT'
 #!/bin/sh
 set -eu
-URL=${POOLED_MODELS_URL:?}
-DIR=${PREDICTOR_MODELS_DIR:?}/pooled
-mkdir -p "$DIR"
-for tf in 1h 4h; do
-  tmp="$DIR/.$tf.json.download"
-  code=$(curl -sL --max-time 120 -o "$tmp" -w '%{http_code}' "$URL/$tf.json" || echo 000)
-  if [ "$code" != 200 ]; then rm -f "$tmp"; echo "$tf: нет в релизе (HTTP $code)"; continue; fi
-  if ! python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m["version"]==2 and m.get("featureSet")=="pooled"' "$tmp"; then
-    rm -f "$tmp"; echo "$tf: файл не похож на общую модель — пропущен"; continue
+URL=${MODELS_RELEASE_URL:?}
+ROOT=${PREDICTOR_MODELS_DIR:?}
+fetch() { # fetch <asset> <target> <kind>
+  asset=$1 target=$2 kind=$3
+  mkdir -p "$(dirname "$target")"
+  tmp="$target.download"
+  code=$(curl -sL --max-time 120 -o "$tmp" -w '%{http_code}' "$URL/$asset" || echo 000)
+  if [ "$code" != 200 ]; then rm -f "$tmp"; echo "$asset: нет в релизе (HTTP $code)"; return; fi
+  if ! python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m["version"]==2 and (m.get("featureSet") or "candles")==sys.argv[2]' "$tmp" "$kind"; then
+    rm -f "$tmp"; echo "$asset: файл не похож на модель — пропущен"; return
   fi
-  if cmp -s "$tmp" "$DIR/$tf.json"; then rm -f "$tmp"; echo "$tf: без изменений"; else mv "$tmp" "$DIR/$tf.json"; echo "$tf: обновлена"; fi
-done
+  if cmp -s "$tmp" "$target"; then rm -f "$tmp"; echo "$asset: без изменений"; else mv "$tmp" "$target"; echo "$asset: обновлена"; fi
+}
+for tf in 15m 30m 1h 4h 12h 24h 3d 7d; do fetch "candles-$tf.json" "$ROOT/$tf.json" candles; done
+for tf in 1h 4h; do fetch "pooled-$tf.json" "$ROOT/pooled/$tf.json" pooled; done
 SCRIPT
 chmod 755 /usr/local/sbin/$APP-models-sync
 
 cat > /etc/systemd/system/$APP-models-sync.service <<UNIT
 [Unit]
-Description=CryptoAnalysis: загрузка общей модели из релиза GitHub
+Description=CryptoAnalysis: загрузка моделей из релиза GitHub
 After=network-online.target
 
 [Service]
@@ -410,7 +385,7 @@ UNIT
 
 cat > /etc/systemd/system/$APP-models-sync.timer <<UNIT
 [Unit]
-Description=CryptoAnalysis: загрузка общей модели каждый день
+Description=CryptoAnalysis: загрузка моделей каждый день
 
 [Timer]
 OnCalendar=*-*-* 06:00
@@ -421,7 +396,6 @@ WantedBy=timers.target
 UNIT
 
 systemctl daemon-reload
-systemctl enable --now $APP-train.timer >/dev/null 2>&1
 systemctl enable --now $APP-market-data.timer >/dev/null 2>&1
 systemctl enable --now $APP-models-sync.timer >/dev/null 2>&1
 systemctl start --no-block $APP-models-sync.service
@@ -528,16 +502,6 @@ for _ in $(seq 1 30); do
 done
 [ "$c" = 200 ] && ok "сайт отвечает на порту $PORT" || { journalctl -u $APP -n 30 --no-pager; die "сайт не отвечает — лог выше"; }
 
-# Переобучение тяжёлое (5–15 минут CPU, до ~1 ГБ памяти), а выкладок бывает несколько в час.
-# При выкладке оно запускается, только если изменился код обучения с прошлого успешного раза;
-# иначе модели обновит воскресный таймер.
-TRAINED_CODE=$(cat "$DATA_DIR/.trained-code" 2>/dev/null || true)
-if [ "$(sh -c "$TRAIN_FP_CMD")" != "$TRAINED_CODE" ]; then
-  systemctl start --no-block $APP-train.service
-  TRAIN_NOTE="идёт сейчас (изменился код обучения), дальше — по воскресеньям"
-else
-  TRAIN_NOTE="по воскресеньям; код обучения не менялся"
-fi
 
 if [ "$USE_CADDY" = 1 ]; then
   URL="https://$(env_get PUBLIC_HOST):$(env_get PUBLIC_PORT)"
@@ -559,8 +523,7 @@ $LOGIN
   Админка:         $URL/admin  (для администраторов)
   Логи:            journalctl -u $APP -f
   Перезапуск:      systemctl restart $APP
-  Переобучение:    journalctl -u $APP-train -f   ($TRAIN_NOTE)
   Сбор данных:     journalctl -u $APP-market-data -f   (каждые 5 минут)
-  Общая модель:    journalctl -u $APP-models-sync   (загрузка из релиза GitHub каждый день)
+  Модели:          обучаются в GitHub Actions по субботам; сервер забирает их в 06:00 (journalctl -u $APP-models-sync)
   Обновление:      bash $APP_DIR/deploy/update.sh   (или автоматически после каждого изменения в main)
 DONE

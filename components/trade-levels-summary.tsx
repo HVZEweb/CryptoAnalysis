@@ -54,8 +54,8 @@ function StrategyNote({ strategy }: { strategy: NonNullable<PredictionResult["st
 function TradeEconomicsNote({ economics }: { economics: NonNullable<PredictionResult["tradeEconomics"]> }) {
   const pct = (n: number) => `${(n * 100).toFixed(0)}%`;
   const rows = [
-    { label: "Рыночный ордер", e: economics.market },
-    { label: "Лимитный ордер", e: economics.limit },
+    { label: "Всё рыночными", e: economics.market },
+    { label: "Цель лимитным", e: economics.limit },
   ];
   return (
     <div className="mt-3 border-t border-white/8 pt-2 text-[11px]">
@@ -78,7 +78,7 @@ function TradeEconomicsNote({ economics }: { economics: NonNullable<PredictionRe
         {economics.worthTrading
           ? economics.preferredOrder === "market"
             ? "Ожидаемый результат положительный"
-            : "Имеет смысл только лимитным ордером"
+            : "Имеет смысл, только если цель выставить лимитным ордером"
           : "После комиссий в среднем убыточно — лучше не входить"}
       </p>
     </div>

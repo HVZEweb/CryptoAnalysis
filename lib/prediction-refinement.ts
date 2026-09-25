@@ -191,24 +191,23 @@ export function refinePrediction(
     if (!economics.worthTrading) {
       recommendation =
         `${direction} ${prediction.probability}%: перевес есть, но после комиссий сделка с такими уровнями в среднем убыточна ` +
-        `(нужно ${pct(economics.limit.breakevenWinRate)} сделок в плюс даже с лимитными ордерами, ожидается ~${win}). Входить не стоит.`;
+        `(нужно ${pct(economics.limit.breakevenWinRate)} сделок в плюс даже с целью лимитным ордером, ожидается ~${win}). Входить не стоит.`;
       notes.push("После комиссий ожидаемый результат отрицательный — сделка не рекомендуется");
     } else {
-      const order = economics.preferredOrder === "market" ? "рыночным или лимитным ордером" : "только лимитным ордером";
+      const order = economics.preferredOrder === "market" ? "рыночным ордером" : "рыночным ордером, TP — только лимитным";
       recommendation =
         `${direction} ${prediction.probability}%: вход ${order} у ${entry.toFixed(2)}, TP ${levels.tp.toFixed(2)}, SL ${levels.sl.toFixed(2)} ` +
-        `(с комиссиями безубыток при ${pct(economics[economics.preferredOrder === "market" ? "market" : "limit"].breakevenWinRate)} сделок в плюс, ожидается ~${win}).`;
+        `(с комиссиями и проскальзыванием безубыток при ${pct(economics[economics.preferredOrder === "market" ? "market" : "limit"].breakevenWinRate)} сделок в плюс, ожидается ~${win}).`;
     }
   }
 
   if (strategy && strategyTrade) {
     const h = strategy.holdout!;
     const setup = strategy.setup!;
-    const order = h.avgNetBpTaker > 0 ? "рыночным или лимитным ордером" : "только лимитным ордером";
     recommendation =
-      `${direction}: проверенная стратегия — вход ${order} у ${entry.toFixed(2)}, TP ${levels.tp.toFixed(2)}, SL ${levels.sl.toFixed(2)}, ` +
-      `закрыть не позже чем через ${setup.horizonBars} × ${setup.interval}. На новых для неё данных: ${h.avgNetBp >= 0 ? "+" : ""}${h.avgNetBp.toFixed(1)} п. ` +
-      `на сделку после комиссий, ${(h.winRate * 100).toFixed(0)}% сделок в плюс, ${h.trades} сделок.`;
+      `${direction}: проверенная стратегия — вход рыночным ордером у ${entry.toFixed(2)}, TP ${levels.tp.toFixed(2)}, SL ${levels.sl.toFixed(2)}, ` +
+      `TP выставить лимитным ордером, закрыть не позже чем через ${setup.horizonBars} × ${setup.interval}. На новых для неё данных: ${h.avgNetBp >= 0 ? "+" : ""}${h.avgNetBp.toFixed(1)} п. ` +
+      `на сделку после комиссий и проскальзывания, ${(h.winRate * 100).toFixed(0)}% сделок в плюс, ${h.trades} сделок.`;
     notes.push("Уровни и срок сделки взяты из настройки, проверенной на истории с комиссиями");
   } else if (strategy) {
     recommendation = `Выгодной сделки сейчас нет: ${strategy.reason}. Направление и коридор — только для ориентира.`;

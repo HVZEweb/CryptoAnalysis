@@ -37,7 +37,7 @@ export function StrategyLabPanel() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         Для каждого таймфрейма модель торгует своими сигналами на истории, которую не видела при обучении: стоп и цель в
-        ATR, закрытие по сроку, одна позиция на монету, комиссии Binance (лимитные 0,04%, рыночные 0,1% за круг). Лучшая
+        ATR, закрытие по сроку, одна позиция на монету, реалистичное исполнение: вход и стоп рыночными ордерами (0,05% + проскальзывание 0,03%), цель — лимитным (0,02%). Лучшая
         настройка выбирается на первых 60% периода и проверяется на последних 40%. Сайт предлагает сделку только там, где
         проверка прошла. 1 п. = 0,01% от суммы позиции.
       </p>
@@ -102,7 +102,7 @@ function PeriodStats({
         {m.trades} сделок ({m.tradesPerWeek.toFixed(1)}/нед.) · в плюс {pct(m.winRate)}
       </p>
       <p>
-        лимитными <span className={m.avgNetBp > 0 ? "text-emerald-400" : "text-red-400"}>{bp(m.avgNetBp)}</span> · рыночными{" "}
+        реалистично <span className={m.avgNetBp > 0 ? "text-emerald-400" : "text-red-400"}>{bp(m.avgNetBp)}</span> · если и цель рыночным{" "}
         <span className={m.avgNetBpTaker > 0 ? "text-emerald-400" : "text-red-400"}>{bp(m.avgNetBpTaker)}</span> на сделку
       </p>
       <p>

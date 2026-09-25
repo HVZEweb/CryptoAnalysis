@@ -1,10 +1,13 @@
 /**
- * Retrain the price predictor (services/predictor) on fresh Binance history,
- * falling back to data/ohlcv CSV files when Binance is unreachable.
+ * Models are no longer trained on the server: GitHub Actions trains them weekly from the Binance
+ * archive (.github/workflows/train-models.yml) and the server downloads the release daily.
+ * Training inside the site's process would take up to 1 GB on a 1.9 GB server shared with other
+ * services, so the retrain buttons explain where training happens instead of starting it.
+ *
+ * Locally (development) `npm run predictor:train` still trains in place.
  */
 
 import { MODELS_DIR } from "@/services/predictor";
-import { trainAll } from "@/services/predictor/training-run";
 
 export interface MlRetrainResult {
   ok: boolean;
@@ -14,20 +17,10 @@ export interface MlRetrainResult {
   error?: string;
 }
 
+export const RETRAIN_ELSEWHERE =
+  "Модели обучаются в GitHub Actions (Actions → Train models) каждую субботу; сервер забирает их каждый день в 06:00. " +
+  "Запустить обучение раньше можно там же кнопкой «Run workflow».";
+
 export async function runMlRetrain(): Promise<MlRetrainResult> {
-  try {
-    let models = await trainAll({ source: "binance" });
-    if (!models.length) models = await trainAll({ source: "csv" });
-    if (!models.length) {
-      return { ok: false, samples: 0, outputPath: MODELS_DIR, error: "no_training_data" };
-    }
-    return {
-      ok: true,
-      samples: models.reduce((s, m) => s + m.samples, 0),
-      outputPath: MODELS_DIR,
-      weightsPath: MODELS_DIR,
-    };
-  } catch (e) {
-    return { ok: false, samples: 0, outputPath: MODELS_DIR, error: (e as Error).message };
-  }
+  return { ok: false, samples: 0, outputPath: MODELS_DIR, error: RETRAIN_ELSEWHERE };
 }
