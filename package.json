@@ -14,7 +14,8 @@
     "db:init": "npx tsx scripts/init-db.ts",
     "compare-models": "npx tsx scripts/compare-models.ts",
     "backtest": "npx tsx scripts/backtest.ts",
-    "predictor:train": "tsx scripts/train-predictor.ts"
+    "predictor:train": "tsx scripts/train-predictor.ts",
+    "research:cross-section": "tsx scripts/cross-section-research.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",

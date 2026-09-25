@@ -88,9 +88,14 @@ export default function AdminPage() {
             Один вход для всех. Роль «админ» открывает эту страницу и служебные разделы.
           </p>
         </div>
-        <Link href="/" className="text-sm text-indigo-300 hover:underline">
-          ← На сайт
-        </Link>
+        <div className="flex gap-4">
+          <Link href="/admin/research" className="text-sm text-indigo-300 hover:underline">
+            Рейтинг монет
+          </Link>
+          <Link href="/" className="text-sm text-indigo-300 hover:underline">
+            ← На сайт
+          </Link>
+        </div>
       </div>
 
       <form onSubmit={addUser} className="flex flex-wrap items-center gap-2 rounded-xl bg-white/[0.03] p-3 ring-1 ring-white/8">
