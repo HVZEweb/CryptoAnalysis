@@ -16,6 +16,7 @@ curl -fsSL https://raw.githubusercontent.com/HVZEweb/CryptoAnalysis/main/deploy/
 | Логи | `journalctl -u cryptoanalysis -f` |
 | Переобучение модели | `cryptoanalysis-train.timer` (вс 04:00), `journalctl -u cryptoanalysis-train -f`; при выкладке — только если изменился код обучения |
 | Сбор рыночных данных | `cryptoanalysis-market-data.timer` (каждые 5 минут), `journalctl -u cryptoanalysis-market-data -f` |
+| Общая модель | обучается в GitHub Actions по субботам (`.github/workflows/train-pooled.yml`) → релиз `pooled-models`; сервер забирает её каждый день в 06:00 (`cryptoanalysis-models-sync.timer`), вручную: `systemctl start cryptoanalysis-models-sync` |
 
 ## Доступ к Binance/OpenRouter из РФ
 

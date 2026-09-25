@@ -8,7 +8,7 @@ import fs from "fs";
 import path from "path";
 import type { AnalysisContext, Candle, MlPrediction, PredictionDirection, PriceForecast, Timeframe } from "@/types";
 import { HORIZONS, SIDEWAYS_BAND } from "@/services/predictor/config";
-import { computeFeatureSeries, FEATURE_LABELS, FEATURE_NAMES, type FeatureContext } from "@/services/predictor/features";
+import { computeFeatureSeries, FEATURE_LABELS, FEATURE_NAMES, type FeatureContext, type FeatureSeries } from "@/services/predictor/features";
 import { classifierContributions, predictClassifier, type PredictorModel } from "@/services/predictor/train";
 import { fetchCandles } from "@/services/binance";
 import { atr14 } from "@/services/strategy-lab/lab";
@@ -65,9 +65,12 @@ export function predictWithModel(
   model: PredictorModel,
   candles: Candle[],
   price: number,
-  context: FeatureContext = {}
+  context: FeatureContext = {},
+  /** Precomputed feature rows for models with another feature set (the pooled model) */
+  features: FeatureSeries = computeFeatureSeries(candles, context),
+  labels: Record<string, string> = FEATURE_LABELS
 ): PricePrediction | null {
-  const { rows, vol } = computeFeatureSeries(candles, context);
+  const { rows, vol } = features;
   const i = rows.length - 1;
   const x = rows[i];
   if (!x || !(vol[i] > 0) || !(price > 0)) return null;
@@ -92,7 +95,7 @@ export function predictWithModel(
     .slice(0, 5)
     .map((f) => ({
       ...f,
-      label: FEATURE_LABELS[f.feature as keyof typeof FEATURE_LABELS] ?? f.feature,
+      label: labels[f.feature] ?? f.feature,
     }));
 
   const v = model.validation;

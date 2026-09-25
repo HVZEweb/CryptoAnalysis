@@ -9,21 +9,25 @@ import {
   sendTelegram,
   telegramError,
 } from "@/lib/telegram";
-import { ALL_TIMEFRAMES } from "@/services/predictor/config";
-import { loadModel } from "@/services/predictor";
-import { scannerState } from "@/services/signal-scanner";
+import { loadModelEntries, scannerState } from "@/services/signal-scanner";
+import { closedSignals, getWatchlist, openSignals } from "@/services/signals/store";
+import { formatTrackRecord, trackRecord } from "@/services/signals/logic";
+import { HELP } from "@/services/signals/bot";
 
 export const dynamic = "force-dynamic";
 
-function profitableTimeframes(): string[] {
-  return ALL_TIMEFRAMES.filter((tf) => loadModel(tf)?.strategy?.profitable);
+function profitableModels(): string[] {
+  return loadModelEntries()
+    .filter((e) => e.model.strategy?.profitable)
+    .map((e) => `${e.timeframe}${e.kind === "pooled" ? " (общая)" : ""}`);
 }
 
 function statusText(): string {
-  const tfs = profitableTimeframes();
-  return tfs.length
-    ? `Проверку прошли стратегии на ${tfs.join(", ")} — по ним приходят сигналы.`
+  const models = profitableModels();
+  const head = models.length
+    ? `Проверку прошли стратегии: ${models.join(", ")}.`
     : "Сейчас ни одна стратегия не прошла проверку на новых данных, поэтому сигналов не будет, пока переобучение не найдёт прибыльную настройку. Об этом придёт отдельное сообщение.";
+  return `${head}\n\nДобавьте монеты командой /watch, например: /watch BTC ETH SOL\n\n${HELP}`;
 }
 
 export async function GET(request: Request) {
@@ -31,13 +35,18 @@ export async function GET(request: Request) {
   if (denied) return denied;
   const config = getTelegramConfig();
   const state = scannerState();
+  const [watchlist, open, closed] = config
+    ? await Promise.all([getWatchlist(config.chatId), openSignals(), closedSignals({ chatId: config.chatId })])
+    : [[], [], []];
   return NextResponse.json({
     connected: Boolean(config),
     source: config?.source ?? null,
-    profitableTimeframes: profitableTimeframes(),
+    profitableTimeframes: profitableModels(),
     lastScanAt: state.lastScanAt ?? null,
     lastSignalAt: state.lastSignalAt ?? null,
-    openSignals: Object.keys(state.busyUntil ?? {}),
+    openSignals: open.map((s) => `${s.side} ${s.symbol} ${s.timeframe}`),
+    watchlist,
+    trackRecord: formatTrackRecord("Результаты сигналов", trackRecord(closed)),
   });
 }
 

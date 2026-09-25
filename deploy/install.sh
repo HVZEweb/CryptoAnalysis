@@ -227,6 +227,8 @@ env_set OPENROUTER_MODEL deepseek/deepseek-chat
 env_set OPENROUTER_FALLBACK_MODELS google/gemini-2.5-flash
 env_set PAYMENT_WEBHOOK_SECRET "$(rand 24)"
 env_set PREDICTOR_MODELS_DIR "$DATA_DIR/models"
+# Общая модель обучается в GitHub Actions (.github/workflows/train-pooled.yml) и публикуется релизом
+env_set POOLED_MODELS_URL https://github.com/HVZEweb/CryptoAnalysis/releases/download/pooled-models
 # Ключ из секрета GitHub (передаётся автопубликацией) всегда главнее того, что в .env.
 if [ -n "${OPENROUTER_API_KEY:-}" ]; then
   env_put OPENROUTER_API_KEY "$OPENROUTER_API_KEY"
@@ -374,9 +376,55 @@ Persistent=true
 WantedBy=timers.target
 UNIT
 
+# Загрузка общей модели из релиза GitHub. Сайт перечитывает файл модели сам (по времени изменения),
+# перезапуск не нужен. Кладётся только файл, который читается как модель нужного вида.
+cat > /usr/local/sbin/$APP-models-sync <<'SCRIPT'
+#!/bin/sh
+set -eu
+URL=${POOLED_MODELS_URL:?}
+DIR=${PREDICTOR_MODELS_DIR:?}/pooled
+mkdir -p "$DIR"
+for tf in 1h 4h; do
+  tmp="$DIR/.$tf.json.download"
+  code=$(curl -sL --max-time 120 -o "$tmp" -w '%{http_code}' "$URL/$tf.json" || echo 000)
+  if [ "$code" != 200 ]; then rm -f "$tmp"; echo "$tf: нет в релизе (HTTP $code)"; continue; fi
+  if ! python3 -c 'import json,sys; m=json.load(open(sys.argv[1])); assert m["version"]==2 and m.get("featureSet")=="pooled"' "$tmp"; then
+    rm -f "$tmp"; echo "$tf: файл не похож на общую модель — пропущен"; continue
+  fi
+  if cmp -s "$tmp" "$DIR/$tf.json"; then rm -f "$tmp"; echo "$tf: без изменений"; else mv "$tmp" "$DIR/$tf.json"; echo "$tf: обновлена"; fi
+done
+SCRIPT
+chmod 755 /usr/local/sbin/$APP-models-sync
+
+cat > /etc/systemd/system/$APP-models-sync.service <<UNIT
+[Unit]
+Description=CryptoAnalysis: загрузка общей модели из релиза GitHub
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=$APP
+EnvironmentFile=$ENV_FILE
+ExecStart=/usr/local/sbin/$APP-models-sync
+UNIT
+
+cat > /etc/systemd/system/$APP-models-sync.timer <<UNIT
+[Unit]
+Description=CryptoAnalysis: загрузка общей модели каждый день
+
+[Timer]
+OnCalendar=*-*-* 06:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
 systemctl daemon-reload
 systemctl enable --now $APP-train.timer >/dev/null 2>&1
 systemctl enable --now $APP-market-data.timer >/dev/null 2>&1
+systemctl enable --now $APP-models-sync.timer >/dev/null 2>&1
+systemctl start --no-block $APP-models-sync.service
 systemctl enable $APP >/dev/null 2>&1
 systemctl restart $APP
 ok "сервис $APP запущен"
@@ -513,5 +561,6 @@ $LOGIN
   Перезапуск:      systemctl restart $APP
   Переобучение:    journalctl -u $APP-train -f   ($TRAIN_NOTE)
   Сбор данных:     journalctl -u $APP-market-data -f   (каждые 5 минут)
+  Общая модель:    journalctl -u $APP-models-sync   (загрузка из релиза GitHub каждый день)
   Обновление:      bash $APP_DIR/deploy/update.sh   (или автоматически после каждого изменения в main)
 DONE

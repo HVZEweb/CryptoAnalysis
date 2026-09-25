@@ -10,6 +10,8 @@ interface Status {
   lastScanAt: string | null;
   lastSignalAt: string | null;
   openSignals: string[];
+  watchlist: string[];
+  trackRecord: string;
 }
 
 const inputClass = "min-w-0 flex-1 rounded-xl bg-white/5 px-3 py-2 text-sm ring-1 ring-white/10";
@@ -51,8 +53,9 @@ export function TelegramSettings() {
       <div>
         <h2 className="font-semibold">Сигналы в Telegram</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Сервер каждые 5 минут прогоняет модели по свежим свечам и присылает сделку, только если её настройка принесла
-          прибыль после комиссий на истории, которую не видела при подборе.
+          Сервер каждые 5 минут прогоняет модели по свежим свечам для монет из вашего списка и присылает сделку, только
+          если её настройка принесла прибыль после комиссий на истории, которую не видела при подборе, — в целом и на этой
+          монете. Монеты и настройки задаются командами боту: /watch, /unwatch, /list, /stats, /pause.
         </p>
       </div>
 
@@ -64,6 +67,11 @@ export function TelegramSettings() {
             {status.profitableTimeframes.length ? status.profitableTimeframes.join(", ") : "пока ни одной — сигналов не будет"}
             {" · "}последняя проверка: {time(status.lastScanAt)} · последний сигнал: {time(status.lastSignalAt)}
           </p>
+          <p className="text-muted-foreground">
+            Монеты: {status.watchlist.length ? status.watchlist.join(", ") : "список пуст — напишите боту /watch BTC ETH"}
+            {status.openSignals.length ? ` · открыто: ${status.openSignals.join(", ")}` : ""}
+          </p>
+          <p className="text-muted-foreground">{status.trackRecord}</p>
           <div className="flex gap-2">
             <Button size="sm" variant="secondary" disabled={busy} onClick={() => act("test")}>
               Прислать проверочное сообщение

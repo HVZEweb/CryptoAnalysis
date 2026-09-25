@@ -44,11 +44,26 @@ VPS `83.222.16.56`: Ubuntu 24.04, 2 CPU, **1,9 ГБ RAM** + 2 ГБ swap. Обл�
 | Настройки | `/opt/cryptoanalysis/.env` (root:cryptoanalysis 640) |
 | Сервис | `cryptoanalysis.service`, слушает `127.0.0.1:3101`, `MemoryMax=700M` |
 | Модели с сервера | `/opt/cryptoanalysis-data/models` (`PREDICTOR_MODELS_DIR`), переобучение `cryptoanalysis-train.timer` по воскресеньям в 04:00 и при выкладке, если изменились `services/predictor`, `services/strategy-lab` или `scripts/train-predictor.ts`. Лимит обучения: 1100M памяти, куча Node 900 МБ |
-| Сбор данных | `cryptoanalysis-market-data.timer` каждые 5 минут, `MemoryMax=250M` |
+| Сбор данных | `cryptoanalysis-market-data.timer` каждые 5 минут, `MemoryMax=250M`; монеты: топ-40 + `POOLED_UNIVERSE` + все списки из Telegram |
+| Общая модель | обучается в GitHub Actions (`train-pooled.yml`, суббота), релиз `pooled-models`; сервер забирает её в `…/models/pooled` таймером `cryptoanalysis-models-sync` (06:00) |
 | База | MariaDB, база и пользователь `cryptoanalysis`, только 127.0.0.1 |
 
 **Соседи, которых нельзя задеть:** `ase.service` (127.0.0.1:3000, `https://83.222.16.56` через
 тот же Caddy), PostgreSQL 16, strongSwan. Порты 80, 443 и 3000 заняты.
+
+### Сигналы в Telegram и общая модель
+
+- Бот управляется командами из подключённого чата (`services/signals/bot.ts`, long polling внутри сайта):
+  `/watch`, `/unwatch`, `/list`, `/stats`, `/pause`, `/resume`, `/observe on|off`. Состояние хранится в MySQL
+  (`services/signals/store.ts`): списки монет, журнал сигналов с реальными исходами.
+- Сигнал отправляется, только если настройка сделок модели прибыльна после комиссий на отложенном периоде
+  в целом **и на этой монете** (`coinVerdict`, `strategy.bySymbol`, от 10 проверочных сделок).
+- Модель отключается сама, если после 30 реальных сигналов её средний результат после комиссий отрицательный.
+  Включается снова после переобучения (новый `trainedAt`).
+- Общая модель (`services/pooled`): свечи + открытый интерес, лонг/шорт, тейкеры, фандинг, ~30 монет, 1h и 4h.
+  Обучение — из архива `data.binance.vision` (из GitHub Actions Binance API недоступен, архив — доступен); в
+  работе те же ряды берутся из таблиц сборщика. Правила выравнивания (`alignDerivs`) общие для обучения и работы:
+  менять их можно только вместе с переобучением.
 
 ### Сеть и VPN
 

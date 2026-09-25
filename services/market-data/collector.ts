@@ -179,6 +179,8 @@ export interface CollectOptions {
   symbols?: string[];
   /** How many top perpetuals to track when `symbols` is not given */
   topCount?: number;
+  /** Tracked in addition to the top list: the pooled model's coins and the Telegram watchlists */
+  extraSymbols?: string[];
   fundingBackfillDays?: number;
   log?: (line: string) => void;
 }
@@ -215,6 +217,7 @@ export async function collectMarketData(options: CollectOptions = {}, deps: Coll
     const { data } = await deps.futures.get<Array<{ symbol: string; quoteVolume: string }>>("/ticker/24hr");
     symbols = topSymbols(data, options.topCount ?? 40);
   }
+  symbols = [...new Set([...symbols, ...(options.extraSymbols ?? [])])];
   log(`монет: ${symbols.length}`);
 
   const { data: premium } = await deps.futures.get<Array<Record<string, unknown>>>("/premiumIndex");

@@ -52,6 +52,8 @@ export interface StrategyReport {
   /** True only when the chosen setup also made money on the unseen holdout period */
   profitable: boolean;
   reason: string;
+  /** The chosen setup's holdout result per coin — whether it also paid on that particular coin */
+  bySymbol?: Record<string, LabMetrics>;
 }
 
 /** One out-of-sample prediction: bar `index` of `candles`, with the model's P(up) and ATR. */
@@ -98,6 +100,7 @@ export function simulateBracket(
 }
 
 interface Trade {
+  symbol: string;
   time: number;
   gross: number;
 }
@@ -115,12 +118,12 @@ export function runSetup(points: LabPoint[], candlesBySymbol: Map<string, Candle
     const sl = p.atr * setup.slAtr;
     const { ret, exitIndex } = simulateBracket(candles, p.index, edge > 0 ? 1 : -1, sl * setup.rr, sl, setup.horizon);
     busyUntil.set(p.symbol, exitIndex);
-    trades.push({ time: p.time, gross: ret });
+    trades.push({ symbol: p.symbol, time: p.time, gross: ret });
   }
   return trades;
 }
 
-export function metricsOf(trades: Trade[], periodMs: number): LabMetrics {
+export function metricsOf(trades: Array<Pick<Trade, "time" | "gross">>, periodMs: number): LabMetrics {
   const n = trades.length;
   if (!n) {
     return { trades: 0, winRate: 0, avgNetBp: 0, avgNetBpTaker: 0, tStat: 0, totalPct: 0, maxDrawdownPct: 0, tradesPerWeek: 0 };
@@ -203,8 +206,12 @@ export function evaluateStrategies(
     return report;
   }
 
-  const hold = metricsOf(runSetup(holdout, candlesBySymbol, best.setup), holdSpan);
+  const holdTrades = runSetup(holdout, candlesBySymbol, best.setup);
+  const hold = metricsOf(holdTrades, holdSpan);
   report.best = { ...best, holdout: hold };
+  const perSymbol = new Map<string, Trade[]>();
+  for (const t of holdTrades) perSymbol.set(t.symbol, [...(perSymbol.get(t.symbol) ?? []), t]);
+  report.bySymbol = Object.fromEntries([...perSymbol].map(([s, trades]) => [s, metricsOf(trades, holdSpan)]));
   if (best.selection.avgNetBp <= 0) {
     report.reason = `даже лучшая из ${grid.length} настроек убыточна после комиссий (${best.selection.avgNetBp.toFixed(1)} п. на сделку)`;
   } else if (hold.trades < MIN_HOLDOUT_TRADES) {
