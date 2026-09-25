@@ -1,13 +1,26 @@
+import axios from "axios";
+
+/** axios, not fetch: only Node's HTTPS agent honours the VPN routing in lib/outbound-proxy. */
+async function getText(url: string, headers?: Record<string, string>) {
+  const res = await axios.get<string>(url, {
+    headers,
+    timeout: 10_000,
+    responseType: "text",
+    transformResponse: (d) => d,
+    validateStatus: () => true,
+  });
+  const text = typeof res.data === "string" ? res.data : JSON.stringify(res.data ?? "");
+  return { status: res.status, ok: res.status >= 200 && res.status < 300, text };
+}
+
 export async function checkOpenRouterReachability(): Promise<{
   ok: boolean;
   blocked: boolean;
   message: string;
 }> {
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/models", {
-      signal: AbortSignal.timeout(10_000),
-    });
-    const text = await response.text();
+    const response = await getText("https://openrouter.ai/api/v1/models");
+    const text = response.text;
 
     if (response.status === 403 && text.includes("security policy")) {
       return {
@@ -63,16 +76,13 @@ export async function checkOpenRouterKey(apiKey: string | undefined): Promise<{
   }
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/auth/key", {
-      headers: {
-        Authorization: `Bearer ${apiKey.trim()}`,
-        "HTTP-Referer": "https://crypto-ai-predictor.local",
-        "X-Title": "Crypto AI Predictor",
-      },
-      signal: AbortSignal.timeout(10_000),
+    const response = await getText("https://openrouter.ai/api/v1/auth/key", {
+      Authorization: `Bearer ${apiKey.trim()}`,
+      "HTTP-Referer": "https://crypto-ai-predictor.local",
+      "X-Title": "Crypto AI Predictor",
     });
 
-    const text = await response.text();
+    const text = response.text;
     if (response.ok) {
       return { ok: true, status: response.status, blocked: false, message: "Ключ OpenRouter принят" };
     }

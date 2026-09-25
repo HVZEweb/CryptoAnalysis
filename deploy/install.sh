@@ -129,39 +129,18 @@ if [ -z "$PROXY" ] && [ -z "$VPN_SRC" ] && ! reach_all; then
 fi
 [ -n "$PROXY" ] && report "$PROXY"
 
-# IPsec-VPN: весь исходящий трафик пользователя $APP уходит с адреса $VPN_SRC (в туннель),
-# остальные процессы сервера не затрагиваются.
-if [ -n "$VPN_SRC" ]; then
-  read -r GW DEV < <(ip -4 route show default | awk '{for(i=1;i<NF;i++){if($i=="via")g=$(i+1);if($i=="dev")d=$(i+1)}} END{print g, d}')
-  [ -n "$GW" ] && [ -n "$DEV" ] || die "не удалось определить шлюз по умолчанию"
-  APP_UID=$(id -u "$APP")
-  cat > /usr/local/sbin/$APP-vpn-route <<EOF
-#!/bin/sh
-ip route replace default via $GW dev $DEV onlink src $VPN_SRC table 7077
-ip rule del priority 1078 2>/dev/null || true
-ip rule add uidrange $APP_UID-$APP_UID lookup 7077 priority 1078
-EOF
-  chmod 755 /usr/local/sbin/$APP-vpn-route
-  cat > /etc/systemd/system/$APP-vpn-route.service <<UNIT
-[Unit]
-Description=CryptoAnalysis: исходящий трафик через VPN (src $VPN_SRC)
-After=network-online.target strongswan.service
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-ExecStart=/usr/local/sbin/$APP-vpn-route
-
-[Install]
-WantedBy=multi-user.target
-UNIT
+# IPsec-VPN: приложение само привязывает к адресу $VPN_SRC только соединения с заблокированными
+# хостами (OUTBOUND_VPN_HOSTS, по умолчанию openrouter.ai; см. lib/outbound-proxy.ts). Binance и
+# остальное идут напрямую: через туннель каждый запрос в несколько раз медленнее.
+# Прежняя схема (весь трафик пользователя через туннель) убирается.
+if [ -f /etc/systemd/system/$APP-vpn-route.service ]; then
+  systemctl disable --now $APP-vpn-route >/dev/null 2>&1 || true
+  rm -f /etc/systemd/system/$APP-vpn-route.service /usr/local/sbin/$APP-vpn-route
   systemctl daemon-reload
-  systemctl enable $APP-vpn-route >/dev/null 2>&1
-  systemctl restart $APP-vpn-route
-  printf '   от имени %s: openrouter.ai → %s\n' "$APP" \
-    "$(sudo -u "$APP" curl -s -o /dev/null -m 12 -w '%{http_code}' https://openrouter.ai/api/v1/models || true)"
 fi
+ip rule del priority 1078 2>/dev/null || true
+ip route flush table 7077 2>/dev/null || true
+[ -n "$VPN_SRC" ] && printf '   openrouter.ai с адреса %s → %s\n' "$VPN_SRC" "$(code https://openrouter.ai/api/v1/models "src:$VPN_SRC")"
 
 # npm/nodejs.org: напрямую, а если не выходит и прокси http — через него
 NPM_PROXY_ARGS=()
@@ -306,15 +285,11 @@ chown root:"$APP" "$ENV_FILE"
 
 # ---------------------------------------------------------------------------
 say "Сервис systemd"
-VPN_DEPS=""
-[ -n "$VPN_SRC" ] && VPN_DEPS="Requires=$APP-vpn-route.service
-After=$APP-vpn-route.service"
 cat > /etc/systemd/system/$APP.service <<UNIT
 [Unit]
 Description=CryptoAnalysis (Next.js) on port $PORT
 After=network-online.target mariadb.service mysql.service
 Wants=network-online.target
-$VPN_DEPS
 
 [Service]
 User=$APP
@@ -334,7 +309,6 @@ UNIT
 cat > /etc/systemd/system/$APP-train.service <<UNIT
 [Unit]
 Description=CryptoAnalysis: переобучение модели прогнозов
-$VPN_DEPS
 
 [Service]
 Nice=10
