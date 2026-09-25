@@ -283,5 +283,5 @@ $(printf '\033[1;32m')Готово!$(printf '\033[0m')
   Логи:            journalctl -u $APP -f
   Перезапуск:      systemctl restart $APP
   Переобучение:    journalctl -u $APP-train -f   (идёт сейчас, дальше — по воскресеньям)
-  Обновление:      распакуйте новую версию в $APP_DIR и снова запустите: bash $APP_DIR/deploy/install.sh
+  Обновление:      bash $APP_DIR/deploy/update.sh   (или автоматически после каждого изменения в main)
 DONE
