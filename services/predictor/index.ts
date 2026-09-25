@@ -14,7 +14,8 @@ import { fetchCandles } from "@/services/binance";
 
 export type { PredictorModel, ValidationReport } from "@/services/predictor/train";
 
-export const MODELS_DIR = path.join(process.cwd(), "models", "predictor");
+/** PREDICTOR_MODELS_DIR keeps server-trained models outside the code checkout, so deploys don't overwrite them. */
+export const MODELS_DIR = process.env.PREDICTOR_MODELS_DIR?.trim() || path.join(process.cwd(), "models", "predictor");
 
 export function modelPath(timeframe: Timeframe, dir = MODELS_DIR): string {
   return path.join(dir, `${timeframe}.json`);
