@@ -34,6 +34,8 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      # Whole project including tests: stale test fixtures used to slip through, since `next build` only checks the app.
+      - run: npx tsc --noEmit
       - run: npm test
       - run: npm run build
         env:

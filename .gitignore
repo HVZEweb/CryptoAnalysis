@@ -52,3 +52,14 @@ __pycache__/
 *.pyc
 .venv/
 *.log
+
+# archived research: code and conclusions (.md) only, no data or generated reports
+archive/**/results/*
+!archive/**/results/*.md
+archive/**/data/**/*.csv
+archive/**/data/**/*.parquet
+*.pid
+*.pyc
+
+# local CSV candles for `npm run predictor:train -- --source csv` (training uses the Binance archive)
+data/ohlcv/*.csv

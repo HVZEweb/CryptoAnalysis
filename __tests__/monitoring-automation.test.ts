@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { detectSharpDropAlerts } from "@/lib/monitoring/alerts";
 import { evaluateRetrainNeed } from "@/lib/monitoring/retraining-scheduler";
 import type { MonitoredPrediction } from "@/lib/monitoring/types";
+import type { MarketRegimeType } from "@/types";
 
-function mockRecord(daysAgo: number, score: number, regime = "Strong Bull"): MonitoredPrediction {
+function mockRecord(daysAgo: number, score: number, regime: MarketRegimeType = "Strong Bull"): MonitoredPrediction {
   const recordedAt = new Date(Date.now() - daysAgo * 24 * 60 * 60_000).toISOString();
   return {
     id: `r-${daysAgo}-${score}`,

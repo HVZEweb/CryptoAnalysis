@@ -69,7 +69,7 @@ describe("enforcePredictionAccess", () => {
   });
 
   it("refunds reserved quota on release", async () => {
-    const identity = { tier: "anon" as const, userId: null, deviceId: "device-1" };
+    const identity = { tier: "anon" as const, deviceId: "device-1" };
     await releaseReservedQuota(identity);
     expect(mocks.refundQuota).toHaveBeenCalledWith(identity);
   });
