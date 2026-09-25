@@ -14,6 +14,8 @@ set -euo pipefail
 APP=cryptoanalysis
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$APP_DIR/.env"
+# Server-trained models live outside the checkout, so a code update never overwrites them.
+DATA_DIR=/opt/$APP-data
 NODE_VERSION=v22.22.2
 NODE_DIR=/opt/$APP-node
 
@@ -36,7 +38,7 @@ rand() { openssl rand -hex "${1:-24}"; }
 # ---------------------------------------------------------------------------
 say "Системные пакеты"
 missing=()
-for pkg in curl ca-certificates xz-utils openssl iproute2; do
+for pkg in curl ca-certificates xz-utils openssl iproute2 git; do
   dpkg -s "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
 done
 if [ ${#missing[@]} -gt 0 ]; then
@@ -179,6 +181,7 @@ env_set ADMIN_SECRET "$(rand 16)"
 env_set PAYMENT_WEBHOOK_SECRET "$(rand 24)"
 # Сайт открывается по http://IP:порт — без https браузер не сохранит secure-cookie
 env_set COOKIE_SECURE false
+env_set PREDICTOR_MODELS_DIR "$DATA_DIR/models"
 if [ -z "$(env_get OPENROUTER_API_KEY)" ]; then
   if [ -t 0 ]; then
     read -rsp "   OpenRouter API-ключ (sk-or-..., Enter — пропустить): " key; echo
@@ -197,7 +200,11 @@ NODE_ENV=production npm run build --silent >/tmp/$APP-build.log 2>&1 || { tail -
 ok "сборка готова"
 
 id -u "$APP" >/dev/null 2>&1 || useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$APP"
-chown -R "$APP:$APP" "$APP_DIR"
+MODELS_DIR="$(env_get PREDICTOR_MODELS_DIR)"
+mkdir -p "$MODELS_DIR"
+# First install: start from the models shipped in the repo; afterwards the weekly retrain owns them.
+[ -n "$(ls -A "$MODELS_DIR" 2>/dev/null)" ] || cp "$APP_DIR"/models/predictor/*.json "$MODELS_DIR"/
+chown -R "$APP:$APP" "$APP_DIR" "$DATA_DIR"
 
 # ---------------------------------------------------------------------------
 say "Сервис systemd"
