@@ -266,7 +266,7 @@ function ModelConfidenceBadge({
         "inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-bold ring-1",
         color
       )}
-      title={`Live model confidence · 30d accuracy ${(confidence.rollingAccuracy30d * 100).toFixed(0)}% · ${confidence.sampleCount} samples${confidence.driftAlert ? " · drift alert" : ""}`}
+      title={`Реальная точность направления за 30 дней: ${(confidence.rollingAccuracy30d * 100).toFixed(0)}% по ${confidence.sampleCount} сигналам${confidence.sampleCount < 30 ? " (мало данных)" : ""}${confidence.driftAlert ? " · точность падает" : ""}`}
     >
       <Shield className="h-3 w-3 opacity-80" />
       <span className="text-[9px] uppercase tracking-wider opacity-70">Model</span>
