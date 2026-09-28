@@ -14,6 +14,7 @@ import { coinVerdict, formatTrackRecord, normalizeSymbol, parseCommand, trackRec
 import { loadModelEntries, scannerState, type ModelEntry } from "@/services/signal-scanner";
 import { POOLED_UNIVERSE } from "@/services/pooled/index";
 import { liveStudy, type LiveStudy } from "@/services/news-study/log";
+import { carryReport } from "@/services/funding-carry/runner";
 
 const OFFSET_FILE = path.join(process.cwd(), ".cache", "telegram-offset.json");
 const MAX_WATCH = 30;
@@ -29,6 +30,7 @@ export const HELP = [
   "/news on|off — алерты по сильным новостям (включены по умолчанию)",
   "/listings on|off — новые монеты на OKX: анонсы, сводка и статистика прошлых листингов (включены по умолчанию)",
   "/newsstats — как разные типы новостей двигали BTC",
+  "/carry — фандинг-портфель: проверка на новых данных (бумажный счёт)",
   "",
   "Сигнал приходит, только если настройка сделок заработала после комиссий на истории, которую не видела при подборе, — в целом и на этой монете. Поэтому бот может подолгу молчать: это значит, что проверенной выгодной сделки нет.",
 ].join("\n");
@@ -38,6 +40,7 @@ export interface BotDeps {
   models: () => ModelEntry[];
   symbolExists: (symbol: string) => Promise<boolean>;
   newsStudy?: () => Promise<LiveStudy>;
+  carry?: () => Promise<string>;
 }
 
 const knownSymbols = new Map<string, boolean>();
@@ -198,6 +201,9 @@ export async function handleCommand(chatId: string, text: string, deps: BotDeps 
         .filter(Boolean)
         .join("\n");
     }
+
+    case "carry":
+      return (deps.carry ?? carryReport)();
 
     default:
       return "Такой команды нет.\n\n" + HELP;

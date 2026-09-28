@@ -45,6 +45,21 @@ export async function register() {
       setInterval(cycle, 5 * 60_000).unref();
     }
 
+    // Funding forward test: a paper book updated after each daily close, rebalanced on Mondays (services/funding-carry).
+    if (process.env.FUNDING_CARRY !== "false") {
+      const { runCarryCycle } = await import("@/services/funding-carry/runner");
+      let running = false;
+      const cycle = () => {
+        if (running) return;
+        running = true;
+        runCarryCycle()
+          .catch((e) => console.warn("[carry] cycle failed:", (e as Error).message))
+          .finally(() => (running = false));
+      };
+      setTimeout(cycle, 90_000).unref();
+      setInterval(cycle, 60 * 60_000).unref();
+    }
+
     // News monitoring runs all the time; strong news goes to the connected bot (/news off in the chat mutes it).
     if (process.env.NEWS_IMPACT_AUTO_START !== "false") {
       const { getNewsImpactEngine } = await import("@/services/news-impact/news-impact-engine");
