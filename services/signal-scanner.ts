@@ -21,6 +21,7 @@ import { getTelegramConfig, sendTelegram } from "@/lib/telegram";
 import { demoConfig, OkxDemo } from "@/lib/okx-demo";
 import * as realStore from "@/services/signals/store";
 import { coinVerdict, disableReason, evaluateOutcome, type Outcome } from "@/services/signals/logic";
+import { chanceMessage, chancePlan, intervalMinutes, type ChanceInfo } from "@/services/signals/chance";
 
 const STATE_FILE = path.join(process.cwd(), ".cache", "signal-scanner.json");
 
@@ -29,6 +30,8 @@ interface ScannerState {
   profitable: string[] | null;
   /** symbol:model → bar time of the last observation message (observe mode) */
   observed?: Record<string, number>;
+  /** symbol → when its last chance was sent */
+  lastChance?: Record<string, number>;
   lastScanAt?: string;
   lastSignalAt?: string;
 }
@@ -141,12 +144,14 @@ export function signalMessage(
   ].join("\n");
 }
 
+const KIND_LABEL: Record<realStore.SignalKind, string> = { signal: "", chance: "🎯 Шанс · ", news: "📰 Новость · " };
+
 export function outcomeMessage(s: realStore.SignalRow, o: Outcome): string {
   const icon = o.status === "tp" ? "✅" : o.status === "sl" ? "❌" : "⏱";
   const what = o.status === "tp" ? "цель достигнута" : o.status === "sl" ? "сработал стоп" : "закрыт по времени";
   const sign = o.netBp >= 0 ? "+" : "";
   return (
-    `${icon} <b>${s.side} ${s.symbol}</b> · ${s.timeframe}: ${what}\n` +
+    `${icon} ${KIND_LABEL[s.kind ?? "signal"]}<b>${s.side} ${s.symbol}</b> · ${s.timeframe}: ${what}\n` +
     `Вход ${fmt(s.entry)} → выход ${fmt(o.exitPrice)}: ${sign}${o.netBp.toFixed(1)} п. (${sign}${(o.netBp / 100).toFixed(2)}%) после комиссий и проскальзывания (вход и стоп рыночными, цель лимитным).`
   );
 }
@@ -156,6 +161,8 @@ export interface ScanResult {
   profitableModels: string[];
   checked: number;
   sent: number;
+  /** Chance messages sent (confident models without proven profit) */
+  chances?: number;
   closed: number;
   errors: string[];
 }
@@ -165,7 +172,7 @@ async function closeFinished(deps: ScanDeps, entries: ModelEntry[], result: Scan
   for (const s of open) {
     try {
       // Judged on the same market the signal was computed on.
-      const market: MarketType = s.model_key.startsWith("pooled:") ? "Futures" : "Spot";
+      const market: MarketType = s.model_key.startsWith("pooled:") || s.kind === "news" ? "Futures" : "Spot";
       const candles = (await deps.candles(s.symbol, s.bar_interval, market)).filter((c) => c.closeTime < deps.now());
       const outcome = evaluateOutcome(s, candles);
       if (!outcome) continue;
@@ -178,8 +185,10 @@ async function closeFinished(deps: ScanDeps, entries: ModelEntry[], result: Scan
         await deps.store.setDemo(s.id, { demo_status: "closing" });
       }
 
-      // Live results of this model version: switch it off if they lose money after fees.
-      const rows = await deps.store.closedSignals({ modelKey: s.model_key, trainedAt: s.model_trained_at });
+      // Live results of this model version: switch it off if they lose money after fees. Chances and news are
+      // labelled as unproven from the start, so only validated signals count here.
+      if ((s.kind ?? "signal") !== "signal") continue;
+      const rows = await deps.store.closedSignals({ modelKey: s.model_key, trainedAt: s.model_trained_at, kind: "signal" });
       const reason = disableReason(rows);
       const current = entries.find((e) => e.key === s.model_key);
       if (reason && current?.model.trainedAt === s.model_trained_at) {
@@ -246,8 +255,13 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
 
   const settings = await deps.store.getChat(chatId);
   const watch = await deps.store.getWatchlist(chatId);
-  const openKeys = new Set((await deps.store.openSignals()).map((s) => `${s.symbol}:${s.model_key}`));
+  const openRows = await deps.store.openSignals();
+  const openKeys = new Set(openRows.filter((s) => (s.kind ?? "signal") === "signal").map((s) => `${s.symbol}:${s.model_key}`));
+  // One open chance per coin: a new one only after the last has ended.
+  const chanceOpen = new Set(openRows.filter((s) => s.kind === "chance").map((s) => s.symbol));
+  const chances = new Map<string, ChanceInfo & { entry: ModelEntry; interval: string; entryTime: number; barOpen: number }>();
   state.observed ??= {};
+  state.lastChance ??= {};
 
   const candleCache = new Map<string, Promise<Candle[]>>();
   const closed = (symbol: string, interval: string, market: MarketType) => {
@@ -321,15 +335,23 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
             continue;
           }
 
-          // Observe mode: a strong view of a model with a validated direction edge, clearly not a trade.
+          // Chance: a confident model with a validated direction edge, sent as a full but clearly unproven plan.
           const edge = run.probabilityUp - 0.5;
-          if (settings.observe && model.validation.hasEdge && Math.abs(edge) >= OBSERVE_EDGE && state.observed[key] !== last.openTime) {
-            state.observed[key] = last.openTime;
-            await deps.send(
-              `👀 <b>Наблюдение, не торговый сигнал</b> · ${symbol} ${modelTitle(entry)}\n` +
-                `Модель: ${(run.probabilityUp * 100).toFixed(1)}% за рост (${edge > 0 ? "вверх" : "вниз"}). ` +
-                `Прибыль после комиссий для этого не подтверждена: ${verdict.ok ? "сигнал слабее проверенного порога" : verdict.text}.`
-            );
+          if (settings.observe && model.validation.hasEdge && Math.abs(edge) >= OBSERVE_EDGE && !chanceOpen.has(symbol) && now - (state.lastChance[symbol] ?? 0) >= CHANCE_COOLDOWN && state.observed[key] !== last.openTime) {
+            const entryTime = last.closeTime + 1;
+            const horizon = model.horizon ?? HORIZONS[entry.timeframe].horizon;
+            const plan = chancePlan(edge > 0 ? "LONG" : "SHORT", last.close, run.atr, horizon, entryTime, intervalMinutes(model.interval));
+            const confidentAccuracy = model.validation.confident?.accuracy ?? null;
+            const current = chances.get(symbol);
+            // Of several confident models on one coin the longest hold speaks (a bigger move leaves more after costs),
+            // then the one most accurate when confident.
+            const better =
+              !current ||
+              (plan && plan.closeBy > current.plan.closeBy) ||
+              (plan && plan.closeBy === current.plan.closeBy && (confidentAccuracy ?? 0) > (current.confidentAccuracy ?? 0));
+            if (plan && better) {
+              chances.set(symbol, { symbol, title: modelTitle(entry), pUp: run.probabilityUp, confidentAccuracy, plan, entry, interval: model.interval, entryTime, barOpen: last.openTime });
+            }
           }
         } catch (e) {
           result.errors.push(`${key}: ${(e as Error).message}`);
@@ -338,11 +360,41 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
     }
   }
 
+  for (const c of chances.values()) {
+    try {
+      await deps.store.logSignal({
+        kind: "chance",
+        chat_id: chatId,
+        model_key: c.entry.key,
+        model_trained_at: c.entry.model.trainedAt,
+        symbol: c.symbol,
+        timeframe: c.entry.timeframe,
+        bar_interval: c.interval,
+        side: c.plan.side,
+        entry: c.plan.entry,
+        tp: c.plan.tp,
+        sl: c.plan.sl,
+        entry_time: c.entryTime,
+        close_by: c.plan.closeBy,
+        sent_at: now,
+      });
+      state.observed[`${c.symbol}:${c.entry.key}`] = c.barOpen;
+      state.lastChance[c.symbol] = now;
+      await deps.send(chanceMessage(c));
+      result.chances = (result.chances ?? 0) + 1;
+    } catch (e) {
+      result.errors.push(`chance ${c.symbol}: ${(e as Error).message}`);
+    }
+  }
+
   for (const [k, t] of Object.entries(state.observed ?? {})) if (now - t > 7 * 86_400_000) delete state.observed![k];
   state.lastScanAt = new Date(now).toISOString();
   writeState(deps.stateFile, state);
   return result;
 }
+
+/** After a chance on a coin, the next one waits this long, so a quick model cannot flood the chat. */
+export const CHANCE_COOLDOWN = 4 * 3_600_000;
 
 /** |P(up) − 0.5| from which observe mode reports a model's view. */
 export const OBSERVE_EDGE = 0.06;

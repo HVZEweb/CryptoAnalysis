@@ -11,8 +11,12 @@ export async function GET(request: NextRequest) {
   if (!(await getUserIdBySession(getSessionToken(request)))) {
     return NextResponse.json({ error: "Войдите на сайт" }, { status: 401 });
   }
-  const [closed, open] = await Promise.all([closedSignals(), openSignals()]);
+  const [all, open] = await Promise.all([closedSignals(), openSignals()]);
+  // Tiles and the curve are the validated signals; chances and news are reported next to them, never mixed in.
+  const closed = all.filter((s) => (s.kind ?? "signal") === "signal");
   const record = trackRecord(closed);
+  const chances = trackRecord(all.filter((s) => s.kind === "chance"));
+  const news = trackRecord(all.filter((s) => s.kind === "news"));
   const demoClosed = closed.filter((s) => s.demo_status === "closed");
   const demo = demoClosed.length ? trackRecord(demoClosed.map((s) => ({ net_bp: s.demo_net_bp ?? 0 }))) : null;
 
@@ -27,9 +31,10 @@ export async function GET(request: NextRequest) {
 
   const row = (s: (typeof closed)[number]) => ({
     id: s.id,
+    kind: s.kind ?? "signal",
     symbol: s.symbol,
     timeframe: s.timeframe,
-    model: s.model_key.startsWith("pooled:") ? "общая" : "по свечам",
+    model: s.kind === "news" ? "новость" : s.kind === "chance" ? "шанс" : s.model_key.startsWith("pooled:") ? "общая" : "по свечам",
     side: s.side,
     entry: s.entry,
     tp: s.tp,
@@ -46,9 +51,11 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     record,
+    chances,
+    news,
     demo,
     curve,
     open: open.map(row),
-    recent: closed.slice(-100).reverse().map(row),
+    recent: all.slice(-100).reverse().map(row),
   });
 }

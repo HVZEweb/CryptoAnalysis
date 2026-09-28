@@ -44,7 +44,7 @@ function memoryStore(watch: string[]) {
     getChat: async () => ({ ...settings }),
     getWatchlist: async () => [...watch],
     logSignal: async (s) => {
-      rows.push({ ...s, id: rows.length + 1, status: "open", exit_price: null, gross_bp: null, net_bp: null, closed_at: null });
+      rows.push({ ...s, kind: s.kind ?? "signal", id: rows.length + 1, status: "open", exit_price: null, gross_bp: null, net_bp: null, closed_at: null });
       return rows.length;
     },
     openSignals: async () => rows.filter((r) => r.status === "open"),
@@ -53,7 +53,9 @@ function memoryStore(watch: string[]) {
       Object.assign(r, { status: o.status, exit_price: o.exitPrice, gross_bp: o.grossBp, net_bp: o.netBp, closed_at: o.closedAt });
     },
     closedSignals: async (f = {}) =>
-      rows.filter((r) => r.status !== "open" && (!f.modelKey || r.model_key === f.modelKey) && (!f.trainedAt || r.model_trained_at === f.trainedAt)),
+      rows.filter(
+        (r) => r.status !== "open" && (!f.modelKey || r.model_key === f.modelKey) && (!f.trainedAt || r.model_trained_at === f.trainedAt) && (!f.kind || r.kind === f.kind)
+      ),
     disabledModels: async () => disabled,
     disableModel: async (key, trainedAt, reason) => void disabled.set(key, { trainedAt, reason }),
     setDemo: async (id, patch) => void Object.assign(rows.find((r) => r.id === id)!, patch),
@@ -144,7 +146,7 @@ describe("scanSignals", () => {
     const t = setup({ watch: ["BTCUSDT"] });
     const lost = { chat_id: "42", model_key: "candles:4h", model_trained_at: "2026-01-01T00:00:00Z", symbol: "BTCUSDT", timeframe: "4h", bar_interval: "1h" };
     for (let i = 0; i < 29; i++) {
-      t.mem.rows.push({ ...lost, id: 100 + i, side: "LONG", entry: 100, tp: 104, sl: 98, entry_time: 0, close_by: 1, sent_at: 0, status: "sl", exit_price: 98, gross_bp: -200, net_bp: -204, closed_at: 1 });
+      t.mem.rows.push({ ...lost, kind: "signal", id: 100 + i, side: "LONG", entry: 100, tp: 104, sl: 98, entry_time: 0, close_by: 1, sent_at: 0, status: "sl", exit_price: 98, gross_bp: -200, net_bp: -204, closed_at: 1 });
     }
     await scanSignals(t.deps); // the 30th signal opens…
     t.advance(2 * HOUR);
@@ -178,6 +180,40 @@ describe("scanSignals", () => {
     expect(calls).toContain("close BTC-USDT-SWAP");
     expect(t.mem.rows[0].demo_status).toBe("closed");
     expect(t.sent.some((m) => m.includes("+385.0 п. с реальными комиссиями") && m.includes("расчёт: +390.0 п."))).toBe(true);
+  });
+
+  it("sends a chance with a full plan when a model with a direction edge is confident, one per coin at a time", async () => {
+    const t = setup({ profitable: false, watch: ["BTCUSDT"] });
+    t.mem.settings.observe = true;
+    const r = await scanSignals(t.deps);
+    expect(r.sent).toBe(0);
+    expect(r.chances).toBe(1);
+    expect(t.sent[0]).toContain("Шанс: LONG BTCUSDT");
+    expect(t.sent[0]).toContain("тейк-профит лимитным ордером: 104.00");
+    expect(t.sent[0]).toContain("стоп-лосс (стоп-маркет): 96.00");
+    expect(t.mem.rows[0]).toMatchObject({ kind: "chance", tp: 104, sl: 96 });
+    t.advance(HOUR);
+    expect((await scanSignals(t.deps)).chances ?? 0).toBe(0); // the first is still open
+    t.advance(2 * HOUR);
+    t.setPrice(105); // closes at the target…
+    expect((await scanSignals(t.deps)).chances ?? 0).toBe(0); // …but the coin waits out the cooldown
+    t.advance(2 * HOUR);
+    expect((await scanSignals(t.deps)).chances).toBe(1);
+  });
+
+  it("reports a chance's result but never lets chances switch a model off", async () => {
+    const t = setup({ profitable: false, watch: ["BTCUSDT"] });
+    t.mem.settings.observe = true;
+    const lost = { chat_id: "42", model_key: "candles:4h", model_trained_at: "2026-01-01T00:00:00Z", symbol: "ETHUSDT", timeframe: "4h", bar_interval: "1h" };
+    for (let i = 0; i < 29; i++) {
+      t.mem.rows.push({ ...lost, kind: "chance", id: 100 + i, side: "LONG", entry: 100, tp: 104, sl: 96, entry_time: 0, close_by: 1, sent_at: 0, status: "sl", exit_price: 96, gross_bp: -400, net_bp: -416, closed_at: 1 });
+    }
+    await scanSignals(t.deps);
+    t.advance(2 * HOUR);
+    t.setPrice(95);
+    await scanSignals(t.deps);
+    expect(t.sent.some((m) => m.includes("Шанс · <b>LONG BTCUSDT") && m.includes("сработал стоп"))).toBe(true);
+    expect(t.mem.disabled.size).toBe(0);
   });
 
   it("does nothing until Telegram is connected", async () => {

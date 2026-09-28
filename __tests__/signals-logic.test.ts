@@ -132,7 +132,7 @@ describe("bot commands", () => {
     const d = deps();
     await handleCommand("42", "/pause", d);
     expect((await d.store.getChat("42")).paused).toBe(true);
-    expect(await handleCommand("42", "/observe on", d)).toContain("не торговые сигналы");
+    expect(await handleCommand("42", "/observe on", d)).toContain("Шансы включены");
     expect((await d.store.getChat("42")).observe).toBe(true);
   });
 
