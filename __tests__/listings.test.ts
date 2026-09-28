@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Candle } from "@/types";
 import { coinListings, type OkxInstrument } from "@/services/listings/okx";
 import { isCoinListingTitle } from "@/services/listings/monitor";
-import { LISTING_COST, listingMoves, studyListings, variantReturn, type StudiedListing } from "@/services/listings/analysis";
+import { LISTING_BAR_HOURS, LISTING_COST, listingMoves, studyListings, variantReturn, type StudiedListing } from "@/services/listings/analysis";
 
 const HOUR = 3_600_000;
 const T0 = Date.UTC(2026, 0, 1, 10);
@@ -64,6 +64,13 @@ describe("variantReturn", () => {
     expect(variantReturn(falling, { side: "short", enterAfterH: 1, holdH: 24 })).toBeCloseTo(0.2 - LISTING_COST.swap);
     expect(variantReturn(falling, { side: "long", enterAfterH: 1, holdH: 24 })).toBeCloseTo(-0.2 - LISTING_COST.spot);
     expect(variantReturn(listing(false, [100, ...Array(30).fill(80)]), { side: "short", enterAfterH: 1, holdH: 24 })).toBeNull();
+  });
+
+  it("reaches the end of the longest hold when the listing hour has no candle", () => {
+    // bars start an hour after listing, as on OKX when the first hour is an auction
+    const late = { base: "X", listTime: T0 - HOUR, hasSpot: true, hasSwap: true, bars: bars(Array(LISTING_BAR_HOURS - 1).fill(100)) };
+    expect(variantReturn(late, { side: "long", enterAfterH: 4, holdH: 168 })).not.toBeNull();
+    expect(listingMoves(late.bars, late.listTime)!.change[168]).not.toBeNull();
   });
 
   it("caps a short's loss at the whole stake", () => {

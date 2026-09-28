@@ -5,6 +5,7 @@
 
 import { execute, query } from "@/lib/db";
 import type { Candle } from "@/types";
+import { LISTING_BAR_HOURS } from "@/services/listings/analysis";
 
 let ready = false;
 
@@ -51,6 +52,9 @@ export async function ensureListingTables(): Promise<void> {
       notified_at BIGINT NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  // How many hours of bars a complete coin has; coins fetched with a shorter window are fetched again.
+  await execute("ALTER TABLE listing_coin ADD COLUMN IF NOT EXISTS bars_hours INT NOT NULL DEFAULT 0");
+  await execute("UPDATE listing_coin SET bars_complete = 0 WHERE bars_complete = 1 AND bars_hours < ?", [LISTING_BAR_HOURS]);
   ready = true;
 }
 
@@ -68,6 +72,7 @@ export interface ListingRow {
   announced_at: number | null;
   profile: Record<string, unknown> | null;
   bars_complete: number;
+  bars_hours: number;
   notified_at: number | null;
   followup_at: number | null;
 }
@@ -87,7 +92,7 @@ export async function knownBases(): Promise<Set<string>> {
   return new Set((await query<Array<{ base: string }>>("SELECT base FROM listing_coin")).map((r) => r.base));
 }
 
-export async function insertListing(r: Omit<ListingRow, "bars_complete" | "notified_at" | "followup_at" | "profile"> & { profile?: object | null }): Promise<void> {
+export async function insertListing(r: Omit<ListingRow, "bars_complete" | "bars_hours" | "notified_at" | "followup_at" | "profile"> & { profile?: object | null }): Promise<void> {
   await ensureListingTables();
   await execute(
     `INSERT IGNORE INTO listing_coin (base, list_time, primary_inst, has_spot, has_swap, markets, source, first_seen_at, announcement_title, announcement_url, announced_at, profile)
@@ -96,7 +101,7 @@ export async function insertListing(r: Omit<ListingRow, "bars_complete" | "notif
   );
 }
 
-export async function updateListing(base: string, patch: Partial<Pick<ListingRow, "bars_complete" | "notified_at" | "followup_at">> & { profile?: object }): Promise<void> {
+export async function updateListing(base: string, patch: Partial<Pick<ListingRow, "bars_complete" | "bars_hours" | "notified_at" | "followup_at">> & { profile?: object }): Promise<void> {
   const keys = Object.keys(patch) as Array<keyof typeof patch>;
   if (!keys.length) return;
   await execute(`UPDATE listing_coin SET ${keys.map((k) => `${k} = ?`).join(", ")} WHERE base = ?`, [
