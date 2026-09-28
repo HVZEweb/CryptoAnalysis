@@ -7,6 +7,7 @@
  *   npx tsx scripts/research.ts --only events --symbols BTC,ETH --days 180
  *   npx tsx scripts/research.ts --only portfolio          # daily strategies on the full history since 2019
  *   npx tsx scripts/research.ts --only funding            # robustness of the cross-sectional funding strategy
+ *   npx tsx scripts/research.ts --only flush              # the fixed "OI flush" rule on 2020-09 → 2024-08, never seen before
  *   npx tsx scripts/research.ts --only news               # how each type of news moved BTC (GDELT, ~3 months)
  */
 
@@ -14,8 +15,9 @@ import fs from "fs";
 import path from "path";
 import { loadPooledDataset } from "@/services/pooled/dataset";
 import { computePooledFeatureSeries } from "@/services/pooled/features";
+import type { LabMetrics } from "@/services/strategy-lab/lab";
 import { POOLED_UNIVERSE } from "@/services/pooled/index";
-import { studyEvents } from "@/services/research/events";
+import { checkFixedEvent, FLUSH_RULE, studyEvents } from "@/services/research/events";
 import { BIGMOVE_CONFIGS, studyBigMove } from "@/services/research/bigmove";
 import { describeVerdict } from "@/services/research/common";
 import { archiveFunding, archiveKlines, listArchiveUsdtPerps } from "@/services/pooled/archive";
@@ -232,6 +234,41 @@ async function fundingRobustness(log: (line: string) => void, report: string[], 
   json.funding = { symbols: u.symbols.length, split: u.days[split], rows, mainPassed };
 }
 
+/**
+ * Pre-registered check of the "OI flush" rule (services/research/events.ts, FLUSH_RULE). The events study
+ * picked it on 2024-09 → 2026-08; here it runs once, unchanged, on the archive before that: the metrics
+ * archive starts in September 2020, and the period ends a day before the study's data began.
+ */
+async function flushSection(log: (line: string) => void, report: string[], json: Record<string, unknown>) {
+  const from = Date.UTC(2020, 8, 1);
+  const to = Date.UTC(2024, 7, 31) - 1;
+  const data = await loadPooledDataset(symbols, "1h", { from, to }, cacheDir, log);
+  const series = data.series.map((s) => ({
+    ...s,
+    rows: computePooledFeatureSeries(s.candles, { btc: s.symbol === "BTCUSDT" ? s.candles : data.btc, derivs: data.derivs.get(s.symbol)! }).rows,
+  }));
+  const check = checkFixedEvent(series, FLUSH_RULE, from, to);
+  const m = (x: LabMetrics) =>
+    `${x.trades} сделок, ${x.avgNetBp >= 0 ? "+" : ""}${x.avgNetBp.toFixed(1)} п./сделку, в плюс ${(x.winRate * 100).toFixed(0)}%, t=${x.tStat.toFixed(1)}, итого ${x.totalPct.toFixed(0)}%, просадка ${x.maxDrawdownPct.toFixed(0)}%`;
+  const lines = [
+    `## Заранее объявленная проверка: «волна закрытий» на истории, которой исследование не видело`,
+    ``,
+    `Правило зафиксировано до прогона: открытый интерес за час падает ≥3σ при движении цены ≥2σ → вход по направлению движения, ` +
+      `стоп ${FLUSH_RULE.slAtr} ATR, цель ×${FLUSH_RULE.rr}, выход не позже ${FLUSH_RULE.horizon} ч. Никакого подбора. ` +
+      `Период ${new Date(from).toISOString().slice(0, 10)} → ${new Date(to).toISOString().slice(0, 10)}, монет ${series.length}. ` +
+      `Проходит, если ≥30 сделок, плюс после комиссий и t ≥ 2 за весь период.`,
+    "```",
+    `${check.passed ? "✅ прошло" : "❌ не прошло"}: ${check.reason}`,
+    `событий ${check.events}; весь период: ${m(check.all)}`,
+    ...check.byYear.map((y) => `  ${y.year}: ${m(y.metrics)}`),
+    "```",
+    "",
+  ];
+  for (const l of lines) log(l);
+  report.push(...lines);
+  json.flush = { from, to, symbols: series.map((s) => s.symbol), ...check };
+}
+
 async function main() {
   const log = (line: string) => console.log(line);
   const report: string[] = [
@@ -242,6 +279,12 @@ async function main() {
     ``,
   ];
   const json: Record<string, unknown> = {};
+
+  if (only === "flush") {
+    log("\n== Волна закрытий: заранее объявленная проверка");
+    await flushSection(log, report, json);
+    return finish(report, json, log);
+  }
 
   if (only === "news") {
     log("\n== Новости и цена BTC");
