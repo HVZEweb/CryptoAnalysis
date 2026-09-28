@@ -42,11 +42,12 @@ export function datasetPeriod(days: number, now = new Date()): { from: number; t
 export async function loadPooledDataset(
   symbols: string[],
   interval: string,
-  days: number,
+  /** Days back from the start of the current month, or an explicit period */
+  period: number | { from: number; to: number },
   cacheDir: string,
   log: (line: string) => void = () => undefined
 ): Promise<PooledDataset> {
-  const { from, to } = datasetPeriod(days);
+  const { from, to } = typeof period === "number" ? datasetPeriod(period) : period;
   const opts = { cacheDir, concurrency: 12, log };
   log(`Период: ${new Date(from).toISOString().slice(0, 10)} → ${new Date(to).toISOString().slice(0, 10)}, монет: ${symbols.length}`);
   const series: PooledDataset["series"] = [];

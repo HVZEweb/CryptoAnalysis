@@ -9,8 +9,8 @@
 
 import type { Candle } from "@/types";
 import { POOLED_FEATURE_NAMES } from "@/services/pooled/features";
-import { atr14 } from "@/services/strategy-lab/lab";
-import { selectAndValidate, simulateIntents, type Candidate, type ResearchVerdict, type TradeIntent } from "@/services/research/common";
+import { atr14, metricsOf, type LabMetrics } from "@/services/strategy-lab/lab";
+import { MIN_HOLDOUT_T, MIN_HOLDOUT_TRADES, selectAndValidate, simulateIntents, type Candidate, type ResearchVerdict, type TradeIntent } from "@/services/research/common";
 
 type Row = Record<(typeof POOLED_FEATURE_NAMES)[number], number>;
 
@@ -116,4 +116,67 @@ export function studyEvents(
     }
     return { ...selectAndValidate(def.title, candidates, from, to), events: hits.length };
   });
+}
+
+export interface FixedEventRule {
+  event: string;
+  mode: "follow" | "fade";
+  slAtr: number;
+  rr: number;
+  horizon: number;
+}
+
+/**
+ * The one rule that came closest in the 2024-09 → 2026-08 study (+23 bp, t = 1.9 on its holdout),
+ * fixed before looking at any other period. It is judged once, on history that study never saw.
+ */
+export const FLUSH_RULE: FixedEventRule = { event: "oi_flush", mode: "follow", slAtr: 2, rr: 3, horizon: 24 };
+
+export interface FixedEventCheck {
+  rule: FixedEventRule;
+  events: number;
+  all: LabMetrics;
+  byYear: Array<{ year: number; metrics: LabMetrics }>;
+  passed: boolean;
+  reason: string;
+}
+
+/** Runs one fixed rule over a whole period — no variants, no selection — and applies the usual bar. */
+export function checkFixedEvent(
+  series: Array<{ symbol: string; candles: Candle[]; rows: Array<number[] | null> }>,
+  rule: FixedEventRule,
+  from: number,
+  to: number
+): FixedEventCheck {
+  const def = EVENTS.find((e) => e.key === rule.event);
+  if (!def) throw new Error(`unknown event ${rule.event}`);
+  const candlesBySymbol = new Map(series.map((s) => [s.symbol, s.candles]));
+  const atrBySymbol = new Map(series.map((s) => [s.symbol, atr14(s.candles)]));
+  const hits = detectEvents(def, series);
+  const intents: TradeIntent[] = hits.flatMap((h) => {
+    const atr = atrBySymbol.get(h.symbol)![h.index];
+    if (!(atr > 0)) return [];
+    const sl = atr * rule.slAtr;
+    const side = rule.mode === "follow" ? h.side : (-h.side as 1 | -1);
+    return [{ symbol: h.symbol, index: h.index, side, slDist: sl, tpDist: sl * rule.rr, horizon: rule.horizon }];
+  });
+  const trades = simulateIntents(intents, candlesBySymbol).filter((t) => t.time >= from && t.time <= to);
+  const all = metricsOf(trades, to - from);
+  const years = [...new Set(trades.map((t) => new Date(t.time).getUTCFullYear()))].sort();
+  const byYear = years.map((year) => {
+    const start = Math.max(from, Date.UTC(year, 0, 1));
+    const end = Math.min(to, Date.UTC(year + 1, 0, 1));
+    return { year, metrics: metricsOf(trades.filter((t) => new Date(t.time).getUTCFullYear() === year), end - start) };
+  });
+  const bp = (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(1)} п.`;
+  let passed = false;
+  let reason: string;
+  if (all.trades < MIN_HOLDOUT_TRADES) reason = `мало сделок (${all.trades})`;
+  else if (all.avgNetBp <= 0) reason = `убыток: ${bp(all.avgNetBp)} на сделку после комиссий`;
+  else if (all.tStat < MIN_HOLDOUT_T) reason = `${bp(all.avgNetBp)} на сделку, но это неотличимо от случайности (t = ${all.tStat.toFixed(1)})`;
+  else {
+    passed = true;
+    reason = `${bp(all.avgNetBp)} на сделку после комиссий, ${all.trades} сделок, t = ${all.tStat.toFixed(1)}`;
+  }
+  return { rule, events: hits.length, all, byYear, passed, reason };
 }
