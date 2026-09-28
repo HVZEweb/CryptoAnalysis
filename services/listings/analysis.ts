@@ -4,7 +4,8 @@
  * Price moves are measured from the close of the first full hour (nobody reliably gets the very first
  * print). Trade variants — long or short, enter after 1 or 4 hours, hold 1, 3 or 7 days — are chosen
  * on the earlier 60% of listings and judged once on the later 40%, with costs for new, thin markets:
- * taker fee plus 0.2% slippage per side. Only coins still listed are known (delisted ones are not in
+ * taker fee plus 0.2% slippage per side; shorts also pay first-week funding and are liquidated when
+ * the price doubles while they are held. Only coins still listed are known (delisted ones are not in
  * OKX's instrument list), which flatters the long side.
  */
 
@@ -50,6 +51,12 @@ export function listingMoves(bars: Candle[], listTime: number): ListingMoves | n
 /** Round-trip cost on a new listing: taker fee both ways plus 0.2% slippage per side. */
 export const LISTING_COST = { spot: 2 * (0.001 + 0.002), swap: 2 * (0.0005 + 0.002) };
 
+/**
+ * Funding a short pays in a new perpetual's first week: crowded shorts drive it negative. Measured on
+ * the 12 OKX listings of July–September 2026 (the history OKX still serves): 1.4% a week on average.
+ */
+export const LISTING_SHORT_FUNDING = 0.014;
+
 export interface ListingTradeVariant {
   side: "long" | "short";
   enterAfterH: number;
@@ -78,11 +85,15 @@ export function variantReturn(l: StudiedListing, v: ListingTradeVariant): number
   const inBar = l.bars.find((b) => b.openTime === first.openTime + (v.enterAfterH - 1) * HOUR);
   const outBar = l.bars.find((b) => b.openTime === first.openTime + (v.enterAfterH - 1 + v.holdH) * HOUR);
   if (!inBar || !outBar) return null;
-  const gross = (v.side === "long" ? 1 : -1) * (outBar.close / inBar.close - 1);
   // Longs buy spot when there is a spot pair, shorts use the perpetual.
   const cost = v.side === "long" && l.hasSpot ? LISTING_COST.spot : LISTING_COST.swap;
-  // a short can lose more than 100% on a new coin — cap the loss at the whole stake
-  return Math.max(-1, gross - cost);
+  if (v.side === "short") {
+    // An unlevered short is liquidated once the price doubles, even if it falls back before the exit.
+    const held = l.bars.filter((b) => b.openTime > inBar.openTime && b.openTime <= outBar.openTime);
+    if (held.some((b) => b.high >= 2 * inBar.close)) return -1;
+  }
+  const gross = (v.side === "long" ? 1 : -1) * (outBar.close / inBar.close - 1);
+  return Math.max(-1, gross - cost - (v.side === "short" ? LISTING_SHORT_FUNDING * (v.holdH / 168) : 0));
 }
 
 export function variantLabel(v: ListingTradeVariant): string {
