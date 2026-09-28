@@ -12,6 +12,12 @@ import type { Candle } from "@/types";
 
 export const HORIZONS_H = [4, 24, 72, 168] as const;
 
+/**
+ * Hours of bars kept per listing. The longest trade enters 4 hours in and holds a week, and the listing
+ * hour itself often has no candle, so a bare 168 hours would never reach the end of a 7-day hold.
+ */
+export const LISTING_BAR_HOURS = 176;
+
 export interface ListingMoves {
   /** Close of the first hour — the reference price */
   entry: number;

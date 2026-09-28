@@ -13,7 +13,7 @@ import { getChat } from "@/services/signals/store";
 import { coinListings, okxCryptoInstruments, okxHourlyBars, okxListingAnnouncements, type CoinListing } from "@/services/listings/okx";
 import { coinProfile, profileLines } from "@/services/listings/profile";
 import * as store from "@/services/listings/store";
-import { listingMoves, studyListings, studySummary, type StudiedListing } from "@/services/listings/analysis";
+import { LISTING_BAR_HOURS, listingMoves, studyListings, studySummary, type StudiedListing } from "@/services/listings/analysis";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -140,10 +140,10 @@ export async function runListingsCycle(now = Date.now()): Promise<CycleResult> {
   for (const l of (await store.listings({ incompleteBars: true })).slice(0, BAR_FETCHES_PER_CYCLE)) {
     try {
       if (l.list_time > now - HOUR) continue;
-      const bars = await okxHourlyBars(l.primary_inst, l.list_time - (l.list_time % HOUR), 168);
+      const bars = await okxHourlyBars(l.primary_inst, l.list_time - (l.list_time % HOUR), LISTING_BAR_HOURS);
       await store.saveBars(l.base, bars);
-      if (now >= l.list_time + 169 * HOUR) {
-        await store.updateListing(l.base, { bars_complete: 1 });
+      if (now >= l.list_time + (LISTING_BAR_HOURS + 1) * HOUR) {
+        await store.updateListing(l.base, { bars_complete: 1, bars_hours: LISTING_BAR_HOURS });
         if (!bars.length) result.errors.push(`bars ${l.base}: OKX не отдал свечи ${l.primary_inst} за первую неделю`);
       }
       result.barsFetched++;
