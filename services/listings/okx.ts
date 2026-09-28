@@ -45,23 +45,27 @@ export async function okxCryptoInstruments(): Promise<OkxInstrument[]> {
 
 export interface CoinListing {
   base: string;
-  /** First time the coin traded on OKX, in any market */
+  /** When the studied instrument started trading */
   listTime: number;
   instruments: OkxInstrument[];
-  /** The instrument whose price history is studied: the USDT spot pair if any, else the USDT swap */
+  /**
+   * The instrument whose price history is studied: the USDT market that opened first (spot on a tie).
+   * Often the perpetual comes weeks before the spot pair; its candles start at the listing, the spot's do not.
+   */
   primary: OkxInstrument;
 }
 
-/** Groups instruments by coin; a coin's listing is its first instrument ever. */
+/** Groups instruments by coin; a coin's listing is the opening of its first USDT market. */
 export function coinListings(instruments: OkxInstrument[]): CoinListing[] {
   const byBase = new Map<string, OkxInstrument[]>();
   for (const i of instruments) byBase.set(i.base, [...(byBase.get(i.base) ?? []), i]);
   const out: CoinListing[] = [];
   for (const [base, list] of byBase) {
-    const primary =
-      list.find((i) => i.instType === "SPOT" && i.quote === "USDT") ?? list.find((i) => i.instType === "SWAP" && i.quote === "USDT");
+    const primary = list
+      .filter((i) => i.quote === "USDT")
+      .sort((a, b) => a.listTime - b.listTime || (a.instType === "SPOT" ? -1 : 1))[0];
     if (!primary) continue;
-    out.push({ base, listTime: Math.min(...list.map((i) => i.listTime)), instruments: list, primary });
+    out.push({ base, listTime: primary.listTime, instruments: list, primary });
   }
   return out.sort((a, b) => b.listTime - a.listTime);
 }
