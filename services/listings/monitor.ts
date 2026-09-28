@@ -53,13 +53,15 @@ export interface CycleResult {
   announcements: number;
   newCoins: number;
   backfilled: number;
+  /** Known coins whose studied instrument or start time changed (their bars are fetched again) */
+  repointed: number;
   barsFetched: number;
   followups: number;
   errors: string[];
 }
 
 export async function runListingsCycle(now = Date.now()): Promise<CycleResult> {
-  const result: CycleResult = { announcements: 0, newCoins: 0, backfilled: 0, barsFetched: 0, followups: 0, errors: [] };
+  const result: CycleResult = { announcements: 0, newCoins: 0, backfilled: 0, repointed: 0, barsFetched: 0, followups: 0, errors: [] };
   await store.ensureListingTables();
   const notify = await notifyEnabled();
 
@@ -82,7 +84,16 @@ export async function runListingsCycle(now = Date.now()): Promise<CycleResult> {
   try {
     const known = await store.knownBases();
     const firstRun = known.size === 0;
-    const coins = coinListings(await okxCryptoInstruments()).filter((c) => c.listTime >= now - HISTORY_DAYS * DAY && !known.has(c.base));
+    const all = coinListings(await okxCryptoInstruments()).filter((c) => c.listTime >= now - HISTORY_DAYS * DAY);
+    const stored = new Map((await store.listings()).map((r) => [r.base, r]));
+    for (const c of all) {
+      const r = stored.get(c.base);
+      if (r && (r.primary_inst !== c.primary.instId || r.list_time !== c.listTime)) {
+        await store.repointListing(c.base, c.primary.instId, c.listTime);
+        result.repointed++;
+      }
+    }
+    const coins = all.filter((c) => !known.has(c.base));
     for (const c of coins) {
       const live = !firstRun && c.listTime >= now - LIVE_WINDOW;
       const ann = await store.announcementFor(c.base, c.listTime);
@@ -131,7 +142,10 @@ export async function runListingsCycle(now = Date.now()): Promise<CycleResult> {
       if (l.list_time > now - HOUR) continue;
       const bars = await okxHourlyBars(l.primary_inst, l.list_time - (l.list_time % HOUR), 168);
       await store.saveBars(l.base, bars);
-      if (now >= l.list_time + 169 * HOUR) await store.updateListing(l.base, { bars_complete: 1 });
+      if (now >= l.list_time + 169 * HOUR) {
+        await store.updateListing(l.base, { bars_complete: 1 });
+        if (!bars.length) result.errors.push(`bars ${l.base}: OKX не отдал свечи ${l.primary_inst} за первую неделю`);
+      }
       result.barsFetched++;
     } catch (e) {
       result.errors.push(`bars ${l.base}: ${(e as Error).message}`);

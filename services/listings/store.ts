@@ -114,6 +114,12 @@ export async function listings(filter: { incompleteBars?: boolean; since?: numbe
   return (await query<ListingRow[]>(`SELECT * FROM listing_coin ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY list_time DESC`, params)).map(num);
 }
 
+/** Points a coin at another instrument or start time and drops its bars so they are fetched again. */
+export async function repointListing(base: string, primaryInst: string, listTime: number): Promise<void> {
+  await execute("UPDATE listing_coin SET primary_inst = ?, list_time = ?, bars_complete = 0 WHERE base = ?", [primaryInst, listTime, base]);
+  await execute("DELETE FROM listing_bars WHERE base = ?", [base]);
+}
+
 export async function saveBars(base: string, bars: Candle[]): Promise<void> {
   for (const b of bars) {
     await execute(

@@ -14,14 +14,19 @@ function bars(closes: number[], start = T0): Candle[] {
 describe("coinListings", () => {
   const inst = (instId: string, instType: "SPOT" | "SWAP", base: string, quote: string, listTime: number): OkxInstrument => ({ instId, instType, base, quote, listTime, state: "live" });
 
-  it("groups by coin, takes the first listing time and prefers the USDT spot pair", () => {
+  it("studies the USDT market that opened first: a perpetual weeks before the spot pair", () => {
     const [kii] = coinListings([
       inst("KII-USDT-SWAP", "SWAP", "KII", "USDT", 200),
       inst("KII-USDT", "SPOT", "KII", "USDT", 300),
       inst("KII-USDC", "SPOT", "KII", "USDC", 100),
     ]);
-    expect(kii.listTime).toBe(100);
-    expect(kii.primary.instId).toBe("KII-USDT");
+    expect(kii.primary.instId).toBe("KII-USDT-SWAP");
+    expect(kii.listTime).toBe(200);
+  });
+
+  it("prefers the spot pair when spot and perpetual open together", () => {
+    const [x] = coinListings([inst("X-USDT-SWAP", "SWAP", "X", "USDT", 100), inst("X-USDT", "SPOT", "X", "USDT", 100)]);
+    expect(x.primary.instId).toBe("X-USDT");
   });
 
   it("falls back to the USDT swap and skips coins without a USDT market", () => {
