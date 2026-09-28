@@ -24,9 +24,9 @@ export const HELP = [
   "/watch SOL DOGE — следить за монетами",
   "/unwatch SOL — убрать монету",
   "/list — ваши монеты и по каким моделям возможны сигналы",
-  "/stats — реальные результаты отправленных сигналов",
+  "/stats — реальные результаты: проверенные сигналы, шансы и новости отдельно",
   "/pause, /resume — остановить или возобновить сигналы",
-  "/observe on|off — наблюдения: сильный взгляд модели без подтверждённой прибыли (не торговый сигнал)",
+  "/observe on|off — шансы: уверенная модель без подтверждённой прибыли, с готовым планом сделки (включены по умолчанию)",
   "/news on|off — алерты по сильным новостям (включены по умолчанию)",
   "/listings on|off — новые монеты на OKX: анонсы, сводка и статистика прошлых листингов (включены по умолчанию)",
   "/newsstats — как разные типы новостей двигали BTC",
@@ -129,7 +129,10 @@ export async function handleCommand(chatId: string, text: string, deps: BotDeps 
     }
 
     case "stats": {
-      const rows = await deps.store.closedSignals({ chatId });
+      const all = await deps.store.closedSignals({ chatId });
+      const rows = all.filter((r) => (r.kind ?? "signal") === "signal");
+      const chances = all.filter((r) => r.kind === "chance");
+      const news = all.filter((r) => r.kind === "news");
       const open = (await deps.store.openSignals()).filter((s) => s.chat_id === chatId);
       const byModel = new Map<string, typeof rows>();
       for (const r of rows) {
@@ -138,12 +141,14 @@ export async function handleCommand(chatId: string, text: string, deps: BotDeps 
       }
       const scan = scannerState();
       return [
-        formatTrackRecord("Всего", trackRecord(rows)),
+        formatTrackRecord("Проверенные сигналы", trackRecord(rows)),
         ...(rows.some((r) => r.demo_status === "closed")
           ? [formatTrackRecord("Демо OKX (реальное исполнение)", trackRecord(rows.filter((r) => r.demo_status === "closed").map((r) => ({ net_bp: r.demo_net_bp ?? 0 }))))]
           : []),
         ...[...byModel].map(([k, v]) => formatTrackRecord(`  ${k}`, trackRecord(v))),
-        `Открыто сейчас: ${open.length}${open.length ? ` (${open.map((s) => `${s.side} ${s.symbol} ${s.timeframe}`).join(", ")})` : ""}`,
+        ...(chances.length ? [formatTrackRecord("🎯 Шансы (не проверенные)", trackRecord(chances))] : []),
+        ...(news.length ? [formatTrackRecord("📰 Новости", trackRecord(news))] : []),
+        `Открыто сейчас: ${open.length}${open.length ? ` (${open.map((s) => `${s.kind === "chance" ? "шанс " : s.kind === "news" ? "новость " : ""}${s.side} ${s.symbol} ${s.timeframe}`).join(", ")})` : ""}`,
         scan.lastScanAt ? `Последняя проверка: ${new Date(scan.lastScanAt).toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })} МСК` : "",
       ]
         .filter(Boolean)
@@ -163,8 +168,8 @@ export async function handleCommand(chatId: string, text: string, deps: BotDeps 
       if (on !== "on" && on !== "off") return "Укажите: /observe on или /observe off";
       await deps.store.setChat(chatId, { observe: on === "on" });
       return on === "on"
-        ? "👀 Наблюдения включены: буду писать, когда модель с подтверждённой точностью направления уверенно смотрит вверх или вниз. Это не торговые сигналы — прибыль после комиссий для них не подтверждена."
-        : "Наблюдения выключены. Только проверенные сигналы.";
+        ? "🎯 Шансы включены: когда модель с подтверждённой точностью направления уверена, пришлю план сделки — вход, цель, стоп и срок. Прибыль после комиссий для них не подтверждена, итог каждой придёт сам, статистика — /stats."
+        : "Шансы выключены. Только проверенные сигналы.";
     }
 
     case "news": {

@@ -5,7 +5,9 @@ import { createHash } from "crypto";
 import type { NewsImpactPrediction } from "@/services/news-impact/types";
 import { getTelegramConfig, sendTelegram as sendToConnectedBot } from "@/lib/telegram";
 import { getStrongNewsRecord, type NewsTrackRecord } from "@/services/news-impact/history";
-import { getChat } from "@/services/signals/store";
+import { getChat, logSignal } from "@/services/signals/store";
+import { binanceFuturesClient } from "@/lib/axios";
+import { holdMinutes, newsPlan, planSteps, type TradePlan } from "@/services/signals/chance";
 import { liveStudy, similarNewsLine } from "@/services/news-study/log";
 import { newsTopic } from "@/services/news-study/study";
 
@@ -143,7 +145,8 @@ export function formatBotAlert(
   prediction: NewsImpactPrediction,
   record: NewsTrackRecord,
   newsTitle?: string,
-  similar?: string | null
+  similar?: string | null,
+  plan?: TradePlan | null
 ): string {
   const long = prediction.direction === "LONG";
   const history =
@@ -157,10 +160,11 @@ export function formatBotAlert(
     `Сила ${prediction.impactScore}/100 · ожидаемое движение ~${prediction.expectedMovePct}% · держать ${escapeHtml(prediction.suggestedHoldTime)}`,
     `📝 ${escapeHtml(prediction.reason)}`,
     prediction.sourceUrl ? `🔗 ${escapeHtml(prediction.sourceUrl)}` : null,
+    ...(plan ? [``, ...planSteps(plan)] : []),
     ``,
     similar ?? null,
     history,
-    `⚠️ Это оценка новости, а не проверенная стратегия: уровни и прибыль после комиссий для неё не проверялись. /news off — выключить.`,
+    `⚠️ Это оценка новости, а не проверенная стратегия: прибыль после комиссий для неё не подтверждена.${plan ? " Итог сделки придёт сам, живая статистика — /stats." : ""} /news off — выключить.`,
   ]
     .filter((l) => l !== null)
     .join("\n");
@@ -175,7 +179,42 @@ async function sendToAdminBot(prediction: NewsImpactPrediction, newsTitle?: stri
   const similar = await liveStudy()
     .then((s) => similarNewsLine(s, newsTopic(newsTitle ?? prediction.newsTitle ?? "")))
     .catch(() => null);
-  await sendToConnectedBot(formatBotAlert(prediction, record, newsTitle, similar), config);
+  const plan = await newsTradePlan(prediction).catch(() => null);
+  if (plan) {
+    await logSignal({
+      kind: "news",
+      chat_id: config.chatId,
+      model_key: "news",
+      model_trained_at: "-",
+      symbol: plan.symbol,
+      timeframe: plan.holdLabel,
+      // Short holds are judged on 1-minute bars, longer ones on 5-minute bars (500 bars must cover the hold).
+      bar_interval: plan.holdMinutes <= 90 ? "1m" : "5m",
+      side: plan.side,
+      entry: plan.entry,
+      tp: plan.tp,
+      sl: plan.sl,
+      entry_time: plan.entryTime,
+      close_by: plan.closeBy,
+      sent_at: plan.entryTime,
+    });
+  }
+  await sendToConnectedBot(formatBotAlert(prediction, record, newsTitle, similar, plan), config);
+}
+
+/** A trade plan for the alert on the coin's USDT perpetual: target at the expected move, stop as far. */
+async function newsTradePlan(
+  prediction: NewsImpactPrediction
+): Promise<(TradePlan & { symbol: string; holdMinutes: number; holdLabel: string; entryTime: number }) | null> {
+  const side = prediction.direction;
+  if (side !== "LONG" && side !== "SHORT") return null;
+  const symbol = `${prediction.coin.toUpperCase().replace(/USDT$/, "")}USDT`;
+  const { data } = await binanceFuturesClient.get<{ price: string }>("/ticker/price", { params: { symbol }, timeout: 8_000 });
+  const minutes = Math.min(holdMinutes(prediction.suggestedHoldTime), 24 * 60);
+  const entryTime = Date.now();
+  const plan = newsPlan(side, Number(data.price), prediction.expectedMovePct, minutes, entryTime);
+  if (!plan) return null;
+  return { ...plan, symbol, holdMinutes: minutes, holdLabel: minutes >= 60 ? `${Math.round(minutes / 60)}h` : `${minutes}m`, entryTime };
 }
 
 async function sendTelegram(text: string): Promise<void> {

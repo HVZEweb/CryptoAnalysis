@@ -5,6 +5,7 @@ import { cn, formatPrice } from "@/lib/utils";
 
 interface SignalRow {
   id: number;
+  kind: "signal" | "chance" | "news";
   symbol: string;
   timeframe: string;
   model: string;
@@ -22,8 +23,18 @@ interface SignalRow {
   demoNetBp: number | null;
 }
 
+interface TrackRecord {
+  closed: number;
+  wins: number;
+  avgNetBp: number;
+  sumNetPct: number;
+}
+
 interface SignalsData {
-  record: { closed: number; wins: number; avgNetBp: number; sumNetPct: number };
+  record: TrackRecord;
+  /** Chances (confident models without proven profit) and news trade plans, kept apart from the validated signals */
+  chances: TrackRecord;
+  news: TrackRecord;
   /** Same signals as really executed on the OKX demo account */
   demo: { closed: number; wins: number; avgNetBp: number; sumNetPct: number } | null;
   curve: Array<{ t: number; pct: number }>;
@@ -166,7 +177,8 @@ export function SignalsPanel() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         Реальные результаты сигналов, отправленных в Telegram: каждый закрыт по цели, стопу или времени, с комиссиями и
-        проскальзыванием (вход и стоп рыночными, цель лимитным). Результат — % от суммы одной позиции.
+        проскальзыванием (вход и стоп рыночными, цель лимитным). Результат — % от суммы одной позиции. Плитки и график — только
+        проверенные сигналы; шансы и новости считаются отдельно.
       </p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Tile label="Закрыто сигналов" value={String(r.closed)} />
@@ -174,6 +186,18 @@ export function SignalsPanel() {
         <Tile label="В среднем" value={r.closed ? `${signed(r.avgNetBp / 100)}%` : "—"} tone={r.avgNetBp > 0 ? "up" : r.avgNetBp < 0 ? "down" : undefined} />
         <Tile label="Всего" value={r.closed ? `${signed(r.sumNetPct)}%` : "—"} tone={r.sumNetPct > 0 ? "up" : r.sumNetPct < 0 ? "down" : undefined} />
       </div>
+      {[
+        { label: "Шансы (не проверенные)", r: data.chances },
+        { label: "Новости", r: data.news },
+      ]
+        .filter((x) => x.r.closed > 0)
+        .map((x) => (
+          <p key={x.label} className="text-sm text-muted-foreground">
+            {x.label}: {x.r.closed} закрыто, в плюс {Math.round((x.r.wins / x.r.closed) * 100)}%, в среднем{" "}
+            <span className={x.r.avgNetBp >= 0 ? "text-emerald-400" : "text-red-400"}>{signed(x.r.avgNetBp / 100)}%</span>, всего{" "}
+            {signed(x.r.sumNetPct)}% после комиссий.
+          </p>
+        ))}
       {data.demo && (
         <p className="text-sm text-muted-foreground">
           На демо-счёте OKX с реальным исполнением: {data.demo.closed} сделок, в среднем{" "}
