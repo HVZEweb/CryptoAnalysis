@@ -1,13 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { BarChart3, BellRing, History, LineChart, Rocket, Sparkles } from "lucide-react";
+import { BarChart3, BellRing, History, LineChart, Rocket, Sparkles, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type TabId = "predict" | "analysis" | "history" | "accuracy" | "signals" | "listings";
+export type TabId = "predict" | "opportunities" | "analysis" | "history" | "accuracy" | "signals" | "listings";
+
+export const TAB_IDS: TabId[] = ["predict", "opportunities", "analysis", "history", "accuracy", "signals", "listings"];
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "predict", label: "Прогноз", icon: Sparkles },
+  { id: "opportunities", label: "Возможности", icon: Target },
   { id: "analysis", label: "Анализ", icon: BarChart3 },
   { id: "history", label: "История", icon: History },
   { id: "accuracy", label: "Точность", icon: LineChart },
@@ -19,11 +22,13 @@ interface TabNavProps {
   active: TabId;
   onChange: (tab: TabId) => void;
   historyCount?: number;
+  className?: string;
 }
 
-export function TabNav({ active, onChange, historyCount = 0 }: TabNavProps) {
+export function TabNav({ active, onChange, historyCount = 0, className }: TabNavProps) {
+  // Phones and tablets: one scrollable row; desktop sidebar: a 4-column grid.
   return (
-    <nav className="card-premium relative grid grid-cols-3 gap-1 sm:grid-cols-6 rounded-2xl p-1.5">
+    <nav className={cn("card-premium relative flex gap-1 overflow-x-auto rounded-2xl p-1.5 [scrollbar-width:none] lg:grid lg:grid-cols-4 lg:overflow-visible", className)}>
       {TABS.map((tab) => {
         const isActive = active === tab.id;
         return (
@@ -31,8 +36,9 @@ export function TabNav({ active, onChange, historyCount = 0 }: TabNavProps) {
             key={tab.id}
             type="button"
             onClick={() => onChange(tab.id)}
+            aria-current={isActive ? "page" : undefined}
             className={cn(
-              "relative flex flex-col items-center gap-1 rounded-xl px-2 py-3 text-xs font-medium transition-colors z-10",
+              "relative z-10 flex min-w-[76px] flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2.5 text-xs font-medium transition-colors lg:min-w-0",
               isActive ? "text-indigo-200" : "text-muted-foreground hover:text-foreground"
             )}
           >

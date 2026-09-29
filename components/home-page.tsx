@@ -17,21 +17,35 @@ import { EmptyState } from "@/components/empty-state";
 import { AuthDialog } from "@/components/auth-dialog";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { UpgradeDialog } from "@/components/upgrade-dialog";
-import { TabNav, type TabId } from "@/components/tab-nav";
+import { TAB_IDS, TabNav, type TabId } from "@/components/tab-nav";
 import { Button } from "@/components/ui/button";
 import { useAccount } from "@/hooks/use-account";
 import { usePrediction, usePredictionHistory } from "@/hooks/use-prediction";
 import type { PredictionFormValues } from "@/lib/schemas";
 import type { PredictionHistoryItem } from "@/types";
-import { TIMEFRAME_LABELS } from "@/lib/utils";
+import { TIMEFRAME_LABELS, cn } from "@/lib/utils";
 import { SignalsPanel } from "@/components/signals-panel";
 import { ListingsPanel } from "@/components/listings-panel";
+import { OpportunitiesPanel } from "@/components/opportunities-panel";
 
 export function HomePage() {
   const { loading, error, result, progress, step, stepMessage, predict } = usePrediction();
   const { user, quota, refresh, register, login, logout } = useAccount();
   const { history, saveToHistory, clearHistory } = usePredictionHistory(!!user);
-  const [tab, setTab] = useState<TabId>("predict");
+  const [tab, setTabState] = useState<TabId>("predict");
+  // The tab lives in the URL (?tab=…), so a link or the back button from a card returns to it.
+  const setTab = useCallback((next: TabId) => {
+    setTabState(next);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (next === "predict") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", next);
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  }, []);
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    if (t && (TAB_IDS as string[]).includes(t)) setTabState(t as TabId);
+  }, []);
   const [repeatSymbol, setRepeatSymbol] = useState<string>();
   const [viewedHistoryItem, setViewedHistoryItem] = useState<PredictionHistoryItem | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
@@ -119,6 +133,8 @@ export function HomePage() {
 
         <div className="mt-5 flex flex-1 flex-col gap-5 lg:mt-6 lg:grid lg:grid-cols-12 lg:gap-6">
           <aside className="flex flex-col gap-4 lg:col-span-4">
+            {/* Phones: tabs first; the prediction form only on its own tab. Desktop: form above the tabs. */}
+            <div className={cn("order-2 lg:order-1", tab !== "predict" && "hidden lg:block")}>
             <PredictionForm
               onSubmit={handleSubmit}
               loading={loading}
@@ -127,10 +143,11 @@ export function HomePage() {
               onNeedAuth={openRegister}
               onNeedUpgrade={openUpgrade}
             />
-            <TabNav active={tab} onChange={setTab} historyCount={history.length} />
+            </div>
+            <TabNav active={tab} onChange={setTab} historyCount={history.length} className="order-1 lg:order-2" />
             <AnimatePresence>
               {error && !loading && tab !== "predict" && (
-                <motion.div key="error-sidebar" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <motion.div key="error-sidebar" className="order-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                   <ErrorAlert
                     error={error}
                     onAction={
@@ -263,6 +280,12 @@ export function HomePage() {
                 <motion.div key="accuracy" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex flex-1 flex-col gap-4 min-h-[40vh]">
                   <PortfolioPanel history={history} />
                   <AccuracyPanel history={history} />
+                </motion.div>
+              )}
+
+              {tab === "opportunities" && (
+                <motion.div key="opportunities" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex flex-1 flex-col gap-4 min-h-[40vh]">
+                  <OpportunitiesPanel />
                 </motion.div>
               )}
 

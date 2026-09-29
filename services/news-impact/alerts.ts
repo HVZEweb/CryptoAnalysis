@@ -7,7 +7,7 @@ import { getTelegramConfig, sendTelegram as sendToConnectedBot } from "@/lib/tel
 import { getStrongNewsRecord, type NewsTrackRecord } from "@/services/news-impact/history";
 import { getChat, logSignal } from "@/services/signals/store";
 import { binanceFuturesClient } from "@/lib/axios";
-import { holdMinutes, newsPlan, planSteps, type TradePlan } from "@/services/signals/chance";
+import { cardLine, holdMinutes, newsPlan, planSteps, type TradePlan } from "@/services/signals/chance";
 import { liveStudy, similarNewsLine } from "@/services/news-study/log";
 import { newsTopic } from "@/services/news-study/study";
 
@@ -180,9 +180,23 @@ async function sendToAdminBot(prediction: NewsImpactPrediction, newsTitle?: stri
     .then((s) => similarNewsLine(s, newsTopic(newsTitle ?? prediction.newsTitle ?? "")))
     .catch(() => null);
   const plan = await newsTradePlan(prediction).catch(() => null);
+  let card: string | null = null;
   if (plan) {
-    await logSignal({
+    const id = await logSignal({
       kind: "news",
+      details: {
+        news: {
+          title: newsTitle ?? prediction.newsTitle,
+          url: prediction.sourceUrl,
+          reason: prediction.reason,
+          impactScore: prediction.impactScore,
+          expectedMovePct: prediction.expectedMovePct,
+          strength: prediction.strength,
+          urgency: prediction.urgency,
+          source: prediction.source,
+          holdTime: prediction.suggestedHoldTime,
+        },
+      },
       chat_id: config.chatId,
       model_key: "news",
       model_trained_at: "-",
@@ -198,8 +212,10 @@ async function sendToAdminBot(prediction: NewsImpactPrediction, newsTitle?: stri
       close_by: plan.closeBy,
       sent_at: plan.entryTime,
     });
+    card = cardLine(id);
   }
-  await sendToConnectedBot(formatBotAlert(prediction, record, newsTitle, similar, plan), config);
+  const text = formatBotAlert(prediction, record, newsTitle, similar, plan);
+  await sendToConnectedBot(card ? `${text}\n${card}` : text, config);
 }
 
 /** A trade plan for the alert on the coin's USDT perpetual: target at the expected move, stop as far. */
