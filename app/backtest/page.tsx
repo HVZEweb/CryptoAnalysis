@@ -39,7 +39,7 @@ export default function BacktestPage() {
           </Link>
         </div>
 
-        <div className="mb-6 flex gap-2 rounded-xl border border-white/10 bg-white/5 p-1">
+        <div className="mb-6 flex gap-2 overflow-x-auto rounded-xl border border-white/10 bg-white/5 p-1 [scrollbar-width:none]">
           <TabButton active={tab === "backtest"} onClick={() => setTab("backtest")} icon={LineChart}>
             Backtest
           </TabButton>
@@ -73,7 +73,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+        "flex flex-1 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:px-4",
         active
           ? "bg-indigo-500/20 text-indigo-100 ring-1 ring-indigo-500/30"
           : "text-muted-foreground hover:bg-white/5 hover:text-foreground"

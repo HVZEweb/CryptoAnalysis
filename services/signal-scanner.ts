@@ -21,7 +21,7 @@ import { getTelegramConfig, sendTelegram } from "@/lib/telegram";
 import { demoConfig, OkxDemo } from "@/lib/okx-demo";
 import * as realStore from "@/services/signals/store";
 import { coinVerdict, disableReason, evaluateOutcome, type Outcome } from "@/services/signals/logic";
-import { chanceMessage, chancePlan, intervalMinutes, type ChanceInfo } from "@/services/signals/chance";
+import { cardLine, chanceMessage, chancePlan, intervalMinutes, type ChanceInfo } from "@/services/signals/chance";
 
 const STATE_FILE = path.join(process.cwd(), ".cache", "signal-scanner.json");
 
@@ -259,7 +259,7 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
   const openKeys = new Set(openRows.filter((s) => (s.kind ?? "signal") === "signal").map((s) => `${s.symbol}:${s.model_key}`));
   // One open chance per coin: a new one only after the last has ended.
   const chanceOpen = new Set(openRows.filter((s) => s.kind === "chance").map((s) => s.symbol));
-  const chances = new Map<string, ChanceInfo & { entry: ModelEntry; interval: string; entryTime: number; barOpen: number }>();
+  const chances = new Map<string, ChanceInfo & { entry: ModelEntry; interval: string; entryTime: number; barOpen: number; accuracy?: number; atr: number }>();
   state.observed ??= {};
   state.lastChance ??= {};
 
@@ -314,6 +314,15 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
               entry_time: entryTime,
               close_by: closeBy,
               sent_at: now,
+              details: {
+                pUp: run.probabilityUp,
+                modelTitle: modelTitle(entry),
+                accuracy: model.validation.accuracy,
+                confidentAccuracy: model.validation.confident?.accuracy,
+                holdout: signal.holdout && { trades: signal.holdout.trades, winRate: signal.holdout.winRate, avgNetBp: signal.holdout.avgNetBp },
+                coinVerdict: verdict.text,
+                atr: run.atr,
+              },
             });
             let demoLine = "";
             if (demo) {
@@ -327,8 +336,10 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
                 demoLine = `🧪 Демо OKX: не открыто — ${(e as Error).message}`;
               }
             }
-            const message = signalMessage(symbol, modelTitle(entry), signal, last.close, run.probabilityUp, closeBy, verdict.text);
-            await deps.send(demoLine ? `${message}\n\n${demoLine}` : message);
+            const message = [signalMessage(symbol, modelTitle(entry), signal, last.close, run.probabilityUp, closeBy, verdict.text), demoLine, cardLine(signalId)]
+              .filter(Boolean)
+              .join("\n\n");
+            await deps.send(message);
             openKeys.add(key);
             state.lastSignalAt = new Date(now).toISOString();
             result.sent++;
@@ -350,7 +361,7 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
               (plan && plan.closeBy > current.plan.closeBy) ||
               (plan && plan.closeBy === current.plan.closeBy && (confidentAccuracy ?? 0) > (current.confidentAccuracy ?? 0));
             if (plan && better) {
-              chances.set(symbol, { symbol, title: modelTitle(entry), pUp: run.probabilityUp, confidentAccuracy, plan, entry, interval: model.interval, entryTime, barOpen: last.openTime });
+              chances.set(symbol, { symbol, title: modelTitle(entry), pUp: run.probabilityUp, confidentAccuracy, plan, entry, interval: model.interval, entryTime, barOpen: last.openTime, accuracy: model.validation.accuracy, atr: run.atr });
             }
           }
         } catch (e) {
@@ -362,8 +373,9 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
 
   for (const c of chances.values()) {
     try {
-      await deps.store.logSignal({
+      const id = await deps.store.logSignal({
         kind: "chance",
+        details: { pUp: c.pUp, modelTitle: c.title, accuracy: c.accuracy, confidentAccuracy: c.confidentAccuracy ?? undefined, atr: c.atr },
         chat_id: chatId,
         model_key: c.entry.key,
         model_trained_at: c.entry.model.trainedAt,
@@ -380,7 +392,7 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
       });
       state.observed[`${c.symbol}:${c.entry.key}`] = c.barOpen;
       state.lastChance[c.symbol] = now;
-      await deps.send(chanceMessage(c));
+      await deps.send([chanceMessage(c), cardLine(id)].filter(Boolean).join("\n"));
       result.chances = (result.chances ?? 0) + 1;
     } catch (e) {
       result.errors.push(`chance ${c.symbol}: ${(e as Error).message}`);

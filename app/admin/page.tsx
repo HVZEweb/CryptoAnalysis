@@ -81,15 +81,15 @@ export default function AdminPage() {
   };
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 p-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
+    <main className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="font-display text-2xl font-bold">Пользователи</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Один вход для всех. Роль «админ» открывает эту страницу и служебные разделы.
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
           <Link href="/admin/research" className="text-sm text-indigo-300 hover:underline">
             Рейтинг монет
           </Link>

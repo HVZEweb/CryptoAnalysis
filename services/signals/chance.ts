@@ -9,6 +9,12 @@ const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;")
 const fmt = (n: number) => (n >= 100 ? n.toFixed(2) : n >= 1 ? n.toFixed(4) : n.toPrecision(4));
 const msk = (t: number) => new Date(t).toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
 
+/** Link to the opportunity's card on the site, when SITE_URL (e.g. https://host:8443) is set. */
+export function cardLine(id: number): string | null {
+  const base = process.env.SITE_URL?.trim().replace(/\/+$/, "");
+  return base ? `🗂 Карточка сделки: ${base}/opportunities/${id}` : null;
+}
+
 /** Minutes in a Binance interval such as "15m", "1h", "4h", "1d". */
 export function intervalMinutes(interval: string): number {
   const m = /^(\d+)([mhd])$/.exec(interval);

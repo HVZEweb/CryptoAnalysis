@@ -66,6 +66,8 @@ export async function ensureSignalTables(): Promise<void> {
   }
   // What sent the row: a validated model trade, a "chance" (confident model without proven profit) or a news trade plan.
   await execute("ALTER TABLE signal_log ADD COLUMN IF NOT EXISTS kind ENUM('signal','chance','news') NOT NULL DEFAULT 'signal'");
+  // Why it was sent (model view, validation numbers, the news itself) — shown on the site's opportunity card.
+  await execute("ALTER TABLE signal_log ADD COLUMN IF NOT EXISTS details JSON NULL");
   await execute(`
     CREATE TABLE IF NOT EXISTS signal_model_state (
       model_key VARCHAR(40) NOT NULL PRIMARY KEY,
@@ -132,9 +134,25 @@ export async function removeWatch(chatId: string, symbols: string[]): Promise<nu
 /** signal — validated trade; chance — confident model, profit not proven; news — trade plan from a strong news alert */
 export type SignalKind = "signal" | "chance" | "news";
 
+/** What the bot knew when it sent the row; every field is optional (older rows have none). */
+export interface SignalDetails {
+  /** Model's probability of a rise */
+  pUp?: number;
+  modelTitle?: string;
+  /** Direction accuracy of the model overall and when this confident, on unseen history */
+  accuracy?: number;
+  confidentAccuracy?: number;
+  /** Validated setup result on the holdout (signals only) */
+  holdout?: { trades: number; winRate: number; avgNetBp: number };
+  coinVerdict?: string;
+  atr?: number;
+  news?: { title?: string; url?: string; reason?: string; impactScore?: number; expectedMovePct?: number; strength?: string; urgency?: string; source?: string; holdTime?: string };
+}
+
 export interface SignalRow {
   id: number;
   kind: SignalKind;
+  details?: SignalDetails | null;
   chat_id: string;
   model_key: string;
   model_trained_at: string;
@@ -163,8 +181,8 @@ export interface SignalRow {
 
 export type NewSignal = Omit<
   SignalRow,
-  "id" | "kind" | "status" | "exit_price" | "gross_bp" | "net_bp" | "closed_at" | "demo_status" | "demo_inst_id" | "demo_entry" | "demo_exit" | "demo_net_bp" | "demo_note"
-> & { kind?: SignalKind };
+  "id" | "kind" | "details" | "status" | "exit_price" | "gross_bp" | "net_bp" | "closed_at" | "demo_status" | "demo_inst_id" | "demo_entry" | "demo_exit" | "demo_net_bp" | "demo_note"
+> & { kind?: SignalKind; details?: SignalDetails };
 
 export type DemoPatch = Partial<Pick<SignalRow, "demo_status" | "demo_inst_id" | "demo_entry" | "demo_exit" | "demo_net_bp" | "demo_note">>;
 
@@ -189,15 +207,16 @@ export async function pendingDemo(): Promise<SignalRow[]> {
 export async function logSignal(s: NewSignal): Promise<number> {
   await ensureSignalTables();
   const r = await execute(
-    `INSERT INTO signal_log (kind, chat_id, model_key, model_trained_at, symbol, timeframe, bar_interval, side, entry, tp, sl, entry_time, close_by, sent_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [s.kind ?? "signal", s.chat_id, s.model_key, s.model_trained_at, s.symbol, s.timeframe, s.bar_interval, s.side, s.entry, s.tp, s.sl, s.entry_time, s.close_by, s.sent_at]
+    `INSERT INTO signal_log (kind, details, chat_id, model_key, model_trained_at, symbol, timeframe, bar_interval, side, entry, tp, sl, entry_time, close_by, sent_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [s.kind ?? "signal", s.details ? JSON.stringify(s.details) : null, s.chat_id, s.model_key, s.model_trained_at, s.symbol, s.timeframe, s.bar_interval, s.side, s.entry, s.tp, s.sl, s.entry_time, s.close_by, s.sent_at]
   );
   return r.insertId;
 }
 
 const numeric = (r: SignalRow): SignalRow => ({
   ...r,
+  details: typeof r.details === "string" ? (JSON.parse(r.details) as SignalDetails) : (r.details ?? null),
   id: Number(r.id),
   entry: Number(r.entry),
   tp: Number(r.tp),
@@ -213,6 +232,21 @@ const numeric = (r: SignalRow): SignalRow => ({
   demo_exit: r.demo_exit == null ? null : Number(r.demo_exit),
   demo_net_bp: r.demo_net_bp == null ? null : Number(r.demo_net_bp),
 });
+
+export async function signalById(id: number): Promise<SignalRow | null> {
+  await ensureSignalTables();
+  const [row] = await query<SignalRow[]>("SELECT * FROM signal_log WHERE id = ?", [id]);
+  return row ? numeric(row) : null;
+}
+
+/** Newest first, for the site's opportunities list. */
+export async function recentSignals(filter: { symbol?: string; limit?: number } = {}): Promise<SignalRow[]> {
+  await ensureSignalTables();
+  const limit = Math.max(1, Math.min(500, Math.floor(filter.limit ?? 200)));
+  const where = filter.symbol ? "WHERE symbol = ?" : "";
+  // LIMIT as a literal: MySQL 8 rejects it as a bound parameter.
+  return (await query<SignalRow[]>(`SELECT * FROM signal_log ${where} ORDER BY sent_at DESC, id DESC LIMIT ${limit}`, filter.symbol ? [filter.symbol] : [])).map(numeric);
+}
 
 export async function openSignals(): Promise<SignalRow[]> {
   await ensureSignalTables();

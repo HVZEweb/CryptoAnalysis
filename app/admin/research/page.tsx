@@ -47,7 +47,7 @@ export default function ResearchPage() {
 
   const r = state?.report;
   return (
-    <main className="mx-auto max-w-4xl space-y-6 p-6">
+    <main className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold">Рейтинг монет</h1>

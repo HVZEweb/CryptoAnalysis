@@ -23,7 +23,7 @@ export default function NewsStudyPage() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-5xl space-y-6 p-6">
+    <main className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold">Как новости двигают цену</h1>
