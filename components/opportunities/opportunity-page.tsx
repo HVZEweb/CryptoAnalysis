@@ -118,7 +118,7 @@ function Plan({ o }: { o: Detail }) {
   return (
     <Section title="План сделки">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Stat label="Вход" value={price(o.entry)} sub={o.market === "Futures" ? "фьючерс USDT" : "спот"} />
+        <Stat label="Вход" value={price(o.entry)} sub={o.market === "Futures" ? "фьючерс USDT" : "цена спота Binance"} />
         <Stat label="Цель" value={price(o.tp)} sub={`${pctOf(o.tp, o.entry)}%`} valueClass="text-emerald-300" />
         <Stat label="Стоп" value={price(o.sl)} sub={`${pctOf(o.sl, o.entry)}%`} valueClass="text-red-300" />
         <Stat label="Закрыть до" value={dateTime(o.closeBy)} sub="МСК" />
@@ -368,9 +368,11 @@ export function OpportunityPage({ id }: { id: string }) {
                     {o.side === "LONG" ? "Покупка" : "Продажа"} {o.coin.base}
                     <span className="ml-2 text-base font-normal text-muted-foreground">{o.timeframe}</span>
                   </h1>
-                  <p className="mt-1 text-sm text-muted-foreground">{o.kind === "news" ? KIND.news.label : o.title}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {o.kind === "news" ? KIND.news.label : `${KIND[o.kind].label} · модель ${o.title}`}
+                  </p>
                 </div>
-                <div className="text-right">
+                <div className="sm:text-right">
                   <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{o.status === "open" ? "если закрыть сейчас" : STATUS[o.status]}</p>
                   <ResultValue o={o} className="font-display text-2xl" />
                 </div>

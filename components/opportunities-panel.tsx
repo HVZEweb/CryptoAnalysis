@@ -45,20 +45,20 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   );
 }
 
+/** Average result per closed trade of one kind; three side by side even on a phone. */
 function RecordTile({ kind, r }: { kind: Kind; r: TrackRecord }) {
   return (
-    <div className="rounded-xl bg-white/[0.03] p-3 ring-1 ring-white/8">
-      <div className="flex items-center justify-between gap-2">
-        <KindBadge kind={kind} />
-        <span className="text-[11px] text-muted-foreground">{r.closed ? `${r.closed} закрыто` : "итогов нет"}</span>
-      </div>
+    <div className="min-w-0 rounded-xl bg-white/[0.03] p-2.5 ring-1 ring-white/8 sm:p-3">
+      <KindBadge kind={kind} />
       {r.closed > 0 ? (
-        <div className="mt-2 flex items-baseline justify-between gap-2">
-          <span className={cn("text-lg font-semibold tabular-nums", tone(r.avgNetBp))}>{bpPct(r.avgNetBp)}</span>
-          <span className="text-xs text-muted-foreground">в плюс {Math.round((r.wins / r.closed) * 100)}%</span>
-        </div>
+        <>
+          <p className={cn("mt-1.5 text-base font-semibold tabular-nums sm:text-lg", tone(r.avgNetBp))}>{bpPct(r.avgNetBp)}</p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {r.closed} шт · в плюс {Math.round((r.wins / r.closed) * 100)}%
+          </p>
+        </>
       ) : (
-        <p className="mt-2 text-xs text-muted-foreground">ещё не закрывались</p>
+        <p className="mt-1.5 text-[11px] text-muted-foreground">итогов нет</p>
       )}
     </div>
   );
@@ -79,7 +79,9 @@ function OpportunityTile({ o }: { o: OpportunitySummary }) {
             <span className="font-display text-base font-semibold">{o.symbol.replace(/USDT$/, "")}</span>
             <span className="text-xs text-muted-foreground">{o.timeframe}</span>
           </div>
-          <p className="mt-1 truncate text-xs text-muted-foreground">{o.kind === "news" ? o.newsTitle ?? o.title : o.title}</p>
+          {(o.kind === "news" || o.title !== o.timeframe) && (
+            <p className="mt-1 truncate text-xs text-muted-foreground">{o.kind === "news" ? o.newsTitle ?? o.title : o.title}</p>
+          )}
         </div>
         <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-foreground" />
       </div>
@@ -158,8 +160,8 @@ export function OpportunitiesPanel() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Всё, что бот присылал в Telegram: проверенные сигналы, шансы и новости. Нажмите на карточку — там план сделки, график, итог и
-          всё о монете. Результаты — после комиссий и проскальзывания, в % от суммы позиции.
+          Всё, что бот присылал в Telegram. В карточке — план сделки, график, итог и всё о монете. Результаты после комиссий, в % от
+          позиции; ниже — средний итог по видам.
         </p>
         <button
           type="button"
@@ -171,13 +173,13 @@ export function OpportunitiesPanel() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2">
         {(["signal", "chance", "news"] as const).map((k) => (
           <RecordTile key={k} kind={k} r={data.records[k]} />
         ))}
       </div>
 
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
         <Chip active={state === "all"} onClick={() => setState("all")}>
           Все
         </Chip>
