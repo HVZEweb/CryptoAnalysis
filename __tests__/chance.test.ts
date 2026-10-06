@@ -30,3 +30,22 @@ describe("chance plans", () => {
     expect(text).toContain("не подтверждена");
   });
 });
+
+describe("entry limits and scan timing", () => {
+  it("stops entering once half the way to the target is gone or a quarter of the hold has passed", async () => {
+    const { entryLimits, entryLimitLine } = await import("@/services/signals/chance");
+    const long = { side: "LONG" as const, entry: 100, tp: 102, sl: 98, entryTime: 0, closeBy: 4 * 3_600_000 };
+    expect(entryLimits(long)).toEqual({ chaseLimit: 101, validUntil: 3_600_000 });
+    expect(entryLimits({ ...long, closeBy: 15 * 60_000 }).validUntil).toBe(5 * 60_000); // at least five minutes
+    expect(entryLimits({ ...long, side: "SHORT", tp: 98 }).chaseLimit).toBe(99);
+    expect(entryLimitLine(long)).toContain("выше 101.00 ");
+  });
+
+  it("scans 20 seconds after each 5-minute mark", async () => {
+    const { msToNextScan } = await import("@/services/signal-scanner");
+    const mark = Date.UTC(2026, 9, 6, 12, 0);
+    expect(msToNextScan(mark)).toBe(20_000);
+    expect(msToNextScan(mark + 20_000)).toBe(5 * 60_000);
+    expect(msToNextScan(mark + 60_000)).toBe(4 * 60_000 + 20_000);
+  });
+});

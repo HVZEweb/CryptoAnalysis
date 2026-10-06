@@ -27,7 +27,30 @@ export interface TradePlan {
   entry: number;
   tp: number;
   sl: number;
+  /** When the plan was made (the entry price is the price at this moment) */
+  entryTime: number;
   closeBy: number;
+}
+
+/**
+ * When the plan is no longer worth entering: the price has already covered half the way to the target
+ * (little profit left, the stop as far as before), is past the stop, or too much of the holding time
+ * has gone — a quarter of it, at least five minutes.
+ */
+export function entryLimits(p: Pick<TradePlan, "side" | "entry" | "tp" | "entryTime" | "closeBy">): { chaseLimit: number; validUntil: number } {
+  return {
+    chaseLimit: p.entry + (p.tp - p.entry) / 2,
+    validUntil: p.entryTime + Math.max(5 * 60_000, (p.closeBy - p.entryTime) / 4),
+  };
+}
+
+const hhmm = (t: number) => new Date(t).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Moscow" });
+
+/** One line: until when and up to which price the plan can still be entered. */
+export function entryLimitLine(p: Pick<TradePlan, "side" | "entry" | "tp" | "sl" | "entryTime" | "closeBy">): string {
+  const { chaseLimit, validUntil } = entryLimits(p);
+  const long = p.side === "LONG";
+  return `⛔ Не входить, если сейчас позже ${hhmm(validUntil)} МСК или цена уже ${long ? "выше" : "ниже"} ${fmt(chaseLimit)} (прошла половину пути до цели) либо ${long ? "ниже" : "выше"} стопа ${fmt(p.sl)}.`;
 }
 
 /**
@@ -38,7 +61,7 @@ export function chancePlan(side: "LONG" | "SHORT", price: number, atr: number, h
   if (!(price > 0) || !(atr > 0) || !(horizonBars > 0)) return null;
   const dist = atr * Math.sqrt(horizonBars);
   const dir = side === "LONG" ? 1 : -1;
-  return { side, entry: price, tp: price + dir * dist, sl: price - dir * dist, closeBy: entryTime + horizonBars * barMinutes * 60_000 };
+  return { side, entry: price, tp: price + dir * dist, sl: price - dir * dist, entryTime, closeBy: entryTime + horizonBars * barMinutes * 60_000 };
 }
 
 export const MAX_NEWS_MOVE_PCT = 3;
@@ -49,7 +72,7 @@ export function newsPlan(side: "LONG" | "SHORT", price: number, expectedMovePct:
   // News estimates go up to ±10%, which a 15–90 minute hold almost never reaches: target at most 3%.
   const dist = (price * Math.min(expectedMovePct, MAX_NEWS_MOVE_PCT)) / 100;
   const dir = side === "LONG" ? 1 : -1;
-  return { side, entry: price, tp: price + dir * dist, sl: price - dir * dist, closeBy: entryTime + holdMinutes * 60_000 };
+  return { side, entry: price, tp: price + dir * dist, sl: price - dir * dist, entryTime, closeBy: entryTime + holdMinutes * 60_000 };
 }
 
 /** News hold times ("5-15 min" … "1-4 hours") → the upper bound in minutes. */
@@ -72,6 +95,7 @@ export function planSteps(plan: TradePlan): string[] {
   return [
     `<b>Что делать</b>`,
     `1. Открыть ${plan.side} рыночным ордером сейчас, цена ~${fmt(plan.entry)}.`,
+    entryLimitLine(plan),
     `2. Сразу поставить тейк-профит лимитным ордером: ${fmt(plan.tp)} (${signedPct(plan.tp, plan.entry)}).`,
     `3. Поставить стоп-лосс (стоп-маркет): ${fmt(plan.sl)} (${signedPct(plan.sl, plan.entry)}).`,
     `4. Если до ${msk(plan.closeBy)} МСК не сработало ни то ни другое — закрыть рыночным.`,

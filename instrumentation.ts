@@ -16,13 +16,15 @@ export async function register() {
 
     // Run the models on fresh candles and send validated trades to Telegram (no-op until a bot is connected).
     if (process.env.SIGNAL_SCANNER !== "false") {
-      const { scanSignals } = await import("@/services/signal-scanner");
+      const { msToNextScan, scanSignals } = await import("@/services/signal-scanner");
       const scan = () =>
         scanSignals()
           .then((r) => r.errors.length && console.warn("[signals]", r.errors.slice(0, 3).join("; ")))
           .catch((e) => console.warn("[signals] scan failed:", (e as Error).message));
-      const timer = setInterval(scan, 5 * 60_000);
-      timer.unref();
+      // Aligned to bar closes (not every 5 minutes from whenever the site started), the next run
+      // scheduled after the previous one has finished.
+      const next = () => setTimeout(() => void scan().finally(next), msToNextScan()).unref();
+      next();
 
       // Commands from the connected chat (/watch, /list, /stats …); idle until a bot is connected.
       const { startBot } = await import("@/services/signals/bot");
