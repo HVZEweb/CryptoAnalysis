@@ -56,7 +56,16 @@ describe("evaluateOutcome", () => {
     expect(o.exitPrice).toBe(101);
   });
 
-  it("works for shorts", () => {
+  it("closes a trade that started mid-bar once a bar passes its exit time", () => {
+    // A news trade: entry 25 s into a bar, so close_by never falls on a bar boundary.
+    const news = { ...signal, entry_time: 10 * HOUR - 35_000, close_by: 13 * HOUR + 25_000 };
+    expect(evaluateOutcome(news, [10, 11, 12].map((i) => bar(i, 99, 101, 100.5)))).toBeNull(); // the 13:00 bar has not ended
+    const o = evaluateOutcome(news, [10, 11, 12, 13].map((i) => bar(i, 99, 101, 100.5)))!;
+    expect(o.status).toBe("timeout");
+    expect(o.exitTime).toBe(13 * HOUR - 1); // the last bar that ended before close_by
+  });
+
+    it("works for shorts", () => {
     const short = { ...signal, side: "SHORT" as const, tp: 96, sl: 102 };
     expect(evaluateOutcome(short, [bar(10, 95, 101)])!.status).toBe("tp");
   });
