@@ -55,7 +55,8 @@ export type DemoTrader = Pick<OkxDemo, "open" | "close" | "settlement">;
 export interface ScanDeps {
   chatId: () => string | null;
   send: (text: string) => Promise<boolean>;
-  candles: (symbol: string, interval: string, market: MarketType) => Promise<Candle[]>;
+  /** Latest 500 bars, or 500 bars from `since` (to judge a trade from its entry however long ago it was). */
+  candles: (symbol: string, interval: string, market: MarketType, since?: number) => Promise<Candle[]>;
   derivs: (symbol: string, since: number) => Promise<DerivData>;
   models: () => ModelEntry[];
   store: SignalStore;
@@ -80,7 +81,7 @@ export function loadModelEntries(): ModelEntry[] {
 const defaultDeps: ScanDeps = {
   chatId: () => getTelegramConfig()?.chatId ?? null,
   send: (text) => sendTelegram(text),
-  candles: (symbol, interval, market) => fetchCandles(symbol, interval, market, 500),
+  candles: (symbol, interval, market, since) => fetchCandles(symbol, interval, market, 500, since),
   derivs: (symbol, since) => loadDerivsFromDb(symbol, since),
   models: loadModelEntries,
   store: realStore,
@@ -173,7 +174,9 @@ async function closeFinished(deps: ScanDeps, entries: ModelEntry[], result: Scan
     try {
       // Judged on the same market the signal was computed on.
       const market: MarketType = s.model_key.startsWith("pooled:") || s.kind === "news" ? "Futures" : "Spot";
-      const candles = (await deps.candles(s.symbol, s.bar_interval, market)).filter((c) => c.closeTime < deps.now());
+      // From the entry on: the latest 500 bars of a 1-minute news trade cover only 8 hours, and a trade
+      // left open longer (e.g. while Telegram was unreachable) would never be judged.
+      const candles = (await deps.candles(s.symbol, s.bar_interval, market, s.entry_time - 60_000)).filter((c) => c.closeTime < deps.now());
       const outcome = evaluateOutcome(s, candles);
       if (!outcome) continue;
       await deps.store.closeSignal(s.id, { status: outcome.status, exitPrice: outcome.exitPrice, grossBp: outcome.grossBp, netBp: outcome.netBp, closedAt: outcome.exitTime });

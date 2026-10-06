@@ -25,6 +25,28 @@ import {
 interface ListData {
   items: OpportunitySummary[];
   records: Record<Kind, TrackRecord>;
+  telegram?: { connected: boolean; failing: boolean; lastOkAt: number | null; lastErrorAt: number | null; lastError: string | null };
+}
+
+/** Shown when the bot cannot reach Telegram: everything is still logged here, but nothing reaches the chat. */
+function TelegramWarning({ t }: { t: NonNullable<ListData["telegram"]> }) {
+  if (!t.connected) {
+    return (
+      <p className="rounded-xl bg-amber-500/10 p-3 text-sm text-amber-200 ring-1 ring-amber-500/30">
+        Telegram-бот не подключён: возможности записываются здесь, но сообщений не будет. Подключить — в разделе «Администрирование».
+      </p>
+    );
+  }
+  if (!t.failing) return null;
+  return (
+    <div role="alert" className="rounded-xl bg-red-500/10 p-3 text-sm text-red-200 ring-1 ring-red-500/30">
+      <p className="font-medium">Бот не может отправлять сообщения в Telegram</p>
+      <p className="mt-1 text-red-200/80">
+        {t.lastOkAt ? `Последняя успешная связь — ${dateTime(t.lastOkAt)} МСК. ` : ""}
+        Ошибка: {t.lastError ?? "неизвестна"}. Возможности ниже записаны и посчитаны, но в Telegram не пришли.
+      </p>
+    </div>
+  );
 }
 
 type StateFilter = "all" | "open" | "closed";
@@ -172,6 +194,8 @@ export function OpportunitiesPanel() {
           <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
         </button>
       </div>
+
+      {data.telegram && <TelegramWarning t={data.telegram} />}
 
       <div className="grid grid-cols-3 gap-2">
         {(["signal", "chance", "news"] as const).map((k) => (

@@ -8,7 +8,7 @@ import fs from "fs";
 import path from "path";
 import axios from "axios";
 import { binanceFuturesClient } from "@/lib/axios";
-import { getTelegramConfig, sendTelegram, type TelegramConfig } from "@/lib/telegram";
+import { getTelegramConfig, recordTelegram, sendTelegram, type TelegramConfig } from "@/lib/telegram";
 import * as store from "@/services/signals/store";
 import { coinVerdict, formatTrackRecord, normalizeSymbol, parseCommand, trackRecord } from "@/services/signals/logic";
 import { loadModelEntries, scannerState, type ModelEntry } from "@/services/signal-scanner";
@@ -262,9 +262,11 @@ export function startBot(): void {
     if (!config) return setTimeout(loop, 30_000);
     try {
       await pollOnce(config);
+      recordTelegram(true);
       setTimeout(loop, 0);
     } catch (e) {
       const status = (e as { response?: { status?: number } }).response?.status;
+      if (status !== 409) recordTelegram(false, e);
       // 409: another getUpdates (the admin page connecting a bot) — back off and retry.
       if (status !== 409) console.warn("[telegram-bot]", (e as Error).message.replace(/bot\d+:[\w-]+/g, "bot***"));
       setTimeout(loop, 15_000);

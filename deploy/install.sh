@@ -87,6 +87,13 @@ report() {
 
 PROXY="$(env_get OUTBOUND_PROXY)"
 VPN_SRC="$(env_get OUTBOUND_SOURCE_IP)"
+# Сервер VPN может выдать туннелю другой адрес (так было 29.09.2026: 10.77.77.1 → 10.77.77.2).
+# Записанный адрес, которого больше нет на интерфейсах, ищется заново.
+if [ -n "$VPN_SRC" ] && ! ip -4 -o addr show 2>/dev/null | grep -q " $VPN_SRC/"; then
+  warn "VPN-адреса $VPN_SRC больше нет на сервере — ищу заново"
+  VPN_SRC=""
+  env_put OUTBOUND_SOURCE_IP ""
+fi
 # Адрес, с которого сервер ходит в интернет по умолчанию; остальные глобальные адреса —
 # кандидаты в адрес IPsec-туннеля (policy-based VPN пропускает только трафик с этого адреса).
 MAIN_SRC=$(ip -4 route get 1.1.1.1 2>/dev/null | grep -oE 'src [0-9.]+' | cut -d' ' -f2)
@@ -105,7 +112,7 @@ else
   done
   if [ -n "$VPN_SRC" ]; then
     ok "найден IPsec-VPN: трафик с адреса $VPN_SRC проходит"
-    env_set OUTBOUND_SOURCE_IP "$VPN_SRC"
+    env_put OUTBOUND_SOURCE_IP "$VPN_SRC"
   fi
 fi
 if [ -z "$PROXY" ] && [ -z "$VPN_SRC" ] && ! reach_all; then
