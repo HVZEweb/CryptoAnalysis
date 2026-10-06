@@ -10,7 +10,7 @@ describe("chance plans", () => {
 
   it("sets a news target at the expected move and caps absurd moves", () => {
     expect(newsPlan("LONG", 200, 1.5, 45, 0)).toMatchObject({ tp: 203, sl: 197, closeBy: 45 * 60_000 });
-    expect(newsPlan("LONG", 100, 40, 60, 0)!.tp).toBeCloseTo(110);
+    expect(newsPlan("LONG", 100, 40, 60, 0)!.tp).toBeCloseTo(103); // no ±10% targets for a 45-minute hold
   });
 
   it("reads news hold times and Binance intervals", () => {

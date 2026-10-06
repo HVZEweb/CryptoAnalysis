@@ -41,10 +41,13 @@ export function chancePlan(side: "LONG" | "SHORT", price: number, atr: number, h
   return { side, entry: price, tp: price + dir * dist, sl: price - dir * dist, closeBy: entryTime + horizonBars * barMinutes * 60_000 };
 }
 
-/** Plan for a news alert: target at the expected move, stop at the same distance. */
+export const MAX_NEWS_MOVE_PCT = 3;
+
+/** Plan for a news alert: target at the expected move (capped), stop at the same distance. */
 export function newsPlan(side: "LONG" | "SHORT", price: number, expectedMovePct: number, holdMinutes: number, entryTime: number): TradePlan | null {
   if (!(price > 0) || !(expectedMovePct > 0) || !(holdMinutes > 0)) return null;
-  const dist = (price * Math.min(expectedMovePct, 10)) / 100;
+  // News estimates go up to ±10%, which a 15–90 minute hold almost never reaches: target at most 3%.
+  const dist = (price * Math.min(expectedMovePct, MAX_NEWS_MOVE_PCT)) / 100;
   const dir = side === "LONG" ? 1 : -1;
   return { side, entry: price, tp: price + dir * dist, sl: price - dir * dist, closeBy: entryTime + holdMinutes * 60_000 };
 }

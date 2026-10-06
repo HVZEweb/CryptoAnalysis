@@ -122,7 +122,20 @@ describe("scanSignals", () => {
     expect(t.sent.some((m) => m.includes("цель достигнута"))).toBe(true);
   });
 
-  it("skips a coin on which the model's setup lost money in validation", async () => {
+  it("judges an open trade from its entry, not from the latest bars only", async () => {
+    const t = setup({ watch: ["BTCUSDT"] });
+    await scanSignals(t.deps);
+    const entry = t.mem.rows[0].entry_time;
+    t.advance(3 * HOUR);
+    t.setPrice(105);
+    const latestOnly = t.deps.candles;
+    // As with 1-minute news bars days later: the latest bars no longer reach back to the entry.
+    t.deps.candles = async (symbol, interval, market, since) => (since != null && since <= entry ? latestOnly(symbol, interval, market) : []);
+    expect((await scanSignals(t.deps)).closed).toBe(1);
+    expect(t.mem.rows[0].status).toBe("tp");
+  });
+
+    it("skips a coin on which the model's setup lost money in validation", async () => {
     const t = setup({ bySymbol: { BTCUSDT: metrics(5), ETHUSDT: metrics(-3) } });
     await scanSignals(t.deps);
     expect(t.sent.map((m) => m.split("\n")[0])).toEqual([expect.stringContaining("BTCUSDT")]);

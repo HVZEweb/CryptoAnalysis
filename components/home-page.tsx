@@ -42,9 +42,13 @@ export function HomePage() {
     else url.searchParams.set("tab", next);
     window.history.replaceState(null, "", url.pathname + url.search + url.hash);
   }, []);
+  // The tab content waits for the URL to be read, so a link to ?tab=… shows that tab at once
+  // instead of the prediction tab animating out first.
+  const [tabReady, setTabReady] = useState(false);
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
     if (t && (TAB_IDS as string[]).includes(t)) setTabState(t as TabId);
+    setTabReady(true);
   }, []);
   const [repeatSymbol, setRepeatSymbol] = useState<string>();
   const [viewedHistoryItem, setViewedHistoryItem] = useState<PredictionHistoryItem | null>(null);
@@ -171,7 +175,8 @@ export function HomePage() {
           </aside>
 
           <section className="flex min-h-0 flex-1 flex-col lg:col-span-8">
-            <AnimatePresence mode="wait">
+            {tabReady && (
+            <AnimatePresence mode="wait" initial={false}>
               {tab === "predict" && (
                 <motion.div
                   key="predict"
@@ -301,6 +306,7 @@ export function HomePage() {
                 </motion.div>
               )}
             </AnimatePresence>
+            )}
           </section>
         </div>
       </div>
