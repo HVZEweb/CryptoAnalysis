@@ -75,8 +75,11 @@ export function evaluateOutcome(signal: Pick<SignalRow, "side" | "entry" | "tp" 
     if (slHit) return result("sl", signal.sl, c.closeTime);
     if (tpHit) return result("tp", signal.tp, c.closeTime);
   }
+  // Time is up once a bar ends at or after close_by. News trades start mid-minute, so their close_by
+  // rarely falls on a bar boundary: they exit at the close of the last bar that ended before it.
   const last = bars.filter((c) => c.closeTime <= signal.close_by).at(-1);
-  if (last && last.closeTime + 1 >= signal.close_by) return result("timeout", last.close, last.closeTime);
+  const timeUp = bars.some((c) => c.closeTime + 1 >= signal.close_by);
+  if (last && timeUp) return result("timeout", last.close, last.closeTime);
   return null;
 }
 
