@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink, RefreshCw } from "lucide-react";
 import { cn, formatNumber } from "@/lib/utils";
 import { PriceChart, type ChartCandle } from "@/components/opportunities/price-chart";
+import { entryLimits } from "@/services/signals/chance";
 import {
   KIND,
   KindBadge,
@@ -108,8 +109,10 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 function Plan({ o }: { o: Detail }) {
   const stopPct = Math.abs(o.sl - o.entry) / o.entry;
   const size = 0.01 / stopPct;
+  const limits = entryLimits({ side: o.side, entry: o.entry, tp: o.tp, entryTime: o.sentAt, closeBy: o.closeBy });
+  const long = o.side === "LONG";
   const steps = [
-    `Открыть ${o.side} рыночным ордером по цене около ${price(o.entry)}.`,
+    `Открыть ${o.side} рыночным ордером по цене около ${price(o.entry)}. Не входить, если уже позже ${dateTime(limits.validUntil)} МСК или цена ${long ? "выше" : "ниже"} ${price(limits.chaseLimit)} (прошла половину пути до цели) либо ${long ? "ниже" : "выше"} стопа.`,
     `Сразу поставить тейк-профит лимитным ордером: ${price(o.tp)} (${pctOf(o.tp, o.entry)}%).`,
     `Поставить стоп-лосс (стоп-маркет): ${price(o.sl)} (${pctOf(o.sl, o.entry)}%).`,
     `Если до ${dateTime(o.closeBy)} МСК не сработало ни то ни другое — закрыть рыночным.`,

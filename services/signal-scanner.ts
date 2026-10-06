@@ -21,7 +21,7 @@ import { getTelegramConfig, sendTelegram } from "@/lib/telegram";
 import { demoConfig, OkxDemo } from "@/lib/okx-demo";
 import * as realStore from "@/services/signals/store";
 import { coinVerdict, disableReason, evaluateOutcome, type Outcome } from "@/services/signals/logic";
-import { cardLine, chanceMessage, chancePlan, intervalMinutes, type ChanceInfo } from "@/services/signals/chance";
+import { cardLine, chanceMessage, chancePlan, entryLimitLine, intervalMinutes, type ChanceInfo } from "@/services/signals/chance";
 
 const STATE_FILE = path.join(process.cwd(), ".cache", "signal-scanner.json");
 
@@ -122,7 +122,8 @@ export function signalMessage(
   price: number,
   pUp: number,
   closeBy: number,
-  coinLine?: string
+  coinLine?: string,
+  entryTime = Date.now()
 ): string {
   const h = signal.holdout!;
   const setup = signal.setup!;
@@ -135,6 +136,7 @@ export function signalMessage(
     `Вход: ~${fmt(price)} (${order})`,
     `TP: ${fmt(tp)} (${long ? "+" : ""}${pct(tp, price)})`,
     `SL: ${fmt(sl)} (${pct(sl, price)})`,
+    entryLimitLine({ side: signal.side!, entry: price, tp, sl, entryTime, closeBy }),
     `Закрыть не позже: ${msk(closeBy)} МСК (${setup.horizonBars} × ${setup.interval})`,
     `Модель: ${(pUp * 100).toFixed(1)}% за рост`,
     ``,
@@ -339,7 +341,7 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
                 demoLine = `🧪 Демо OKX: не открыто — ${(e as Error).message}`;
               }
             }
-            const message = [signalMessage(symbol, modelTitle(entry), signal, last.close, run.probabilityUp, closeBy, verdict.text), demoLine, cardLine(signalId)]
+            const message = [signalMessage(symbol, modelTitle(entry), signal, last.close, run.probabilityUp, closeBy, verdict.text, entryTime), demoLine, cardLine(signalId)]
               .filter(Boolean)
               .join("\n\n");
             await deps.send(message);
@@ -410,6 +412,16 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
 
 /** After a chance on a coin, the next one waits this long, so a quick model cannot flood the chat. */
 export const CHANCE_COOLDOWN = 4 * 3_600_000;
+
+/** Bars of every model interval (15m … 4h) close on 5-minute marks; Binance finalises them within seconds. */
+const SCAN_STEP = 5 * 60_000;
+const SCAN_LAG = 20_000;
+
+/** Time until the next scan: 20 s after the next 5-minute mark, so a plan goes out right after its bar closed. */
+export function msToNextScan(now = Date.now()): number {
+  const sinceMark = now % SCAN_STEP;
+  return sinceMark < SCAN_LAG ? SCAN_LAG - sinceMark : SCAN_STEP - sinceMark + SCAN_LAG;
+}
 
 /** |P(up) − 0.5| from which observe mode reports a model's view. */
 export const OBSERVE_EDGE = 0.06;
