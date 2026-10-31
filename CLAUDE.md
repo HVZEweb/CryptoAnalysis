@@ -148,6 +148,9 @@ OKX, монеты, впервые появившиеся на OKX (только 
 2. GitHub на закрытый бэкенд не заходит: таймер `cryptoanalysis-autoupdate` (каждые 5 минут) сверяет
    `main` с установленной версией и, если проверка CI `test` по новому коммиту зелёная, запускает
    обновление (`AUTO_UPDATE=true` в `.env`). Журнал: `journalctl -u cryptoanalysis-autoupdate`.
+   Проверить ветку на сервере вручную: `touch /run/cryptoanalysis-autoupdate.pause`, затем
+   `HOME=/root BRANCH=<ветка> bash /opt/cryptoanalysis/deploy/update.sh`; паузу снять (`rm`) после проверки,
+   и автообновление вернёт `main`. Одновременно идёт только одно обновление (`flock` в `update.sh`).
 3. Запускается `deploy/update.sh`: `git fetch` явного URL репозитория и `reset --hard`
    на `main`, неотслеживаемые файлы переносятся в `/opt/cryptoanalysis-stray-*`, дальше `deploy/install.sh`.
 4. `install.sh` повторяемый: `.env` не перезаписывает (кроме `COOKIE_SECURE`), собирает сайт, перезапускает сервис, обновляет блок Caddy между маркерами

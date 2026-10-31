@@ -10,6 +10,10 @@ REPO=${REPO:-https://github.com/HVZEweb/CryptoAnalysis.git}
 BRANCH=${BRANCH:-main}
 
 [ "$(id -u)" = 0 ] || { echo "запустите от root" >&2; exit 1; }
+# One update at a time: two builds at once don't fit in memory (the self-update timer once started one
+# in the middle of a manual install). A second run while one is going just leaves.
+exec 9>/run/cryptoanalysis-update.lock
+flock -n 9 || { echo "==> обновление уже идёт — этот запуск пропущен"; exit 0; }
 if ! command -v git >/dev/null; then
   DEBIAN_FRONTEND=noninteractive apt-get update -qq
   DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git >/dev/null
