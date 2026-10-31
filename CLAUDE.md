@@ -133,6 +133,15 @@ OKX, монеты, впервые появившиеся на OKX (только 
   проверяет адреса интерфейсов и берёт другой адрес из той же /24, а `install.sh` переопределяет пропавший адрес.
   Сбой доставки виден на вкладке «Возможности» (`lib/telegram.ts`, `telegramHealth`).
 
+### Резервные копии и сторож
+
+- Бэкенд: `cryptoanalysis-backup.timer` в 03:30 делает дамп базы в `/opt/cryptoanalysis-data/backups`
+  (14 последних, `latest.sql.gz`). Фронт по воскресеньям забирает его в `/var/backups/cryptoanalysis`
+  (8 последних, `deploy/front-backup.sh`); его ключ на бэкенде (`BACKUP_PULL_KEY`) может только прочитать копию.
+- `cryptoanalysis-health.timer` (каждые 5 минут, `deploy/health.py`): сайт изнутри и снаружи, свежесть данных,
+  связь с Telegram, автообновление, копия, диск, память. Сбой (два раза подряд) и восстановление — сообщением
+  владельцу в Telegram. Ручной запуск: `/usr/local/sbin/cryptoanalysis-health`.
+
 ### Выкладка
 
 1. PR влит в `main` → CI зелёный.
