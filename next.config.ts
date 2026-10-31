@@ -11,7 +11,8 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // Next.js needs eval only in development (fast refresh)
+      `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: https://assets.coingecko.com https://coin-images.coingecko.com",
       "connect-src 'self' https://openrouter.ai https://api.binance.com https://fapi.binance.com https://api.coingecko.com",
@@ -23,6 +24,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // No "X-Powered-By: Next.js" telling scanners what to try
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       {
