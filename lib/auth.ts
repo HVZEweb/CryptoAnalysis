@@ -11,7 +11,14 @@ export interface UserRecord {
   role: UserRole;
   predictionsUsed: number;
   deviceId?: string;
+  /** End of the paid subscription (ms), if any */
+  paidUntil: number | null;
   createdAt: string;
+}
+
+/** Paid access: an admin, a permanent grant (tier = paid), or a subscription that has not ended. */
+export function hasPaidAccess(u: Pick<UserRecord, "role" | "tier" | "paidUntil">, now = Date.now()): boolean {
+  return u.role === "admin" || u.tier === "paid" || (u.paidUntil != null && u.paidUntil > now);
 }
 
 export type UserRole = "user" | "admin";
@@ -24,6 +31,7 @@ interface DbUserRow {
   role?: UserRole;
   predictions_used: number;
   device_id: string | null;
+  paid_until?: number | string | null;
   created_at: Date;
 }
 
@@ -39,6 +47,7 @@ function mapUser(row: DbUserRow): UserRecord {
     role: row.role === "admin" ? "admin" : "user",
     predictionsUsed: row.predictions_used,
     deviceId: row.device_id ?? undefined,
+    paidUntil: row.paid_until == null ? null : Number(row.paid_until),
     createdAt: row.created_at.toISOString(),
   };
 }
@@ -270,6 +279,7 @@ export async function listUsers(limit = 100): Promise<
     role: UserRole;
     predictionsUsed: number;
     deviceId: string | null;
+    paidUntil: number | null;
     createdAt: string;
   }>
 > {
@@ -281,9 +291,10 @@ export async function listUsers(limit = 100): Promise<
       role: UserRole;
       predictions_used: number;
       device_id: string | null;
+      paid_until: number | string | null;
       created_at: Date;
     }>
-  >("SELECT id, email, tier, role, predictions_used, device_id, created_at FROM users ORDER BY created_at DESC LIMIT ?", [
+  >("SELECT id, email, tier, role, predictions_used, device_id, paid_until, created_at FROM users ORDER BY created_at DESC LIMIT ?", [
     limit,
   ]);
   return rows.map((r) => ({
@@ -293,8 +304,18 @@ export async function listUsers(limit = 100): Promise<
     role: r.role === "admin" ? "admin" : "user",
     predictionsUsed: r.predictions_used,
     deviceId: r.device_id,
+    paidUntil: r.paid_until == null ? null : Number(r.paid_until),
     createdAt: r.created_at.toISOString(),
   }));
+}
+
+/** Adds days to a user's subscription by hand (e.g. a transfer with the wrong amount, checked manually). */
+export async function extendSubscription(id: string, days: number, now = Date.now()): Promise<number | null> {
+  const user = await findUserById(id);
+  if (!user) return null;
+  const until = Math.max(user.paidUntil ?? 0, now) + days * 86_400_000;
+  await execute("UPDATE users SET paid_until = ? WHERE id = ?", [until, id]);
+  return until;
 }
 
 async function reserveOnConnection(
@@ -323,13 +344,14 @@ async function reserveOnConnection(
   }
 
   const [userRows] = await conn.execute(
-    "SELECT predictions_used, tier FROM users WHERE id = ? FOR UPDATE",
+    "SELECT predictions_used, tier, role, paid_until FROM users WHERE id = ? FOR UPDATE",
     [userId]
   );
-  const user = (userRows as Array<{ predictions_used: number; tier: string }>)[0];
+  const user = (userRows as Array<{ predictions_used: number; tier: string; role: string | null; paid_until: number | string | null }>)[0];
   if (!user) return false;
 
-  const userLimit = user.tier === "paid" ? getQuotaLimit("paid") : limit;
+  const paid = hasPaidAccess({ role: user.role === "admin" ? "admin" : "user", tier: user.tier as UserTier, paidUntil: user.paid_until == null ? null : Number(user.paid_until) });
+  const userLimit = paid ? getQuotaLimit("paid") : limit;
   if (user.predictions_used >= userLimit) return false;
 
   await conn.execute("UPDATE users SET predictions_used = predictions_used + 1 WHERE id = ?", [userId]);

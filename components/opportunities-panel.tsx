@@ -25,6 +25,9 @@ import {
 interface ListData {
   items: OpportunitySummary[];
   records: Record<Kind, TrackRecord>;
+  /** No subscription: only closed trades are listed */
+  locked?: boolean;
+  lockedOpen?: number;
   telegram?: { connected: boolean; failing: boolean; lastOkAt: number | null; lastErrorAt: number | null; lastError: string | null };
 }
 
@@ -139,7 +142,7 @@ function OpportunityTile({ o }: { o: OpportunitySummary }) {
   );
 }
 
-export function OpportunitiesPanel() {
+export function OpportunitiesPanel({ onUpgrade }: { onUpgrade?: () => void }) {
   const [data, setData] = useState<ListData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -196,6 +199,24 @@ export function OpportunitiesPanel() {
       </div>
 
       {data.telegram && <TelegramWarning t={data.telegram} />}
+
+      {data.locked && (
+        <div className="flex flex-col gap-3 rounded-xl bg-indigo-500/10 p-3 ring-1 ring-indigo-500/30 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-indigo-100">
+            {data.lockedOpen ? `Сейчас идёт сделок: ${data.lockedOpen}. ` : ""}
+            Идущие сделки с планом и уровнями — по подписке. Ниже — история закрытых сделок с реальными итогами, она открыта всем.
+          </p>
+          {onUpgrade && (
+            <button
+              type="button"
+              onClick={onUpgrade}
+              className="shrink-0 rounded-lg bg-indigo-500 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-400"
+            >
+              Оформить подписку
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-2">
         {(["signal", "chance", "news"] as const).map((k) => (

@@ -11,10 +11,11 @@ interface AdminUser {
   tier: "registered" | "paid";
   role: "user" | "admin";
   predictionsUsed: number;
+  paidUntil: number | null;
   createdAt: string;
 }
 
-type UserChange = { tier?: AdminUser["tier"]; role?: AdminUser["role"]; password?: string };
+type UserChange = { tier?: AdminUser["tier"]; role?: AdminUser["role"]; password?: string; extendDays?: number };
 
 const inputClass = "rounded-xl bg-white/5 px-3 py-2 text-sm ring-1 ring-white/10";
 
@@ -145,7 +146,14 @@ export default function AdminPage() {
                 )}
               </p>
               <p className="text-muted-foreground">
-                {u.role === "admin" || u.tier === "paid" ? "без лимита" : "обычный доступ"} · {u.predictionsUsed} прогнозов · с{" "}
+                {u.role === "admin" || u.tier === "paid"
+                  ? "без лимита"
+                  : u.paidUntil && u.paidUntil > Date.now()
+                    ? `подписка до ${new Date(u.paidUntil).toLocaleDateString("ru-RU")}`
+                    : u.paidUntil
+                      ? `подписка закончилась ${new Date(u.paidUntil).toLocaleDateString("ru-RU")}`
+                      : "обычный доступ"}{" "}
+                · {u.predictionsUsed} прогнозов · с{" "}
                 {new Date(u.createdAt).toLocaleDateString("ru-RU")}
               </p>
             </div>
@@ -164,6 +172,11 @@ export default function AdminPage() {
                   }
                 >
                   {u.tier === "paid" ? "Снять безлимит" : "Дать безлимит"}
+                </Button>
+              )}
+              {u.role !== "admin" && u.tier !== "paid" && (
+                <Button size="sm" variant="secondary" disabled={busy === u.id} onClick={() => update(u, { extendDays: 30 }, "Подписка продлена на 30 дней")}>
+                  +30 дней
                 </Button>
               )}
               <Button size="sm" variant="secondary" disabled={busy === u.id} onClick={() => resetPassword(u)}>

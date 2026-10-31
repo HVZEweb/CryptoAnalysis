@@ -31,6 +31,17 @@ export async function register() {
       startBot();
     }
 
+    // Subscription payments: USDT transfers to the owner's wallet extend the payer's access (services/payments).
+    {
+      const { billingConfig } = await import("@/services/payments/logic");
+      if (billingConfig()) {
+        const { checkPayments } = await import("@/services/payments/store");
+        setInterval(() => {
+          checkPayments().catch((e) => console.warn("[payments] check failed:", (e as Error).message));
+        }, 30_000).unref();
+      }
+    }
+
     // New coins on OKX: announcements, profiles, first-week history (Telegram part is idle until a bot is connected).
     if (process.env.LISTINGS_MONITOR !== "false") {
       const { runListingsCycle } = await import("@/services/listings/monitor");

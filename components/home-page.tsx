@@ -104,6 +104,11 @@ export function HomePage() {
     if (params.get("admin") === "required" && !user) openLogin();
   }, [user, openLogin]);
 
+  // ?upgrade=1 (from an opportunity card or a link) opens the subscription window.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("upgrade") === "1") setUpgradeOpen(true);
+  }, []);
+
   useEffect(() => {
     if (error?.code === "QUOTA_EXCEEDED") {
       if (quota?.requiresPayment) openUpgrade();
@@ -290,7 +295,7 @@ export function HomePage() {
 
               {tab === "opportunities" && (
                 <motion.div key="opportunities" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex flex-1 flex-col gap-4 min-h-[40vh]">
-                  <OpportunitiesPanel />
+                  <OpportunitiesPanel onUpgrade={openUpgrade} />
                 </motion.div>
               )}
 
@@ -319,7 +324,7 @@ export function HomePage() {
         onRegister={register}
       />
 
-      <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} onNeedAuth={openRegister} onPaid={() => void refresh()} />
 
       <ConfirmDialog
         open={confirmPredictOpen}

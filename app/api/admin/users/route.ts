@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { denyUnlessAdmin } from "@/lib/admin-auth";
-import { listUsers, setUserPassword, setUserRole, setUserTierById } from "@/lib/auth";
+import { extendSubscription, listUsers, setUserPassword, setUserRole, setUserTierById } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   const denied = await denyUnlessAdmin(request);
@@ -15,6 +15,8 @@ const updateSchema = z.object({
   tier: z.enum(["registered", "paid"]).optional(),
   role: z.enum(["user", "admin"]).optional(),
   password: z.string().min(8, "Пароль — минимум 8 символов").optional(),
+  /** Add this many days to the subscription */
+  extendDays: z.number().int().min(1).max(366).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -25,7 +27,11 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Некорректный запрос" }, { status: 400 });
   }
-  const { userId, tier, role, password } = parsed.data;
+  const { userId, tier, role, password, extendDays } = parsed.data;
+
+  if (extendDays && (await extendSubscription(userId, extendDays)) == null) {
+    return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+  }
 
   if (password && !(await setUserPassword(userId, password))) {
     return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });

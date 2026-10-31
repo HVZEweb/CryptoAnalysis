@@ -28,7 +28,14 @@ export function AccountBar({ user, quota, onLogin, onRegister, onLogout, onUpgra
         )}
       >
         {quota?.tier === "paid" ? (
-          <span className="font-medium text-amber-300">∞ прогнозов</span>
+          <span className="font-medium text-amber-300">
+            ∞ прогнозов
+            {quota.paidUntil ? (
+              <span className="font-normal text-muted-foreground">
+                {" "}· до {new Date(quota.paidUntil).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" })}
+              </span>
+            ) : null}
+          </span>
         ) : (
           <span>
             Осталось: <span className="font-semibold text-foreground">{remaining}</span> из {limit}
@@ -45,11 +52,15 @@ export function AccountBar({ user, quota, onLogin, onRegister, onLogout, onUpgra
               <span className="rounded-md bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300">админ</span>
             )}
           </span>
-          {quota?.requiresPayment && (
-            <Button size="sm" variant="default" className="h-8 rounded-xl text-xs" onClick={onUpgrade}>
-              Купить доступ
+          {quota?.tier !== "paid" ? (
+            <Button size="sm" variant={quota?.requiresPayment ? "default" : "secondary"} className="h-8 rounded-xl text-xs" onClick={onUpgrade}>
+              Подписка
             </Button>
-          )}
+          ) : quota.paidUntil ? (
+            <Button size="sm" variant="ghost" className="h-8 rounded-xl text-xs" onClick={onUpgrade}>
+              Продлить
+            </Button>
+          ) : null}
           <Button size="sm" variant="ghost" className="h-8 rounded-xl text-xs" onClick={onLogout}>
             <LogOut className="h-3.5 w-3.5" />
           </Button>
