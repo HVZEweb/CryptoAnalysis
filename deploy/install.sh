@@ -11,6 +11,11 @@
 #   - пользователь deploy для автопубликации из GitHub (может только запустить обновление)
 #   - .env (существующие значения не перезаписываются), сборка, systemd-сервис на свободном порту
 #   - еженедельное переобучение модели прогнозов
+#
+# Режим «за прокси» (FRONT_PROXY_IP в .env): сайт работает на этом сервере, а посетители заходят через
+# другой сервер (FRONT_PROXY_IP), чей Caddy пересылает запросы сюда по TLS. Наружу здесь ничего не
+# открывается: Caddy принимает только адрес FRONT_PROXY_IP, обновления сервер забирает из GitHub сам
+# (таймер cryptoanalysis-autoupdate), без входящего SSH.
 set -euo pipefail
 
 APP=cryptoanalysis
@@ -56,6 +61,23 @@ if [ ${#missing[@]} -gt 0 ]; then
 fi
 ok "curl, openssl, xz готовы"
 id -u "$APP" >/dev/null 2>&1 || useradd --system --home-dir "$APP_DIR" --shell /usr/sbin/nologin "$APP"
+
+# Сборка сайта берёт около 1 ГБ. Без подкачки на сервере с 2 ГБ нехватка памяти бьёт по соседним
+# сервисам, поэтому, если подкачки нет и место есть, заводим 2 ГБ; система берёт её только под давлением.
+if [ -z "$(swapon --show --noheadings 2>/dev/null)" ]; then
+  avail_gb=$(df --output=avail -BG / | tail -1 | tr -dc 0-9)
+  if [ "${avail_gb:-0}" -ge 6 ]; then
+    SWAP=/swapfile-$APP
+    [ -f "$SWAP" ] || { fallocate -l 2G "$SWAP" && chmod 600 "$SWAP" && mkswap -q "$SWAP"; }
+    swapon "$SWAP" 2>/dev/null || true
+    grep -q "^$SWAP " /etc/fstab || echo "$SWAP none swap sw 0 0" >> /etc/fstab
+    echo "vm.swappiness=10" > /etc/sysctl.d/60-$APP-swap.conf
+    sysctl -q -p /etc/sysctl.d/60-$APP-swap.conf || true
+    ok "подкачка 2 ГБ ($SWAP)"
+  else
+    warn "подкачки нет и мало места на диске — сборка может не уместиться в память"
+  fi
+fi
 
 # ---------------------------------------------------------------------------
 say "Проверка доступа в интернет (Binance, OpenRouter)"
@@ -185,7 +207,17 @@ if ! command -v mysql >/dev/null; then
   else
     say "Устанавливаю MariaDB"
     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq mariadb-server >/dev/null
-    systemctl enable --now mariadb >/dev/null 2>&1 || true
+    # Экономный режим: база маленькая, а память делим с другими сервисами. Только локальные подключения.
+    mkdir -p /etc/mysql/mariadb.conf.d
+    cat > /etc/mysql/mariadb.conf.d/60-$APP.cnf <<CNF
+[mysqld]
+bind-address = 127.0.0.1
+innodb_buffer_pool_size = 96M
+performance_schema = OFF
+max_connections = 40
+CNF
+    systemctl enable mariadb >/dev/null 2>&1 || true
+    systemctl restart mariadb
   fi
 fi
 if ! mysql_root_ok; then
@@ -252,10 +284,16 @@ fi
 # через Caddy (порт PUBLIC_PORT) и закрыт для всех, кроме вошедших (SITE_PRIVATE).
 # Без Caddy — как раньше, http://IP:порт.
 CADDYFILE=/etc/caddy/Caddyfile
+FRONT_PROXY_IP="$(env_get FRONT_PROXY_IP)"
 if command -v caddy >/dev/null && [ -f "$CADDYFILE" ]; then
   USE_CADDY=1
   BIND=127.0.0.1
-  env_set PUBLIC_PORT 8443
+  # Свободный порт, начиная с 8443 (на сервере могут быть другие сайты Caddy)
+  if [ -z "$(env_get PUBLIC_PORT)" ]; then
+    pp=8443
+    while port_busy "$pp"; do pp=$((pp + 1)); done
+    env_set PUBLIC_PORT "$pp"
+  fi
   env_set PUBLIC_HOST "$MAIN_SRC"
   env_set SITE_PRIVATE true
   # Пароль Caddy нужен только до появления первого администратора (см. ниже)
@@ -277,8 +315,10 @@ say "Установка зависимостей и сборка (несколь
 cd "$APP_DIR"
 # Build caches left by running Next.js from a subfolder confuse the type check — they are safe to drop.
 find "$APP_DIR" -mindepth 2 -maxdepth 3 -type d -name .next -not -path "*/node_modules/*" -prune -exec rm -rf {} +
-npm ci --no-audit --no-fund --loglevel=error "${NPM_PROXY_ARGS[@]}"
-NODE_ENV=production npm run build --silent >/tmp/$APP-build.log 2>&1 || { tail -40 /tmp/$APP-build.log; die "сборка не удалась (лог: /tmp/$APP-build.log)"; }
+# Установка и сборка — в своей группе памяти: если её не хватит, остановится сборка, а не соседние сервисы.
+capped() { systemd-run --quiet --scope -p MemoryMax=1300M -p MemorySwapMax=2G "$@"; }
+capped npm ci --no-audit --no-fund --loglevel=error "${NPM_PROXY_ARGS[@]}"
+NODE_ENV=production NODE_OPTIONS=--max-old-space-size=1100 capped npm run build --silent >/tmp/$APP-build.log 2>&1   || { tail -40 /tmp/$APP-build.log; die "сборка не удалась (лог: /tmp/$APP-build.log)"; }
 ok "сборка готова"
 
 MODELS_DIR="$(env_get PREDICTOR_MODELS_DIR)"
@@ -434,7 +474,26 @@ if [ "$USE_CADDY" = 1 ]; then
     $0 == e {skip=0; next}
     $0 == "# --- cryptoanalysis ---" {legacy=1}
     !skip && !legacy' "$CADDYFILE.bak-$APP" > "$CADDYFILE"
-  cat >> "$CADDYFILE" <<EOF
+  if [ -n "$FRONT_PROXY_IP" ]; then
+    # За прокси: свой сертификат Caddy (его корень лежит у прокси), только адрес прокси, настоящий IP
+    # посетителя приходит заголовком X-Real-IP — ему можно верить, потому что других источников нет.
+    cat >> "$CADDYFILE" <<EOF
+$BEGIN
+https://$APP.internal:$(env_get PUBLIC_PORT) {
+	tls internal
+	@outside not remote_ip $FRONT_PROXY_IP
+	abort @outside
+	encode zstd gzip
+	$AUTH_BLOCK
+	reverse_proxy 127.0.0.1:$PORT {
+		header_up X-Forwarded-For {http.request.header.X-Real-IP}
+		header_up X-Forwarded-Proto https
+	}
+}
+$END
+EOF
+  else
+    cat >> "$CADDYFILE" <<EOF
 $BEGIN
 https://$(env_get PUBLIC_HOST):$(env_get PUBLIC_PORT) {
 	tls {
@@ -444,10 +503,13 @@ https://$(env_get PUBLIC_HOST):$(env_get PUBLIC_PORT) {
 	}
 	encode zstd gzip
 	$AUTH_BLOCK
-	reverse_proxy 127.0.0.1:$PORT
+	reverse_proxy 127.0.0.1:$PORT {
+		header_up X-Real-IP {remote_host}
+	}
 }
 $END
 EOF
+  fi
   if caddy validate --config "$CADDYFILE" --adapter caddyfile >/dev/null 2>&1; then
     systemctl reload caddy
     if [ -n "$AUTH_BLOCK" ]; then
@@ -459,13 +521,61 @@ EOF
     cp "$CADDYFILE.bak-$APP" "$CADDYFILE"
     die "новый Caddyfile не прошёл проверку — возвращён прежний"
   fi
-  if [ "$UFW" = 1 ]; then
+  if [ "$UFW" = 1 ] && [ -n "$FRONT_PROXY_IP" ]; then
+    ufw allow from "$FRONT_PROXY_IP" to any port "$(env_get PUBLIC_PORT)" proto tcp >/dev/null
+    ok "ufw: порт $(env_get PUBLIC_PORT) открыт только для $FRONT_PROXY_IP"
+  elif [ "$UFW" = 1 ]; then
     ufw allow "$(env_get PUBLIC_PORT)/tcp" >/dev/null
     ufw delete allow "$PORT/tcp" >/dev/null 2>&1 || true
     ok "ufw: открыт $(env_get PUBLIC_PORT), порт $PORT закрыт снаружи"
   fi
 elif [ "$UFW" = 1 ]; then
   ufw allow "$PORT/tcp" >/dev/null && ok "порт $PORT открыт в ufw"
+fi
+
+# ---------------------------------------------------------------------------
+# Обновление «изнутри» (AUTO_UPDATE=true в .env): сервер сам раз в 5 минут смотрит main на GitHub и
+# ставит новый коммит, если CI по нему зелёный. Нужен там, куда GitHub не может зайти по SSH.
+if [ "$(env_get AUTO_UPDATE)" = true ]; then
+  say "Автообновление из GitHub"
+  cat > /usr/local/sbin/$APP-autoupdate <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+APP_DIR=/opt/cryptoanalysis
+REPO=https://github.com/HVZEweb/CryptoAnalysis
+current=$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null || echo none)
+latest=$(git ls-remote "$REPO.git" refs/heads/main | cut -f1)
+[ -n "$latest" ] && [ "$latest" != "$current" ] || exit 0
+# Только коммит, у которого прошли тесты и сборка (проверка CI называется "test").
+state=$(curl -fsS -m 20 "https://api.github.com/repos/HVZEweb/CryptoAnalysis/commits/$latest/check-runs?check_name=test"   | python3 -c 'import json,sys; r=json.load(sys.stdin).get("check_runs") or []; print(r[0].get("conclusion") or "running" if r else "none")')
+if [ "$state" != success ]; then echo "main ${latest:0:7}: CI $state — ждём"; exit 0; fi
+echo "main ${latest:0:7}: CI зелёный — обновляюсь"
+exec bash "$APP_DIR/deploy/update.sh"
+SCRIPT
+  chmod 755 /usr/local/sbin/$APP-autoupdate
+  cat > /etc/systemd/system/$APP-autoupdate.service <<UNIT
+[Unit]
+Description=CryptoAnalysis: обновление из GitHub после зелёного CI
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/$APP-autoupdate
+UNIT
+  cat > /etc/systemd/system/$APP-autoupdate.timer <<UNIT
+[Unit]
+Description=CryptoAnalysis: проверка обновлений каждые 5 минут
+
+[Timer]
+OnBootSec=3min
+OnUnitInactiveSec=5min
+
+[Install]
+WantedBy=timers.target
+UNIT
+  systemctl daemon-reload
+  systemctl enable --now $APP-autoupdate.timer >/dev/null 2>&1
+  ok "таймер $APP-autoupdate: обновление после зелёного CI в main"
 fi
 
 # ---------------------------------------------------------------------------
