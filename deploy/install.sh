@@ -475,8 +475,9 @@ if [ "$USE_CADDY" = 1 ]; then
     $0 == "# --- cryptoanalysis ---" {legacy=1}
     !skip && !legacy' "$CADDYFILE.bak-$APP" > "$CADDYFILE"
   if [ -n "$FRONT_PROXY_IP" ]; then
-    # За прокси: свой сертификат Caddy (его корень лежит у прокси), только адрес прокси, настоящий IP
-    # посетителя приходит заголовком X-Real-IP — ему можно верить, потому что других источников нет.
+    # За прокси: свой сертификат Caddy (его корень лежит у прокси), только адрес прокси. Прокси обращается
+    # по имени cryptoanalysis.internal (Caddy выбирает сайт по имени), а настоящие адрес посетителя и имя
+    # сайта присылает в X-Real-IP и X-Forwarded-Host — им можно верить, других источников здесь нет.
     cat >> "$CADDYFILE" <<EOF
 $BEGIN
 https://$APP.internal:$(env_get PUBLIC_PORT) {
@@ -488,6 +489,8 @@ https://$APP.internal:$(env_get PUBLIC_PORT) {
 	reverse_proxy 127.0.0.1:$PORT {
 		header_up X-Forwarded-For {http.request.header.X-Real-IP}
 		header_up X-Forwarded-Proto https
+		header_up Host {http.request.header.X-Forwarded-Host}
+		header_up X-Forwarded-Host {http.request.header.X-Forwarded-Host}
 	}
 }
 $END

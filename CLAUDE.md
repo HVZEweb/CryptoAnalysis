@@ -47,7 +47,7 @@ CI (`.github/workflows/ci.yml`) гоняет тесты с MySQL и сборку
 
 | Что | Где |
 |---|---|
-| Сайт | `https://83.222.16.56:8443` → Caddy фронта → бэкенд; `SITE_PRIVATE=true`: только для вошедших, пользователей добавляет админ |
+| Сайт | `https://cryptopredict.mywire.org` (Dynu DDNS → фронт, сертификат Let's Encrypt) и `https://83.222.16.56:8443` → Caddy фронта → бэкенд; `SITE_PRIVATE=true`: только для вошедших, пользователей добавляет админ |
 | Код | `/opt/cryptoanalysis` на бэкенде (git checkout `main`, владелец root) |
 | Настройки | `/opt/cryptoanalysis/.env` (root:cryptoanalysis 640) |
 | Сервис | `cryptoanalysis.service`, слушает `127.0.0.1:3101`, `MemoryMax=700M` |
