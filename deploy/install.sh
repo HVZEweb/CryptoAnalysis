@@ -563,6 +563,8 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+# systemd gives services no HOME; update.sh needs it for git config --global
+Environment=HOME=/root
 ExecStart=/usr/local/sbin/$APP-autoupdate
 UNIT
   cat > /etc/systemd/system/$APP-autoupdate.timer <<UNIT
