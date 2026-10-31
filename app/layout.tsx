@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Outfit } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,15 +7,10 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
-});
 
 export const metadata: Metadata = {
-  title: "AI Crypto Predictor — Интеллектуальные прогнозы криптовалют",
-  description:
-    "Получайте AI-прогнозы движения криптовалют с использованием современных языковых моделей и технического анализа.",
+  title: "CryptoPredict — прогнозы и сделки по криптовалютам",
+  description: "Прогнозы по криптовалютам на обученных моделях, сделки с планом и честной статистикой после комиссий.",
   icons: { icon: "/favicon.svg" },
 };
 
@@ -26,7 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ru" className="dark h-full">
-      <body className={`${inter.variable} ${outfit.variable} font-sans antialiased h-full`}>
+      <body className={`${inter.variable} font-sans antialiased h-full`}>
         {children}
       </body>
     </html>

@@ -26,7 +26,7 @@ export function ProgressBar({ progress, step, message, variant = "compact" }: Pr
     >
       {isHero && (
         <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/25 to-violet-500/10 ring-1 ring-indigo-500/25">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.05] ring-1 ring-white/10">
             <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
           </div>
           <h3 className="font-display text-xl font-semibold">Формируем прогноз</h3>
@@ -47,7 +47,7 @@ export function ProgressBar({ progress, step, message, variant = "compact" }: Pr
         </div>
         <div className={cn("overflow-hidden rounded-full bg-white/5 ring-1 ring-white/5", isHero ? "h-3" : "h-2")}>
           <motion.div
-            className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-400"
+            className="h-full rounded-full bg-indigo-400"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.5, ease: "easeOut" }}

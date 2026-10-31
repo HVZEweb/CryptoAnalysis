@@ -41,7 +41,7 @@ export function ExportActions({ prediction }: ExportActionsProps) {
 
   const handleShare = async () => {
     if (navigator.share) {
-      await navigator.share({ title: "AI Crypto Predictor", text });
+      await navigator.share({ title: "CryptoPredict", text });
       notify("Отправлено");
     } else {
       await handleCopy();

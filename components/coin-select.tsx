@@ -44,7 +44,7 @@ export function CoinSelect({ value, onChange }: CoinSelectProps) {
     <>
       <button type="button" onClick={() => { if (error) loadCoins(); else if (!loading) setOpen(true); }} disabled={loading}
         className="group flex w-full items-center gap-4 rounded-2xl border border-border bg-input p-4 text-left transition-all hover:border-indigo-500/40 hover:bg-indigo-500/5">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500/20 to-violet-500/20">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/[0.06]">
           {loading ? <Loader2 className="h-5 w-5 animate-spin text-indigo-400" />
             : value?.image ? <Image src={value.image} alt={value.symbol} width={48} height={48} className="h-full w-full object-cover" />
             : value ? <span className="text-sm font-bold text-indigo-300">{value.symbol.slice(0, 3)}</span>

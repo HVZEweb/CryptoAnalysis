@@ -59,7 +59,7 @@ export function MarketOverview() {
 
   if (!data) {
     return (
-      <div className="stat-pill flex gap-3 overflow-x-auto px-4 py-2.5 shimmer">
+      <div className="stat-pill no-scrollbar flex gap-3 overflow-x-auto px-4 py-2.5 shimmer">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className="h-4 w-24 shrink-0 rounded-full bg-white/5" />
         ))}
@@ -75,7 +75,7 @@ export function MarketOverview() {
         : "text-amber-400";
 
   return (
-    <div className="stat-pill flex items-center gap-x-4 gap-y-2 overflow-x-auto px-4 py-2.5 text-xs">
+    <div className="stat-pill no-scrollbar flex items-center gap-x-4 gap-y-2 overflow-x-auto px-4 py-2.5 text-xs">
       {data.topCoins?.map((coin) => {
         const up = coin.change24h >= 0;
         return (

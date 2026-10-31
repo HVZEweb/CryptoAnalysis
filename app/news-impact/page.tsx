@@ -7,7 +7,7 @@ import { NewsImpactPanel } from "@/components/news-impact/NewsImpactPanel";
 
 export default function NewsImpactPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-950 via-black to-zinc-950 text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="mesh-bg pointer-events-none absolute inset-0 opacity-40" />
       <div className="relative mx-auto max-w-6xl px-4 py-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -17,7 +17,7 @@ export default function NewsImpactPage() {
               animate={{ opacity: 1, y: 0 }}
               className="flex items-center gap-3 text-2xl font-bold"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-red-500/20 ring-1 ring-amber-500/20">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] ring-1 ring-white/10">
                 <Radar className="h-5 w-5 text-amber-400" />
               </div>
               News Impact Detector
