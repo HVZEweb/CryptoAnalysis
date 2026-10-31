@@ -608,6 +608,8 @@ if [ "$(env_get AUTO_UPDATE)" = true ]; then
 set -euo pipefail
 APP_DIR=/opt/cryptoanalysis
 REPO=https://github.com/HVZEweb/CryptoAnalysis
+# Paused while a branch is tried by hand (touch the file; /run is cleared on reboot).
+[ -e /run/cryptoanalysis-autoupdate.pause ] && { echo "автообновление на паузе"; exit 0; }
 current=$(git -C "$APP_DIR" rev-parse HEAD 2>/dev/null || echo none)
 latest=$(git ls-remote "$REPO.git" refs/heads/main | cut -f1)
 [ -n "$latest" ] && [ "$latest" != "$current" ] || exit 0
