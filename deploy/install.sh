@@ -442,7 +442,69 @@ Persistent=true
 WantedBy=timers.target
 UNIT
 
+# Резервная копия базы каждый день (deploy/backup.sh) и сторож каждые 5 минут (deploy/health.py):
+# пишет владельцу в Telegram, когда что-то сломалось и когда починилось.
+install -m 755 "$APP_DIR/deploy/backup.sh" /usr/local/sbin/$APP-backup
+install -m 755 "$APP_DIR/deploy/health.py" /usr/local/sbin/$APP-health
+cat > /etc/systemd/system/$APP-backup.service <<UNIT
+[Unit]
+Description=CryptoAnalysis: резервная копия базы
+After=mariadb.service
+
+[Service]
+Type=oneshot
+Nice=10
+ExecStart=/usr/local/sbin/$APP-backup
+UNIT
+cat > /etc/systemd/system/$APP-backup.timer <<UNIT
+[Unit]
+Description=CryptoAnalysis: резервная копия базы каждый день
+
+[Timer]
+OnCalendar=*-*-* 03:30
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+cat > /etc/systemd/system/$APP-health.service <<UNIT
+[Unit]
+Description=CryptoAnalysis: сторож (сбои — в Telegram владельцу)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/$APP-health
+UNIT
+cat > /etc/systemd/system/$APP-health.timer <<UNIT
+[Unit]
+Description=CryptoAnalysis: сторож каждые 5 минут
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+# Недельная копия на другом сервере: он заходит как cabackup, чей ключ умеет только одно —
+# отдать последнюю копию (BACKUP_PULL_KEY в .env — открытый ключ того сервера, см. deploy/front-proxy.sh).
+PULL_KEY="$(env_get BACKUP_PULL_KEY)"
+if [ -n "$PULL_KEY" ]; then
+  id -u cabackup >/dev/null 2>&1 || useradd --system --create-home --home-dir /var/lib/$APP-cabackup --shell /bin/sh cabackup
+  install -d -m 700 -o cabackup -g cabackup /var/lib/$APP-cabackup/.ssh
+  printf 'command="cat %s/backups/latest.sql.gz",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty %s
+' "$DATA_DIR" "$PULL_KEY"     > /var/lib/$APP-cabackup/.ssh/authorized_keys
+  chown cabackup:cabackup /var/lib/$APP-cabackup/.ssh/authorized_keys
+  chmod 600 /var/lib/$APP-cabackup/.ssh/authorized_keys
+  mkdir -p "$DATA_DIR/backups"
+  chgrp cabackup "$DATA_DIR/backups" && chmod 750 "$DATA_DIR/backups"
+  # Каталог данных принадлежит сервису; cabackup должен лишь пройти к копиям.
+  chmod o+x "$DATA_DIR"
+fi
+
 systemctl daemon-reload
+systemctl enable --now $APP-backup.timer $APP-health.timer >/dev/null 2>&1
 systemctl enable --now $APP-market-data.timer >/dev/null 2>&1
 systemctl enable --now $APP-models-sync.timer >/dev/null 2>&1
 systemctl start --no-block $APP-models-sync.service
