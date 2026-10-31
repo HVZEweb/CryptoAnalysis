@@ -190,7 +190,7 @@ export function UpgradeDialog({ open, onOpenChange, onNeedAuth, onPaid }: Upgrad
             </>
           ) : (
             <>
-              <div className="rounded-2xl bg-gradient-to-br from-indigo-500/15 to-violet-500/10 p-4 ring-1 ring-indigo-500/20">
+              <div className="rounded-2xl bg-white/[0.03] p-4 ring-1 ring-white/10">
                 <p className="font-display text-2xl font-bold">
                   {price} USDT<span className="text-sm font-normal text-muted-foreground"> / {days} дней</span>
                 </p>

@@ -1,7 +1,9 @@
 "use client";
 
+import { BrandMark } from "@/components/hero";
+
 import { useEffect, useState } from "react";
-import { LogIn, Sparkles, UserPlus } from "lucide-react";
+import { LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -57,13 +59,11 @@ export default function LoginPage() {
   return (
     <main className="relative flex min-h-[100dvh] items-center justify-center p-4">
       <div className="mesh-bg pointer-events-none absolute inset-0" />
-      <form onSubmit={submit} className="glass relative w-full max-w-sm space-y-4 rounded-2xl p-6">
+      <form onSubmit={submit} className="card-premium relative w-full max-w-sm space-y-4 rounded-2xl p-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
+          <BrandMark className="h-10 w-10" />
           <div>
-            <h1 className="font-display text-lg font-bold">AI Crypto Predictor</h1>
+            <h1 className="text-lg font-semibold tracking-tight">CryptoPredict</h1>
             <p className="text-xs text-muted-foreground">
               {firstAccount
                 ? "Создайте первый аккаунт — он станет администратором"

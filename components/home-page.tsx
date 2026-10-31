@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, BarChart3, History, Sparkles } from "lucide-react";
 import { Hero } from "@/components/hero";
+import { MarketOverview } from "@/components/market-overview";
 import { PredictionForm } from "@/components/prediction-form";
 import { PredictionCard } from "@/components/prediction-card";
 import { PredictionHistory } from "@/components/prediction-history";
@@ -126,60 +127,38 @@ export function HomePage() {
   const displayAnalysis = displayPrediction?.analysis ?? null;
 
   return (
-    <main className="relative flex min-h-[100dvh] flex-col">
-      <div className="mesh-bg pointer-events-none absolute inset-0" />
-      <div className="grid-overlay pointer-events-none absolute inset-0 opacity-60" />
+    <main className="flex min-h-[100dvh] flex-col">
+      <Hero
+        user={user}
+        quota={quota}
+        onLogin={openLogin}
+        onRegister={openRegister}
+        onLogout={logout}
+        onUpgrade={openUpgrade}
+        nav={<TabNav active={tab} onChange={setTab} historyCount={history.length} />}
+      />
 
-      <div className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-4 sm:px-6 sm:py-6">
-        <Hero
-          user={user}
-          quota={quota}
-          onLogin={openLogin}
-          onRegister={openRegister}
-          onLogout={logout}
-          onUpgrade={openUpgrade}
-        />
-
-        <div className="mt-5 flex flex-1 flex-col gap-5 lg:mt-6 lg:grid lg:grid-cols-12 lg:gap-6">
-          <aside className="flex flex-col gap-4 lg:col-span-4">
-            {/* Phones: tabs first; the prediction form only on its own tab. Desktop: form above the tabs. */}
-            <div className={cn("order-2 lg:order-1", tab !== "predict" && "hidden lg:block")}>
-            <PredictionForm
-              onSubmit={handleSubmit}
-              loading={loading}
-              defaultSymbol={repeatSymbol}
-              quota={quota}
-              onNeedAuth={openRegister}
-              onNeedUpgrade={openUpgrade}
-            />
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-5 sm:px-6 sm:py-6">
+        {tab === "predict" && (
+          <div className="mb-5">
+            <MarketOverview />
+          </div>
+        )}
+        <div className={cn("flex flex-1 flex-col gap-5", tab === "predict" && "lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start lg:gap-6")}>
+          {tab === "predict" && (
+            <div className="space-y-4 lg:sticky lg:top-28">
+              <PredictionForm
+                onSubmit={handleSubmit}
+                loading={loading}
+                defaultSymbol={repeatSymbol}
+                quota={quota}
+                onNeedAuth={openRegister}
+                onNeedUpgrade={openUpgrade}
+              />
             </div>
-            <TabNav active={tab} onChange={setTab} historyCount={history.length} className="order-1 lg:order-2" />
-            <AnimatePresence>
-              {error && !loading && tab !== "predict" && (
-                <motion.div key="error-sidebar" className="order-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <ErrorAlert
-                    error={error}
-                    onAction={
-                      error.code === "QUOTA_EXCEEDED"
-                        ? quota?.requiresPayment
-                          ? openUpgrade
-                          : openRegister
-                        : undefined
-                    }
-                    actionLabel={
-                      error.code === "QUOTA_EXCEEDED"
-                        ? quota?.requiresPayment
-                          ? "Купить доступ"
-                          : "Зарегистрироваться"
-                        : undefined
-                    }
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </aside>
+          )}
 
-          <section className="flex min-h-0 flex-1 flex-col lg:col-span-8">
+          <section className="flex min-h-0 flex-1 flex-col">
             {tabReady && (
             <AnimatePresence mode="wait" initial={false}>
               {tab === "predict" && (
@@ -248,7 +227,7 @@ export function HomePage() {
                       icon={Sparkles}
                       title="Готов к анализу"
                       description="Выберите монету, рынок и таймфрейм — AI проанализирует 18+ индикаторов и сформирует прогноз."
-                      action="← Заполните форму слева"
+                      action="Выберите монету в форме"
                     />
                   )}
                 </motion.div>
@@ -347,8 +326,8 @@ export function HomePage() {
         }}
       />
 
-      <footer className="relative mt-auto shrink-0 border-t border-white/5 bg-black/20 py-3 text-center text-xs text-muted-foreground backdrop-blur-sm">
-        Crypto AI Predictor © {new Date().getFullYear()} — Не является финансовой рекомендацией
+      <footer className="relative mt-auto shrink-0 border-t border-white/[0.06] py-5 text-center text-xs text-muted-foreground">
+        CryptoPredict © {new Date().getFullYear()} · Аналитика, а не финансовая рекомендация
       </footer>
     </main>
   );

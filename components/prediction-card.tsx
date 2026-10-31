@@ -96,7 +96,7 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
       className={cn("card-premium gradient-border overflow-hidden rounded-2xl", glowClass)}
     >
       {/* Header — одна строка */}
-      <div className="flex items-center justify-between gap-3 border-b border-white/5 bg-gradient-to-r from-indigo-500/8 to-transparent px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-white/5 px-4 py-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-display truncate text-lg font-bold">
@@ -128,7 +128,7 @@ export function PredictionCard({ prediction }: PredictionCardProps) {
       </div>
 
       {/* Целевая цена — главный блок прогноза */}
-      <div className="border-b border-white/5 bg-gradient-to-br from-indigo-500/10 via-transparent to-cyan-500/5 px-4 py-4">
+      <div className="border-b border-white/5 bg-white/[0.02] px-4 py-4">
         <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Целевая цена на конец таймфрейма</p>
         <div className="mt-1 flex flex-wrap items-end gap-x-4 gap-y-1">
           <p className="font-display text-3xl font-bold tabular-nums tracking-tight">

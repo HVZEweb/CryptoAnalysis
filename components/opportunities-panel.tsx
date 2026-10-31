@@ -224,7 +224,7 @@ export function OpportunitiesPanel({ onUpgrade }: { onUpgrade?: () => void }) {
         ))}
       </div>
 
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none]">
+      <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
         <Chip active={state === "all"} onClick={() => setState("all")}>
           Все
         </Chip>

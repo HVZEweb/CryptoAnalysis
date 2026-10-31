@@ -62,7 +62,7 @@ export function DevMenu() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
               transition={{ duration: 0.2 }}
-              className="fixed left-1/2 top-20 z-50 w-full max-w-md -translate-x-1/2 rounded-2xl border border-white/10 bg-black/90 p-4 shadow-2xl backdrop-blur-xl"
+              className="fixed left-1/2 top-20 z-50 w-full max-w-md -translate-x-1/2 rounded-2xl border border-white/10 bg-[#131315] p-4 shadow-2xl"
             >
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -88,7 +88,7 @@ export function DevMenu() {
                     onClick={() => setIsOpen(false)}
                     className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-3 transition-all hover:border-indigo-500/30 hover:bg-indigo-500/10"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500/20 to-violet-500/20">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/[0.06]">
                       <item.icon className="h-5 w-5 text-indigo-400" />
                     </div>
                     <div className="min-w-0 flex-1">

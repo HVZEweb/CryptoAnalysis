@@ -17,7 +17,7 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       animate={{ opacity: 1, scale: 1 }}
       className="card-premium gradient-border flex flex-1 min-h-[40vh] flex-col items-center justify-center rounded-3xl p-8 text-center"
     >
-      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-violet-500/10 ring-1 ring-indigo-500/20">
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.05] ring-1 ring-white/10">
         <Icon className="h-8 w-8 text-indigo-400 animate-float" />
       </div>
       <h3 className="font-display text-xl font-semibold">{title}</h3>

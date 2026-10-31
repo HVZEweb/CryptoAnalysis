@@ -35,7 +35,7 @@ export function PredictionExplanationPanel({
   return (
     <div
       className={cn(
-        "rounded-xl border border-indigo-500/20 bg-gradient-to-br from-indigo-500/8 via-transparent to-cyan-500/5",
+        "rounded-xl border border-white/[0.08] bg-white/[0.02]",
         compact ? "p-3" : "p-4",
         className
       )}

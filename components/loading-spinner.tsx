@@ -18,7 +18,7 @@ export function LoadingSpinner() {
       className="glass rounded-2xl p-8 text-center"
     >
       <div className="relative mx-auto mb-6 h-16 w-16">
-        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 opacity-20 animate-pulse-glow" />
+        <div className="absolute inset-0 rounded-full bg-white/10 animate-pulse-glow" />
         <div className="absolute inset-2 flex items-center justify-center rounded-full glass">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
         </div>
