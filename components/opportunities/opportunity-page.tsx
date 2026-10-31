@@ -318,6 +318,7 @@ function Record({ o }: { o: Detail }) {
 export function OpportunityPage({ id }: { id: string }) {
   const [o, setO] = useState<Detail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [locked, setLocked] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(() => {
@@ -325,6 +326,7 @@ export function OpportunityPage({ id }: { id: string }) {
     fetch(`/api/opportunities/${id}`)
       .then(async (r) => {
         const body = await r.json();
+        setLocked(r.status === 402);
         if (!r.ok) throw new Error(body.error ?? "Не удалось загрузить карточку");
         setO(body as Detail);
         setError(null);
@@ -352,7 +354,19 @@ export function OpportunityPage({ id }: { id: string }) {
           </button>
         </div>
 
-        {error && !o && <p className="text-sm text-red-400">{error}</p>}
+        {locked && !o ? (
+          <div className="card-premium mx-auto max-w-lg rounded-2xl p-5 text-center">
+            <p className="font-display text-lg font-semibold">Сделка ещё идёт</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              План, уровни входа, цели и стопа для идущих сделок открыты по подписке. Когда сделка закроется, её карточка с итогом станет доступна всем.
+            </p>
+            <Link href="/?upgrade=1" className="mt-4 inline-block rounded-lg bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400">
+              Оформить подписку
+            </Link>
+          </div>
+        ) : (
+          error && !o && <p className="text-sm text-red-400">{error}</p>
+        )}
         {!o && !error && <p className="text-sm text-muted-foreground">Загрузка…</p>}
 
         {o && (

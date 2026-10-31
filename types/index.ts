@@ -430,6 +430,8 @@ export interface QuotaStatus {
   email?: string;
   requiresAuth: boolean;
   requiresPayment: boolean;
+  /** End of the paid subscription (ms) */
+  paidUntil?: number | null;
 }
 
 export interface AuthUser {

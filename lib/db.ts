@@ -126,6 +126,10 @@ async function initializeSchema(): Promise<void> {
   if (!(await columnExists("users", "role"))) {
     await db.execute("ALTER TABLE users ADD COLUMN role ENUM('user', 'admin') NOT NULL DEFAULT 'user'");
   }
+  // Paid subscription end (ms). tier = 'paid' stays a permanent grant made by hand.
+  if (!(await columnExists("users", "paid_until"))) {
+    await db.execute("ALTER TABLE users ADD COLUMN paid_until BIGINT NULL");
+  }
 
   schemaReady = true;
 }

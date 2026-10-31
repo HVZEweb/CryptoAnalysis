@@ -1,4 +1,4 @@
-import { findUserById, getEffectiveUsage, getUserIdBySession, reserveQuotaAtomic, refundQuotaAtomic } from "@/lib/auth";
+import { findUserById, getEffectiveUsage, getUserIdBySession, hasPaidAccess, reserveQuotaAtomic, refundQuotaAtomic } from "@/lib/auth";
 import { getQuotaLimit, type UserTier } from "@/lib/quota-config";
 
 export interface QuotaStatus {
@@ -8,6 +8,8 @@ export interface QuotaStatus {
   remaining: number;
   isLoggedIn: boolean;
   email?: string;
+  /** End of the paid subscription (ms); null for none or a permanent grant */
+  paidUntil?: number | null;
   requiresAuth: boolean;
   requiresPayment: boolean;
 }
@@ -27,7 +29,7 @@ export async function resolveIdentity(
   const user = userId ? await findUserById(userId) : null;
 
   let tier: UserTier = "anon";
-  if (user?.tier === "paid" || user?.role === "admin") tier = "paid";
+  if (user && hasPaidAccess(user)) tier = "paid";
   else if (user) tier = "registered";
 
   return { deviceId: device, sessionToken, userId: userId ?? undefined, tier, user: user ?? undefined };
@@ -47,6 +49,7 @@ export async function getQuotaStatus(identity: Awaited<ReturnType<typeof resolve
     remaining,
     isLoggedIn,
     email: user?.email,
+    paidUntil: user?.paidUntil ?? null,
     requiresAuth: !isLoggedIn && remaining <= 0,
     requiresPayment: isLoggedIn && tier === "registered" && remaining <= 0,
   };
@@ -75,7 +78,7 @@ export async function checkQuotaAllowed(identity: Awaited<ReturnType<typeof reso
     return {
       allowed: false,
       status,
-      message: "Лимит бесплатных прогнозов исчерпан (3 из 3). Оформите подписку для продолжения.",
+      message: "Бесплатные прогнозы закончились (3 из 3). Оформите подписку, чтобы продолжить.",
     };
   }
 
