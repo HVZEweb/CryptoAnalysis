@@ -21,7 +21,7 @@ import { getTelegramConfig, sendTelegram } from "@/lib/telegram";
 import { demoConfig, OkxDemo } from "@/lib/okx-demo";
 import * as realStore from "@/services/signals/store";
 import { coinVerdict, disableReason, evaluateOutcome, type Outcome } from "@/services/signals/logic";
-import { cardLine, chanceMessage, chancePlan, entryLimitLine, intervalMinutes, type ChanceInfo } from "@/services/signals/chance";
+import { cardLine, chanceBars, chanceMessage, chanceMuteReason, chancePlan, chanceWorthSending, entryLimitLine, intervalMinutes, type ChanceInfo } from "@/services/signals/chance";
 
 const STATE_FILE = path.join(process.cwd(), ".cache", "signal-scanner.json");
 
@@ -190,6 +190,16 @@ async function closeFinished(deps: ScanDeps, entries: ModelEntry[], result: Scan
         await deps.store.setDemo(s.id, { demo_status: "closing" });
       }
 
+      // A model's chances stop when, live, it guesses the direction no better than a coin.
+      if (s.kind === "chance") {
+        const reason = chanceMuteReason(await deps.store.closedSignals({ modelKey: s.model_key, trainedAt: s.model_trained_at, kind: "chance" }));
+        const current = entries.find((e) => e.key === s.model_key);
+        const muteKey = chanceMuteKey(s.model_key);
+        if (reason && current?.model.trainedAt === s.model_trained_at && (await deps.store.disabledModels()).get(muteKey)?.trainedAt !== s.model_trained_at) {
+          await deps.store.disableModel(muteKey, s.model_trained_at, reason);
+          await deps.send(`⏸ Шансы ${modelTitle(current)} остановлены: ${reason}. Включатся снова после переобучения модели.`);
+        }
+      }
       // Live results of this model version: switch it off if they lose money after fees. Chances and news are
       // labelled as unproven from the start, so only validated signals count here.
       if ((s.kind ?? "signal") !== "signal") continue;
@@ -353,10 +363,13 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
 
           // Chance: a confident model with a validated direction edge, sent as a full but clearly unproven plan.
           const edge = run.probabilityUp - 0.5;
-          if (settings.observe && model.validation.hasEdge && Math.abs(edge) >= OBSERVE_EDGE && !chanceOpen.has(symbol) && now - (state.lastChance[symbol] ?? 0) >= CHANCE_COOLDOWN && state.observed[key] !== last.openTime) {
+          const chanceMuted = disabled.get(chanceMuteKey(entry.key))?.trainedAt === model.trainedAt;
+          if (settings.observe && !chanceMuted && model.validation.hasEdge && Math.abs(edge) >= OBSERVE_EDGE && !chanceOpen.has(symbol) && now - (state.lastChance[symbol] ?? 0) >= CHANCE_COOLDOWN && state.observed[key] !== last.openTime) {
             const entryTime = last.closeTime + 1;
             const horizon = model.horizon ?? HORIZONS[entry.timeframe].horizon;
-            const plan = chancePlan(edge > 0 ? "LONG" : "SHORT", last.close, run.atr, horizon, entryTime, intervalMinutes(model.interval));
+            const barMinutes = intervalMinutes(model.interval);
+            const planned = chancePlan(edge > 0 ? "LONG" : "SHORT", last.close, run.atr, chanceBars(horizon), entryTime, barMinutes);
+            const plan = planned && chanceWorthSending(planned, horizon, barMinutes) ? planned : null;
             const confidentAccuracy = model.validation.confident?.accuracy ?? null;
             const current = chances.get(symbol);
             // Of several confident models on one coin the longest hold speaks (a bigger move leaves more after costs),
@@ -409,6 +422,9 @@ export async function scanSignals(deps: ScanDeps = defaultDeps): Promise<ScanRes
   writeState(deps.stateFile, state);
   return result;
 }
+
+/** Muted chances are kept with the switched-off models, under their own key. */
+const chanceMuteKey = (modelKey: string) => `chance:${modelKey}`;
 
 /** After a chance on a coin, the next one waits this long, so a quick model cannot flood the chat. */
 export const CHANCE_COOLDOWN = 4 * 3_600_000;

@@ -1,11 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { chanceMessage, chancePlan, holdMinutes, intervalMinutes, newsPlan } from "@/services/signals/chance";
+import { chanceBars, chanceMessage, chanceMuteReason, chancePlan, chanceWorthSending, holdMinutes, intervalMinutes, newsPlan } from "@/services/signals/chance";
 
 describe("chance plans", () => {
   it("puts target and stop at the same distance, one ATR scaled by √bars", () => {
     const p = chancePlan("SHORT", 100, 2, 4, 0, 60)!;
     expect(p).toMatchObject({ side: "SHORT", entry: 100, tp: 96, sl: 104, closeBy: 4 * 3_600_000 });
     expect(chancePlan("LONG", 100, 0, 4, 0, 60)).toBeNull();
+  });
+
+  it("sends only chances an hour or more ahead with a target at least 1% away, held at least 3 bars", () => {
+    expect(chanceBars(1)).toBe(3);
+    expect(chanceBars(4)).toBe(4);
+    expect(chanceWorthSending(chancePlan("LONG", 100, 2, 3, 0, 15)!, 1, 15)).toBe(false); // a 15-minute model
+    expect(chanceWorthSending(chancePlan("LONG", 100, 0.4, 3, 0, 60)!, 1, 60)).toBe(false); // target 0.69%
+    expect(chanceWorthSending(chancePlan("LONG", 100, 0.6, 3, 0, 60)!, 1, 60)).toBe(true); // target 1.04%
+  });
+
+  it("mutes a model's chances when it guesses the direction no better than a coin", () => {
+    const rows = (wins: number, n: number) => Array.from({ length: n }, (_, i) => ({ gross_bp: i < wins ? 10 : -10 }));
+    expect(chanceMuteReason(rows(20, 49))).toBeNull(); // too few yet
+    expect(chanceMuteReason(rows(25, 50))).toContain("50.0%");
+    expect(chanceMuteReason(rows(27, 50))).toBeNull(); // 54%
   });
 
   it("sets a news target at the expected move and caps absurd moves", () => {
