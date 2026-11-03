@@ -225,7 +225,11 @@ export function UpgradeDialog({ open, onOpenChange, onNeedAuth, onPaid }: Upgrad
               )}
               <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
                 Это аналитический инструмент, а не инвестиционная рекомендация. Прибыль не гарантируется: наши же сделки после комиссий бывают в
-                минусе, их реальные итоги открыты в разделе «Возможности».
+                минусе, их реальные итоги открыты в разделе «Возможности». Оплачивая, вы принимаете{" "}
+                <a href="/terms" target="_blank" className="underline underline-offset-2 hover:text-foreground">
+                  условия и риски
+                </a>
+                .
               </p>
             </>
           )}

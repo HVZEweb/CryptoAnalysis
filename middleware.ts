@@ -7,6 +7,7 @@ import { DEVICE_COOKIE, SESSION_COOKIE, secureCookies } from "@/lib/request-cont
 const PUBLIC_PATHS = [
   "/login",
   "/reset-password",
+  "/terms",
   "/api/auth/login",
   "/api/auth/register",
   "/api/auth/signup-status",
