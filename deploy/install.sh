@@ -284,7 +284,8 @@ fi
 # через Caddy (порт PUBLIC_PORT) и закрыт для всех, кроме вошедших (SITE_PRIVATE).
 # Без Caddy — как раньше, http://IP:порт.
 CADDYFILE=/etc/caddy/Caddyfile
-FRONT_PROXY_IP="$(env_get FRONT_PROXY_IP)"
+# One or more entrance servers, separated by commas or spaces.
+FRONT_PROXY_IP="$(env_get FRONT_PROXY_IP | tr ',' ' ' | xargs)"
 if command -v caddy >/dev/null && [ -f "$CADDYFILE" ]; then
   USE_CADDY=1
   BIND=127.0.0.1
@@ -587,7 +588,9 @@ EOF
     die "новый Caddyfile не прошёл проверку — возвращён прежний"
   fi
   if [ "$UFW" = 1 ] && [ -n "$FRONT_PROXY_IP" ]; then
-    ufw allow from "$FRONT_PROXY_IP" to any port "$(env_get PUBLIC_PORT)" proto tcp >/dev/null
+    for ip in $FRONT_PROXY_IP; do
+      ufw allow from "$ip" to any port "$(env_get PUBLIC_PORT)" proto tcp >/dev/null
+    done
     ok "ufw: порт $(env_get PUBLIC_PORT) открыт только для $FRONT_PROXY_IP"
   elif [ "$UFW" = 1 ]; then
     ufw allow "$(env_get PUBLIC_PORT)/tcp" >/dev/null
