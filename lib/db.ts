@@ -114,22 +114,21 @@ async function initializeSchema(): Promise<void> {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  if (!(await columnExists("users", "device_id"))) {
-    await db.execute("ALTER TABLE users ADD COLUMN device_id CHAR(36) NULL");
-  }
-  if (!(await columnExists("users", "reset_token"))) {
-    await db.execute("ALTER TABLE users ADD COLUMN reset_token CHAR(64) NULL");
-  }
-  if (!(await columnExists("users", "reset_expires_at"))) {
-    await db.execute("ALTER TABLE users ADD COLUMN reset_expires_at BIGINT NULL");
-  }
-  if (!(await columnExists("users", "role"))) {
-    await db.execute("ALTER TABLE users ADD COLUMN role ENUM('user', 'admin') NOT NULL DEFAULT 'user'");
-  }
+  // Another process (or test file) may add the same column at the same moment: "duplicate column" is fine.
+  const addColumn = async (table: string, column: string, definition: string) => {
+    if (await columnExists(table, column)) return;
+    try {
+      await db.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+    } catch (e) {
+      if ((e as { errno?: number }).errno !== 1060) throw e;
+    }
+  };
+  await addColumn("users", "device_id", "CHAR(36) NULL");
+  await addColumn("users", "reset_token", "CHAR(64) NULL");
+  await addColumn("users", "reset_expires_at", "BIGINT NULL");
+  await addColumn("users", "role", "ENUM('user', 'admin') NOT NULL DEFAULT 'user'");
   // Paid subscription end (ms). tier = 'paid' stays a permanent grant made by hand.
-  if (!(await columnExists("users", "paid_until"))) {
-    await db.execute("ALTER TABLE users ADD COLUMN paid_until BIGINT NULL");
-  }
+  await addColumn("users", "paid_until", "BIGINT NULL");
 
   schemaReady = true;
 }
