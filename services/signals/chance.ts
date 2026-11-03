@@ -64,6 +64,36 @@ export function chancePlan(side: "LONG" | "SHORT", price: number, atr: number, h
   return { side, entry: price, tp: price + dir * dist, sl: price - dir * dist, entryTime, closeBy: entryTime + horizonBars * barMinutes * 60_000 };
 }
 
+/**
+ * Limits from the live audit of 502 chances (26.09–03.11.2026): 15m and 30m models guessed the direction
+ * no better than a coin and lost 0.17–0.19% a trade after fees; targets closer than 1% left too little after
+ * the ~0.16% round trip; one-bar holds ended by time in 62% of trades. Only chances past all three are sent.
+ */
+export const CHANCE_MIN_HORIZON_MIN = 60;
+export const CHANCE_MIN_BARS = 3;
+export const CHANCE_MIN_TARGET_PCT = 1;
+
+/** Bars a chance is held: the model's horizon, at least CHANCE_MIN_BARS. */
+export const chanceBars = (horizonBars: number) => Math.max(horizonBars, CHANCE_MIN_BARS);
+
+/** A chance worth sending: the model looks at least an hour ahead and the target is far enough for the fees. */
+export function chanceWorthSending(plan: TradePlan, horizonBars: number, barMinutes: number): boolean {
+  return horizonBars * barMinutes >= CHANCE_MIN_HORIZON_MIN && (Math.abs(plan.tp - plan.entry) / plan.entry) * 100 >= CHANCE_MIN_TARGET_PCT;
+}
+
+/** Live chances of one model version needed before their direction record can mute the model. */
+export const CHANCE_MUTE_AFTER = 50;
+export const CHANCE_MIN_LIVE_ACCURACY = 0.52;
+
+/** Mute a model's chances when, live, it guesses the direction (move before fees) no better than a coin. */
+export function chanceMuteReason(rows: Array<{ gross_bp: number | null }>): string | null {
+  const done = rows.filter((r) => r.gross_bp != null);
+  if (done.length < CHANCE_MUTE_AFTER) return null;
+  const acc = done.filter((r) => r.gross_bp! > 0).length / done.length;
+  if (acc >= CHANCE_MIN_LIVE_ACCURACY) return null;
+  return `после ${done.length} шансов направление угадано в ${(acc * 100).toFixed(1)}% — не лучше монетки`;
+}
+
 export const MAX_NEWS_MOVE_PCT = 3;
 
 /** Plan for a news alert: target at the expected move (capped), stop at the same distance. */

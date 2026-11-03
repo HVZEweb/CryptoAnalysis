@@ -229,6 +229,23 @@ describe("scanSignals", () => {
     expect(t.mem.disabled.size).toBe(0);
   });
 
+  it("mutes a model's chances once it guesses the direction no better than a coin live", async () => {
+    const t = setup({ profitable: false, watch: ["BTCUSDT"] });
+    t.mem.settings.observe = true;
+    const past = { chat_id: "42", model_key: "candles:4h", model_trained_at: "2026-01-01T00:00:00Z", symbol: "ETHUSDT", timeframe: "4h", bar_interval: "1h" };
+    for (let i = 0; i < 49; i++) {
+      const won = i % 2 === 0;
+      t.mem.rows.push({ ...past, kind: "chance", id: 100 + i, side: "LONG", entry: 100, tp: 104, sl: 96, entry_time: 0, close_by: 1, sent_at: 0, status: won ? "tp" : "sl", exit_price: won ? 104 : 96, gross_bp: won ? 400 : -400, net_bp: won ? 390 : -416, closed_at: 1 });
+    }
+    expect((await scanSignals(t.deps)).chances).toBe(1);
+    t.advance(5 * HOUR);
+    t.setPrice(95); // the 50th chance hits its stop: 25 of 50 right
+    expect((await scanSignals(t.deps)).chances ?? 0).toBe(0);
+    expect(t.sent.some((m) => m.includes("Шансы") && m.includes("остановлены") && m.includes("50.0%"))).toBe(true);
+    expect(t.mem.disabled.get("chance:candles:4h")?.trainedAt).toBe("2026-01-01T00:00:00Z");
+    expect(t.mem.disabled.has("candles:4h")).toBe(false); // validated signals are judged separately
+  });
+
   it("does nothing until Telegram is connected", async () => {
     const t = setup();
     const r = await scanSignals({ ...t.deps, chatId: () => null });
