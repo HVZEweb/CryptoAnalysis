@@ -44,7 +44,7 @@ curl -fsSL https://raw.githubusercontent.com/HVZEweb/CryptoAnalysis/main/deploy/
 Сайт может работать на сервере, закрытом для интернета (бэкенд), а посетители — заходить через другой
 сервер (фронт), чей Caddy пересылает запросы на бэкенд по TLS.
 
-- На бэкенде в `.env`: `FRONT_PROXY_IP=<адрес фронта>` и `AUTO_UPDATE=true`. Установщик ставит Caddy-блок
+- На бэкенде в `.env`: `FRONT_PROXY_IP=<адрес фронта>` (несколько входов — через запятую) и `AUTO_UPDATE=true`. Установщик ставит Caddy-блок
   `https://cryptoanalysis.internal:PORT` со своим сертификатом (`tls internal`), пускает только
   `FRONT_PROXY_IP`, берёт адрес посетителя из `X-Real-IP` и ничего не открывает наружу.
 - На фронте `bash deploy/front-proxy.sh <адрес бэкенда> <PORT> <root.crt>` ставит пересылку с проверкой
