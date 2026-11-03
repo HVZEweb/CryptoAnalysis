@@ -128,6 +128,11 @@ export default function LoginPage() {
           </p>
         )}
         <p className="text-center text-xs text-muted-foreground">Забыли пароль? Новый задаст администратор.</p>
+        <p className="text-center text-xs text-muted-foreground">
+          <a href="/terms" className="underline underline-offset-2 hover:text-foreground">
+            Условия и риски
+          </a>
+        </p>
       </form>
     </main>
   );
