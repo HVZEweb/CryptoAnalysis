@@ -25,6 +25,15 @@ import { totpCode, totpStep } from "@/lib/totp";
 // Touches real tables, so it only runs against a throwaway *_ci database (as in CI).
 const onCiDb = (process.env.DB_NAME ?? "").endsWith("_ci");
 
+/** A six-digit code that is not valid in any step the server accepts right now. */
+const wrongCode = (secret: string) => {
+  const valid = new Set([-1, 0, 1].map((d) => totpCode(secret, totpStep() + d)));
+  for (let n = 0; ; n++) {
+    const c = String(n).padStart(6, "0");
+    if (!valid.has(c)) return c;
+  }
+};
+
 const signedIn = async (email: string, password: string) => {
   const r = await loginUser(email, password);
   if (!("token" in r)) throw new Error("expected a session, got a 2FA challenge");
@@ -130,21 +139,23 @@ describe.runIf(onCiDb)("sign-in, sessions and roles", () => {
   it("asks for an authenticator code after the password, refuses replays, accepts a recovery code once", async () => {
     const owner = (await findUserByEmail("owner@example.com"))!;
     const secret = await startTwoFactorSetup(owner.id);
-    // A code from 2 steps ago so that the sign-ins below can use later steps.
-    const recovery = await enableTwoFactor(owner.id, totpCode(secret, totpStep() - 1));
+    const recovery = await enableTwoFactor(owner.id, totpCode(secret, totpStep()));
     expect(recovery).toHaveLength(10);
     await revokeUserSessions(owner.id);
 
     const first = await loginUser("owner@example.com", "lunar-tram-41");
     expect("twoFactor" in first).toBe(true);
     const challenge = (first as { twoFactor: string }).twoFactor;
-    await expect(loginSecondStep(challenge, "000000")).rejects.toThrow(/Неверный код/);
-    const ok = await loginSecondStep(challenge, totpCode(secret, totpStep()));
+    await expect(loginSecondStep(challenge, wrongCode(secret))).rejects.toThrow(/Неверный код/);
+    // The step is fixed here: a 30-second boundary passing during the test must not turn the replay into a new code.
+    // The next step (one step of drift is accepted), so it is always later than the step used to enable.
+    const used = totpCode(secret, totpStep() + 1);
+    const ok = await loginSecondStep(challenge, used);
     expect(ok.user.email).toBe("owner@example.com");
-    await expect(loginSecondStep(challenge, totpCode(secret, totpStep()))).rejects.toThrow(/заново/); // challenge used
+    await expect(loginSecondStep(challenge, used)).rejects.toThrow(/заново/); // challenge used
 
     const second = (await loginUser("owner@example.com", "lunar-tram-41")) as { twoFactor: string };
-    await expect(loginSecondStep(second.twoFactor, totpCode(secret, totpStep()))).rejects.toThrow(/Неверный код/); // same step again
+    await expect(loginSecondStep(second.twoFactor, used)).rejects.toThrow(/Неверный код/); // same code again
     expect((await loginSecondStep(second.twoFactor, recovery[0].toUpperCase())).user.email).toBe("owner@example.com");
 
     const third = (await loginUser("owner@example.com", "lunar-tram-41")) as { twoFactor: string };
@@ -153,7 +164,9 @@ describe.runIf(onCiDb)("sign-in, sessions and roles", () => {
 
   it("drops a second-step challenge after five wrong codes", async () => {
     const r = (await loginUser("owner@example.com", "lunar-tram-41")) as { twoFactor: string };
-    for (let i = 0; i < 5; i++) await expect(loginSecondStep(r.twoFactor, "000000")).rejects.toThrow();
-    await expect(loginSecondStep(r.twoFactor, "000000")).rejects.toThrow(/заново/);
+    const owner = await findUserByEmail("owner@example.com");
+    const secret = (await query<Array<{ totp_secret: string }>>("SELECT totp_secret FROM users WHERE id = ?", [owner!.id]))[0].totp_secret;
+    for (let i = 0; i < 5; i++) await expect(loginSecondStep(r.twoFactor, wrongCode(secret))).rejects.toThrow();
+    await expect(loginSecondStep(r.twoFactor, wrongCode(secret))).rejects.toThrow(/заново/);
   });
 });
