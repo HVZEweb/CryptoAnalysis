@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { LogIn, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AuthUser, QuotaStatus } from "@/types";
@@ -45,13 +46,18 @@ export function AccountBar({ user, quota, onLogin, onRegister, onLogout, onUpgra
 
       {user ? (
         <>
-          <span className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
+          <Link
+            href="/account"
+            title="Аккаунт и безопасность"
+            className="flex items-center gap-1.5 rounded-xl px-2 py-1.5 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground"
+          >
             <User className="h-3.5 w-3.5" />
-            {user.email}
+            <span className="hidden max-w-[180px] truncate sm:inline">{user.email}</span>
             {user.role === "admin" && (
-              <span className="rounded-md bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300">админ</span>
+              <span className="hidden rounded-md bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300 sm:inline">админ</span>
             )}
-          </span>
+            {user.emailVerified === false && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" aria-label="email не подтверждён" />}
+          </Link>
           {quota?.tier !== "paid" ? (
             <Button size="sm" variant={quota?.requiresPayment ? "default" : "secondary"} className="h-8 rounded-xl text-xs" onClick={onUpgrade}>
               Подписка
@@ -61,7 +67,7 @@ export function AccountBar({ user, quota, onLogin, onRegister, onLogout, onUpgra
               Продлить
             </Button>
           ) : null}
-          <Button size="sm" variant="ghost" className="h-8 rounded-xl text-xs" onClick={onLogout}>
+          <Button size="sm" variant="ghost" className="h-8 rounded-xl text-xs" onClick={onLogout} aria-label="Выйти" title="Выйти">
             <LogOut className="h-3.5 w-3.5" />
           </Button>
         </>

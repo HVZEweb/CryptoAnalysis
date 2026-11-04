@@ -13,9 +13,22 @@ interface AdminUser {
   predictionsUsed: number;
   paidUntil: number | null;
   createdAt: string;
+  emailVerified: boolean;
+  twoFactor: boolean;
+  lastLoginAt: number | null;
+  sessions: number;
 }
 
-type UserChange = { tier?: AdminUser["tier"]; role?: AdminUser["role"]; password?: string; extendDays?: number };
+type UserChange = {
+  tier?: AdminUser["tier"];
+  role?: AdminUser["role"];
+  password?: string;
+  extendDays?: number;
+  revokeSessions?: true;
+  resetTwoFactor?: true;
+};
+
+const when = (t: number) => new Date(t).toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
 const inputClass = "rounded-xl bg-white/5 px-3 py-2 text-sm ring-1 ring-white/10";
 
@@ -63,8 +76,8 @@ export default function AdminPage() {
   };
 
   const resetPassword = async (user: AdminUser) => {
-    const password = window.prompt(`Новый пароль для ${user.email} (минимум 8 символов):`);
-    if (password) await update(user, { password }, `Пароль для ${user.email} изменён`);
+    const password = window.prompt(`Новый пароль для ${user.email} (минимум 8 символов). Все его устройства выйдут из аккаунта:`);
+    if (password) await update(user, { password }, `Пароль для ${user.email} изменён, сеансы завершены`);
   };
 
   const addUser = async (e: React.FormEvent) => {
@@ -156,6 +169,11 @@ export default function AdminPage() {
                 · {u.predictionsUsed} прогнозов · с{" "}
                 {new Date(u.createdAt).toLocaleDateString("ru-RU")}
               </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {u.emailVerified ? "почта подтверждена" : "почта не подтверждена"}
+                {u.twoFactor ? " · двухэтапный вход" : ""} · {u.lastLoginAt ? `вход ${when(u.lastLoginAt)}` : "ещё не входил"}
+                {u.sessions ? ` · устройств: ${u.sessions}` : ""}
+              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               {u.role !== "admin" && (
@@ -182,6 +200,29 @@ export default function AdminPage() {
               <Button size="sm" variant="secondary" disabled={busy === u.id} onClick={() => resetPassword(u)}>
                 Сменить пароль
               </Button>
+              {u.sessions > 0 && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy === u.id}
+                  onClick={() => window.confirm(`Выйти из аккаунта ${u.email} на всех устройствах?`) && update(u, { revokeSessions: true }, "Сеансы завершены")}
+                >
+                  Выйти везде
+                </Button>
+              )}
+              {u.twoFactor && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy === u.id}
+                  onClick={() =>
+                    window.confirm(`Отключить двухэтапный вход для ${u.email}? Делайте это, только убедившись, что пишет сам владелец.`) &&
+                    update(u, { resetTwoFactor: true }, "Двухэтапный вход отключён")
+                  }
+                >
+                  Сбросить 2FA
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant={u.role === "admin" ? "ghost" : "default"}

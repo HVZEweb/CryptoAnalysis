@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { denyUnlessAdmin } from "@/lib/admin-auth";
-import { extendSubscription, listUsers, setUserPassword, setUserRole, setUserTierById } from "@/lib/auth";
+import { AuthError, extendSubscription, listUsers, resetTwoFactor, setUserPassword, setUserRole, setUserTierById } from "@/lib/auth";
+import { revokeUserSessions } from "@/lib/sessions";
 
 export async function GET(request: NextRequest) {
   const denied = await denyUnlessAdmin(request);
@@ -14,7 +15,11 @@ const updateSchema = z.object({
   userId: z.string().min(1),
   tier: z.enum(["registered", "paid"]).optional(),
   role: z.enum(["user", "admin"]).optional(),
-  password: z.string().min(8, "Пароль — минимум 8 символов").optional(),
+  password: z.string().min(8, "Пароль — минимум 8 символов").max(128).optional(),
+  /** Sign the user out on every device */
+  revokeSessions: z.literal(true).optional(),
+  /** Turn off two-step sign-in (a lost phone) */
+  resetTwoFactor: z.literal(true).optional(),
   /** Add this many days to the subscription */
   extendDays: z.number().int().min(1).max(366).optional(),
 });
@@ -29,12 +34,22 @@ export async function POST(request: NextRequest) {
   }
   const { userId, tier, role, password, extendDays } = parsed.data;
 
+  if (parsed.data.revokeSessions) await revokeUserSessions(userId);
+  if (parsed.data.resetTwoFactor && !(await resetTwoFactor(userId))) {
+    return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+  }
+
   if (extendDays && (await extendSubscription(userId, extendDays)) == null) {
     return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
   }
 
-  if (password && !(await setUserPassword(userId, password))) {
-    return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+  try {
+    if (password && !(await setUserPassword(userId, password))) {
+      return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
+    }
+  } catch (error) {
+    if (error instanceof AuthError) return NextResponse.json({ error: error.message }, { status: error.status });
+    throw error;
   }
 
   if (tier && !(await setUserTierById(userId, tier))) {

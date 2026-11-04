@@ -439,6 +439,8 @@ export interface AuthUser {
   tier: "anon" | "registered" | "paid";
   role?: "user" | "admin";
   predictionsUsed: number;
+  emailVerified?: boolean;
+  twoFactor?: boolean;
 }
 
 export interface PredictionHistoryItem extends PredictionResult {

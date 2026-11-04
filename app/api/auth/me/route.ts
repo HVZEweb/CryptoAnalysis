@@ -1,27 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cleanupExpiredSessions, findUserById } from "@/lib/auth";
+import { findUserById } from "@/lib/auth";
+import { publicUser } from "@/lib/auth-http";
 import { getQuotaStatus, resolveIdentity } from "@/lib/quota";
+import { cleanupAuth } from "@/lib/sessions";
 import { getDeviceId, getSessionToken } from "@/lib/request-context";
 
 export async function GET(request: NextRequest) {
   try {
-    await cleanupExpiredSessions();
+    await cleanupAuth().catch((e) => console.error("[auth cleanup]", (e as Error).message));
     const identity = await resolveIdentity(getDeviceId(request), getSessionToken(request));
     const status = await getQuotaStatus(identity);
 
-    if (!identity.userId) {
-      return NextResponse.json({ user: null, quota: status });
-    }
-
-    const user = await findUserById(identity.userId);
-    if (!user) {
-      return NextResponse.json({ user: null, quota: status });
-    }
-
-    return NextResponse.json({
-      user: { email: user.email, tier: user.tier, role: user.role, predictionsUsed: user.predictionsUsed },
-      quota: status,
-    });
+    const user = identity.userId ? await findUserById(identity.userId) : null;
+    return NextResponse.json({ user: user ? publicUser(user) : null, quota: status });
   } catch (error) {
     console.error("[auth/me]", error);
     return NextResponse.json(

@@ -129,6 +129,66 @@ async function initializeSchema(): Promise<void> {
   await addColumn("users", "role", "ENUM('user', 'admin') NOT NULL DEFAULT 'user'");
   // Paid subscription end (ms). tier = 'paid' stays a permanent grant made by hand.
   await addColumn("users", "paid_until", "BIGINT NULL");
+  // Sign-in security (lib/sessions.ts, lib/auth-tokens.ts, lib/totp.ts); times in ms.
+  await addColumn("users", "email_verified_at", "BIGINT NULL");
+  await addColumn("users", "password_changed_at", "BIGINT NULL");
+  await addColumn("users", "last_login_at", "BIGINT NULL");
+  await addColumn("users", "totp_secret", "VARCHAR(64) NULL");
+  await addColumn("users", "totp_enabled_at", "BIGINT NULL");
+  await addColumn("users", "totp_last_step", "BIGINT NULL");
+
+  // Sessions are kept by the SHA-256 of their token: a copy of the database does not let anyone sign in.
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS user_sessions (
+      id CHAR(64) PRIMARY KEY,
+      user_id CHAR(24) NOT NULL,
+      created_at BIGINT NOT NULL,
+      last_seen_at BIGINT NOT NULL,
+      expires_at BIGINT NOT NULL,
+      ip VARCHAR(64) NULL,
+      user_agent VARCHAR(255) NULL,
+      INDEX idx_user_sessions_user (user_id),
+      INDEX idx_user_sessions_expires (expires_at),
+      CONSTRAINT fk_user_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  // One-time links and challenges (email check, password reset, second sign-in step), also by hash.
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS auth_tokens (
+      id CHAR(64) PRIMARY KEY,
+      user_id CHAR(24) NOT NULL,
+      purpose ENUM('verify_email', 'reset_password', 'login_2fa') NOT NULL,
+      expires_at BIGINT NOT NULL,
+      attempts INT NOT NULL DEFAULT 0,
+      created_at BIGINT NOT NULL,
+      INDEX idx_auth_tokens_user (user_id, purpose),
+      INDEX idx_auth_tokens_expires (expires_at),
+      CONSTRAINT fk_auth_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS user_recovery_codes (
+      code_hash CHAR(64) PRIMARY KEY,
+      user_id CHAR(24) NOT NULL,
+      used_at BIGINT NULL,
+      INDEX idx_recovery_user (user_id),
+      CONSTRAINT fk_recovery_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+  // Sign-ins, failures, password and 2FA changes: shown to the user on /account, kept 90 days.
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS auth_events (
+      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+      user_id CHAR(24) NULL,
+      email VARCHAR(255) NULL,
+      type VARCHAR(32) NOT NULL,
+      ip VARCHAR(64) NULL,
+      user_agent VARCHAR(255) NULL,
+      created_at BIGINT NOT NULL,
+      INDEX idx_auth_events_user (user_id, created_at),
+      INDEX idx_auth_events_created (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
 
   schemaReady = true;
 }

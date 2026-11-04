@@ -1,50 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { isSignupOpen, registerUser } from "@/lib/auth";
-import { DEVICE_COOKIE, SESSION_COOKIE, secureCookies } from "@/lib/request-context";
+import { authFailure, jsonBody, limitByIp, publicUser, withSession } from "@/lib/auth-http";
+import { sendVerificationEmail } from "@/lib/auth-mail";
+import { DEVICE_COOKIE, clientMeta, publicOrigin } from "@/lib/request-context";
 
-const authSchema = z.object({
-  email: z.string().email("Некорректный email"),
-  password: z.string().min(8, "Минимум 8 символов"),
+const schema = z.object({
+  email: z.string().trim().min(3, "Введите email").max(254),
+  password: z.string().min(1, "Введите пароль").max(1024),
 });
 
-function setSessionCookie(response: NextResponse, token: string) {
-  response.cookies.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: secureCookies(),
-    sameSite: "lax",
-    maxAge: 30 * 24 * 60 * 60,
-    path: "/",
-  });
-}
-
 export async function POST(request: NextRequest) {
-  const ip = getClientIp(request);
-  const rate = await checkRateLimit(`auth-register:${ip}`, 5, 60 * 60_000);
-  if (!rate.allowed) {
-    return NextResponse.json({ error: "Слишком много регистраций" }, { status: 429 });
-  }
+  const limited = await limitByIp(request, "auth-register", 5, 60 * 60_000);
+  if (limited) return limited;
 
   if (!(await isSignupOpen().catch(() => false))) {
-    return NextResponse.json(
-      { error: "Регистрация закрыта. Попросите администратора добавить вас." },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "Регистрация закрыта. Попросите администратора добавить вас." }, { status: 403 });
   }
 
-  try {
-    const body = authSchema.parse(await request.json());
-    const deviceId = request.cookies.get(DEVICE_COOKIE)?.value;
-    const { user, token } = await registerUser(body.email, body.password, deviceId);
+  const parsed = schema.safeParse(await jsonBody(request));
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Введите email и пароль" }, { status: 400 });
 
-    const response = NextResponse.json({
-      user: { email: user.email, tier: user.tier, role: user.role, predictionsUsed: user.predictionsUsed },
-    });
-    setSessionCookie(response, token);
-    return response;
+  try {
+    const deviceId = request.cookies.get(DEVICE_COOKIE)?.value;
+    const { user, token, expiresAt } = await registerUser(parsed.data.email, parsed.data.password, deviceId, clientMeta(request));
+    const verificationSent = await sendVerificationEmail(user, publicOrigin(request));
+    return withSession({ user: publicUser(user), verificationSent }, token, expiresAt);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Ошибка регистрации";
-    return NextResponse.json({ error: message }, { status: 400 });
+    return authFailure(error, "auth/register");
   }
 }

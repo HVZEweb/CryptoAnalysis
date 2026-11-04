@@ -1,38 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { loginUser } from "@/lib/auth";
-import { SESSION_COOKIE, secureCookies } from "@/lib/request-context";
+import { authFailure, jsonBody, limitByIp, publicUser, withSession } from "@/lib/auth-http";
+import { clientMeta } from "@/lib/request-context";
 
-const authSchema = z.object({
-  email: z.string().email("Некорректный email"),
-  password: z.string().min(1, "Введите пароль"),
+const schema = z.object({
+  email: z.string().trim().min(3, "Введите email").max(254),
+  password: z.string().min(1, "Введите пароль").max(1024),
 });
 
 export async function POST(request: NextRequest) {
-  const ip = getClientIp(request);
-  const rate = await checkRateLimit(`auth-login:${ip}`, 10, 15 * 60_000);
-  if (!rate.allowed) {
-    return NextResponse.json({ error: "Слишком много попыток входа" }, { status: 429 });
-  }
+  const limited = await limitByIp(request, "auth-login", 20, 15 * 60_000);
+  if (limited) return limited;
+
+  const parsed = schema.safeParse(await jsonBody(request));
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Введите email и пароль" }, { status: 400 });
 
   try {
-    const body = authSchema.parse(await request.json());
-    const { user, token } = await loginUser(body.email, body.password);
-
-    const response = NextResponse.json({
-      user: { email: user.email, tier: user.tier, role: user.role, predictionsUsed: user.predictionsUsed },
-    });
-    response.cookies.set(SESSION_COOKIE, token, {
-      httpOnly: true,
-      secure: secureCookies(),
-      sameSite: "lax",
-      maxAge: 30 * 24 * 60 * 60,
-      path: "/",
-    });
-    return response;
+    const result = await loginUser(parsed.data.email, parsed.data.password, clientMeta(request));
+    // Two-step sign-in: the password was right, now the code (POST /api/auth/login/2fa with this challenge).
+    if ("twoFactor" in result) return NextResponse.json({ twoFactor: true, challenge: result.twoFactor });
+    return withSession({ user: publicUser(result.user) }, result.token, result.expiresAt);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Ошибка входа";
-    return NextResponse.json({ error: message }, { status: 401 });
+    return authFailure(error, "auth/login");
   }
 }
