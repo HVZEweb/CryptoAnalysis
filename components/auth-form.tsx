@@ -100,8 +100,14 @@ export function AuthForm({ initialMode = "login", onSuccess, onModeChange }: Aut
     setModeState(m);
     setError("");
     setInfo("");
-    onModeChange?.(m);
   };
+
+  // Every step change (also the first one and the switch to signup for the very first account) is reported.
+  const modeChange = useRef(onModeChange);
+  modeChange.current = onModeChange;
+  useEffect(() => {
+    modeChange.current?.(mode);
+  }, [mode]);
 
   useEffect(() => {
     fetch("/api/auth/signup-status")

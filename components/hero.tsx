@@ -14,6 +14,8 @@ interface HeroProps {
   onUpgrade: () => void;
   /** Section navigation, shown as the header's second row */
   nav?: React.ReactNode;
+  /** The account is still loading: show nothing instead of a guest's buttons for a moment */
+  accountLoading?: boolean;
 }
 
 /** The site's mark: a small square with a rising line — no gradients, readable at favicon size. */
@@ -27,7 +29,7 @@ export function BrandMark({ className = "h-7 w-7" }: { className?: string }) {
 }
 
 /** Sticky top bar: brand and account on one row, the sections below it. */
-export function Hero({ user, quota, onLogin, onRegister, onLogout, onUpgrade, nav }: HeroProps) {
+export function Hero({ user, quota, onLogin, onRegister, onLogout, onUpgrade, nav, accountLoading }: HeroProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 pt-3 sm:px-6">
@@ -37,7 +39,11 @@ export function Hero({ user, quota, onLogin, onRegister, onLogout, onUpgrade, na
         </Link>
         <div className="flex items-center gap-2">
           {user?.role === "admin" && <DevMenu />}
-          <AccountBar user={user} quota={quota} onLogin={onLogin} onRegister={onRegister} onLogout={onLogout} onUpgrade={onUpgrade} />
+          {accountLoading ? (
+            <div className="h-8 w-40 animate-pulse rounded-xl bg-white/[0.04]" aria-hidden />
+          ) : (
+            <AccountBar user={user} quota={quota} onLogin={onLogin} onRegister={onRegister} onLogout={onLogout} onUpgrade={onUpgrade} />
+          )}
         </div>
       </div>
       {nav && <div className="mx-auto max-w-6xl px-2 sm:px-4">{nav}</div>}

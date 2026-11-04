@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { BrandMark } from "@/components/hero";
 import { AuthForm, type AuthMode } from "@/components/auth-form";
 
@@ -20,6 +21,11 @@ const SUBTITLE: Record<AuthMode, string> = {
 
 export default function LoginPage() {
   const [mode, setMode] = useState<AuthMode>("login");
+  // /login?mode=register (from the landing page) opens the signup form.
+  const [initial, setInitial] = useState<"login" | "register" | null>(null);
+  useEffect(() => {
+    setInitial(new URLSearchParams(window.location.search).get("mode") === "register" ? "register" : "login");
+  }, []);
 
   return (
     <main className="relative flex min-h-[100dvh] items-center justify-center p-4">
@@ -33,15 +39,21 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <AuthForm
-          onModeChange={setMode}
-          onSuccess={({ registered }) => {
-            // A full load, so pages checked on the server see the new session.
-            window.location.href = registered ? "/account?welcome=1" : safeNext();
-          }}
-        />
+        {initial && (
+          <AuthForm
+            initialMode={initial}
+            onModeChange={setMode}
+            onSuccess={() => {
+              // A full load, so "/" and pages checked on the server see the new session.
+              window.location.href = safeNext();
+            }}
+          />
+        )}
 
-        <p className="text-center text-xs text-muted-foreground">
+        <p className="flex justify-center gap-4 text-xs text-muted-foreground">
+          <Link href="/" className="underline underline-offset-2 hover:text-foreground">
+            О сервисе
+          </Link>
           <a href="/terms" className="underline underline-offset-2 hover:text-foreground">
             Условия и риски
           </a>
