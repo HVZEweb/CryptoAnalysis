@@ -50,6 +50,10 @@ export async function checkRateLimit(
   }
 
   const now = Date.now();
+  // Forget finished windows now and then, so a flood of distinct addresses cannot grow the map for ever.
+  if (memoryStore.size > 10_000) {
+    for (const [k, e] of memoryStore) if (now > e.resetAt) memoryStore.delete(k);
+  }
   const entry = memoryStore.get(key);
 
   if (!entry || now > entry.resetAt) {

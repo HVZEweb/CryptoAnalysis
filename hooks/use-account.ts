@@ -26,40 +26,11 @@ export function useAccount() {
     refresh();
   }, [refresh]);
 
-  const register = useCallback(
-    async (email: string, password: string) => {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Ошибка регистрации");
-      await refresh();
-      return data;
-    },
-    [refresh]
-  );
-
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Ошибка входа");
-      await refresh();
-      return data;
-    },
-    [refresh]
-  );
-
+  // A full reload: on a private site the next page is the login form, and nothing of the account stays on screen.
   const logout = useCallback(async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    await refresh();
-  }, [refresh]);
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => undefined);
+    window.location.href = "/";
+  }, []);
 
-  return { user, quota, loading, refresh, register, login, logout };
+  return { user, quota, loading, refresh, logout };
 }

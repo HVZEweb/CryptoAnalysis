@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getUserIdBySession, isSitePrivate } from "@/lib/auth";
-import { DEVICE_COOKIE, SESSION_COOKIE, secureCookies } from "@/lib/request-context";
+import { isSitePrivate } from "@/lib/auth";
+import { lookupSession } from "@/lib/sessions";
+import { DEVICE_COOKIE, clientMeta, getSessionToken, isCrossSiteWrite, publicHost, secureCookies, setSessionCookie } from "@/lib/request-context";
 
 /** Reachable without signing in on a private site: the login page and the auth API itself. */
 const PUBLIC_PATHS = [
@@ -13,6 +14,7 @@ const PUBLIC_PATHS = [
   "/api/auth/signup-status",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
+  "/api/auth/verify-email",
   "/api/auth/me",
 ];
 
@@ -38,23 +40,28 @@ function withDeviceCookie(request: NextRequest, response: NextResponse): NextRes
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  if (isSitePrivate() && !isPublic(pathname)) {
-    const token = request.cookies.get(SESSION_COOKIE)?.value;
-    const userId = token ? await getUserIdBySession(token).catch(() => null) : null;
-    if (!userId) {
-      if (pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Войдите на сайт" }, { status: 401 });
-      }
-      // Build the public URL from the proxy's headers: behind Caddy, request.url is the internal 127.0.0.1 address.
-      const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? request.nextUrl.host;
-      const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
-      const login = new URL(`${proto}://${host}/login`);
-      if (pathname !== "/") login.searchParams.set("next", pathname + search);
-      return withDeviceCookie(request, NextResponse.redirect(login));
-    }
+  if (pathname.startsWith("/api/") && isCrossSiteWrite(request)) {
+    return NextResponse.json({ error: "Запрос с чужого сайта отклонён" }, { status: 403 });
   }
 
-  return withDeviceCookie(request, NextResponse.next());
+  // The session is looked up (and its expiry moved forward) once here; route handlers check it again themselves.
+  const token = getSessionToken(request);
+  const session = token ? await lookupSession(token, clientMeta(request)).catch(() => null) : null;
+
+  if (isSitePrivate() && !isPublic(pathname) && !session) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Войдите на сайт" }, { status: 401 });
+    }
+    // Build the public URL from the proxy's headers: behind Caddy, request.url is the internal 127.0.0.1 address.
+    const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+    const login = new URL(`${proto}://${publicHost(request)}/login`);
+    if (pathname !== "/") login.searchParams.set("next", pathname + search);
+    return withDeviceCookie(request, NextResponse.redirect(login));
+  }
+
+  const response = NextResponse.next();
+  if (session?.renewed && token) setSessionCookie(response, token, session.expiresAt);
+  return withDeviceCookie(request, response);
 }
 
 export const config = {

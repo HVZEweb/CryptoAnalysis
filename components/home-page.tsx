@@ -31,7 +31,7 @@ import { OpportunitiesPanel } from "@/components/opportunities-panel";
 
 export function HomePage() {
   const { loading, error, result, progress, step, stepMessage, predict } = usePrediction();
-  const { user, quota, refresh, register, login, logout } = useAccount();
+  const { user, quota, refresh, logout } = useAccount();
   const { history, saveToHistory, clearHistory } = usePredictionHistory(!!user);
   const [tab, setTabState] = useState<TabId>("predict");
   // The tab lives in the URL (?tab=…), so a link or the back button from a card returns to it.
@@ -299,8 +299,7 @@ export function HomePage() {
         open={authOpen}
         onOpenChange={setAuthOpen}
         defaultTab={authTab}
-        onLogin={login}
-        onRegister={register}
+        onSuccess={refresh}
       />
 
       <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} onNeedAuth={openRegister} onPaid={() => void refresh()} />

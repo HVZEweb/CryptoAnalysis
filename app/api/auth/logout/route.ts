@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { deleteSession } from "@/lib/auth";
-import { SESSION_COOKIE } from "@/lib/request-context";
+import { logAuthEvent } from "@/lib/auth-tokens";
+import { lookupSession, deleteSession } from "@/lib/sessions";
+import { clearSessionCookie, clientMeta, getSessionToken } from "@/lib/request-context";
 
-export async function POST() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get(SESSION_COOKIE)?.value;
-  if (token) await deleteSession(token);
-
+export async function POST(request: Request) {
+  const token = getSessionToken(request);
+  if (token) {
+    const session = await lookupSession(token).catch(() => null);
+    await deleteSession(token).catch(() => undefined);
+    if (session) await logAuthEvent("logout", { userId: session.userId }, clientMeta(request));
+  }
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(SESSION_COOKIE, "", { httpOnly: true, maxAge: 0, path: "/" });
+  clearSessionCookie(response);
   return response;
 }
