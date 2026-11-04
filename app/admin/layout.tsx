@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
-import { getAdminFromCookies } from "@/lib/admin-auth";
+import { getUserFromCookies } from "@/lib/admin-auth";
 
 // Checked on every request: the page is only for signed-in admins.
 export const dynamic = "force-dynamic";
 
 export default async function AdminOnlyLayout({ children }: { children: React.ReactNode }) {
-  if (!(await getAdminFromCookies())) redirect("/?admin=required");
+  const user = await getUserFromCookies();
+  if (!user) redirect("/login?next=%2Fadmin");
+  if (user.role !== "admin") redirect("/?admin=required");
   return children;
 }

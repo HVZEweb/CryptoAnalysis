@@ -31,7 +31,7 @@ import { OpportunitiesPanel } from "@/components/opportunities-panel";
 
 export function HomePage() {
   const { loading, error, result, progress, step, stepMessage, predict } = usePrediction();
-  const { user, quota, refresh, logout } = useAccount();
+  const { user, quota, loading: accountLoading, refresh, logout } = useAccount();
   const { history, saveToHistory, clearHistory } = usePredictionHistory(!!user);
   const [tab, setTabState] = useState<TabId>("predict");
   // The tab lives in the URL (?tab=…), so a link or the back button from a card returns to it.
@@ -129,6 +129,7 @@ export function HomePage() {
   return (
     <main className="flex min-h-[100dvh] flex-col">
       <Hero
+        accountLoading={accountLoading}
         user={user}
         quota={quota}
         onLogin={openLogin}

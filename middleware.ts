@@ -19,6 +19,8 @@ const PUBLIC_PATHS = [
 ];
 
 function isPublic(pathname: string): boolean {
+  // "/" is the landing page for guests (app/page.tsx shows the service only to signed-in users).
+  if (pathname === "/") return true;
   if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
   // Static files from /public (icons, images).
   return /\.[a-z0-9]{2,5}$/i.test(pathname);
