@@ -39,6 +39,18 @@ async function columnExists(table: string, column: string): Promise<boolean> {
   return ((rows as Array<{ c: number }>)[0]?.c ?? 0) > 0;
 }
 
+/** "CHAR(24) CHARACTER SET … COLLATE …" exactly as users.id is, for columns that reference it. */
+async function userIdColumnType(): Promise<string> {
+  const [rows] = await getPool().execute(
+    `SELECT CHARACTER_SET_NAME AS cs, COLLATION_NAME AS co FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'id'`,
+    [DB_NAME]
+  );
+  const { cs, co } = (rows as Array<{ cs: string | null; co: string | null }>)[0] ?? { cs: null, co: null };
+  const name = /^[A-Za-z0-9_]+$/;
+  return cs && co && name.test(cs) && name.test(co) ? `CHAR(24) CHARACTER SET ${cs} COLLATE ${co}` : "CHAR(24)";
+}
+
 async function initializeSchema(): Promise<void> {
   const { host, port, user, password } = getConfig();
   const bootstrap = await mysql.createConnection({ host, port, user, password });
@@ -68,10 +80,14 @@ async function initializeSchema(): Promise<void> {
       INDEX idx_users_reset (reset_token)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+  // A foreign key needs the same collation on both sides. users may come from an older server (a restored dump
+  // keeps utf8mb4_general_ci) while new tables get the server's default (utf8mb4_uca1400_ai_ci on MariaDB 11):
+  // the mismatch fails CREATE TABLE with errno 150 and, with it, every query. So copy users.id's own collation.
+  const userId = await userIdColumnType();
   await db.execute(`
     CREATE TABLE IF NOT EXISTS sessions (
       token CHAR(64) PRIMARY KEY,
-      user_id CHAR(24) NOT NULL,
+      user_id ${userId} NOT NULL,
       expires_at BIGINT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       INDEX idx_sessions_user (user_id),
@@ -90,7 +106,7 @@ async function initializeSchema(): Promise<void> {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS predictions (
       id CHAR(24) PRIMARY KEY,
-      user_id CHAR(24) NULL,
+      user_id ${userId} NULL,
       device_id CHAR(36) NULL,
       symbol VARCHAR(20) NOT NULL,
       coin_name VARCHAR(120) NOT NULL,
@@ -141,7 +157,7 @@ async function initializeSchema(): Promise<void> {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS user_sessions (
       id CHAR(64) PRIMARY KEY,
-      user_id CHAR(24) NOT NULL,
+      user_id ${userId} NOT NULL,
       created_at BIGINT NOT NULL,
       last_seen_at BIGINT NOT NULL,
       expires_at BIGINT NOT NULL,
@@ -156,7 +172,7 @@ async function initializeSchema(): Promise<void> {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS auth_tokens (
       id CHAR(64) PRIMARY KEY,
-      user_id CHAR(24) NOT NULL,
+      user_id ${userId} NOT NULL,
       purpose ENUM('verify_email', 'reset_password', 'login_2fa') NOT NULL,
       expires_at BIGINT NOT NULL,
       attempts INT NOT NULL DEFAULT 0,
@@ -169,7 +185,7 @@ async function initializeSchema(): Promise<void> {
   await db.execute(`
     CREATE TABLE IF NOT EXISTS user_recovery_codes (
       code_hash CHAR(64) PRIMARY KEY,
-      user_id CHAR(24) NOT NULL,
+      user_id ${userId} NOT NULL,
       used_at BIGINT NULL,
       INDEX idx_recovery_user (user_id),
       CONSTRAINT fk_recovery_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

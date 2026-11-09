@@ -7,6 +7,7 @@ const DB_TESTS = [
   "__tests__/auth-roles.test.ts",
   "__tests__/payments-flow.test.ts",
   "__tests__/db-schema.test.ts",
+  "__tests__/db-collation.test.ts",
   "__tests__/market-data-collector.test.ts",
   "__tests__/news-study.test.ts",
 ];
